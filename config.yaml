@@ -1,0 +1,7 @@
+baseURL: "https://matthewcrews.com"
+title: "Matthew Crews"
+theme: "hugo-PaperMod"
+menu:
+  main:
+    - name: About
+      url: about
