@@ -4,7 +4,7 @@ date: 2020-12-01
 draft: true
 ---
 
-Recently I was asked if it would be possible to add the `log` function to the [Flips library](https://flipslibrary.com). Flips is a library for modeling and solving Linear and Mixed-Integer Programming problems. Both of these classes of problems are constrained to only having linear (i.e. straight) lines. You may ask, "What do you mean by straight?" The following are examples of linear functions.
+Recently I was asked if it would be possible to add the `log` function to the [Flips library](https://flipslibrary.com). Flips is a library for modeling and solving Linear and Mixed-Integer Programming problems. Both classes of problems are constrained to only having linear (i.e. straight) lines. You may ask, "What do you mean by straight?" The following are examples of linear functions.
 
 $$
 \displaylines{
@@ -30,13 +30,13 @@ For a function to be linear in the domain of Linear/Mixed-Integer Programming th
 
 ## What if we need a Non-Linear Function
 
-Fortunately we have ways of working around this limitation. Another way to think of a curve is just a series of straight lines. We could approximate our curve using a series of straight lines that were close enough to the original function to make our answer meaningful. For this example let's try modeling the parabola $y=-x^2+10.0$. We will use this to represent the Objective Function of our model. Below you see a plot which has a smooth grey line for the exact values of our parabola and a series of point connect by blue line segments. You will notice that the blue line segments closely match the shape of the parabola.
+Fortunately, we have ways of working around this limitation. Another way to think of a curve is just a series of straight lines. We could approximate our curve using a series of straight lines that were close enough to the original function to make our answer meaningful. For this example, let's try modeling the parabola $y=-x^2+10.0$. We will use this to represent the Objective Function of our model. Below you see a plot which has a smooth grey line for the exact values of our parabola and a series of point connect by blue line segments. You will notice that the blue line segments closely match the shape of the parabola.
 
 ![Smooth Function as Line Segments](/img/2020-12-01-line-segments.png)
 
 Our goal is to now model our original parabola with a series of segments. We will create a Decision variable which corresponds to each point on the plot. To get a value along the line segments we take a percent of the adjacent points. If I wanted the value of $y$ at the point $x=0.5$, I would use 50% of the value of $x$ at 0.0 and 50% of the value of $x$ at $1.0$. You may recognize this as [linear-interpolation](https://en.wikipedia.org/wiki/Linear_interpolation). If we want a value for x that is between our Decision variable, we just use a percent of the adjacent decisions. Let's get to the code!
 
-We open up the `Flips` library and generate the set of points we want Decisions for. We create a range of values from `-5.0` to `5.0` and provide an index for the value. We extract the index values to be elswhere in our code.
+We open the `Flips` library and generate the set of points we want Decisions for. We create a range of values from `-5.0` to `5.0` and provide an index for the value. We extract the index values to be elsewhere in our code.
 
 ```fsharp
 open Flips
@@ -63,14 +63,14 @@ let decs =
     } |> SMap
 ```
 
-Next we need to create a constraints which says the total percentage of the points that we use must be equal to `1.0`. This ensures that the solver is selecting a point along one of our segments.
+Next, we need to create a constraints which says the total percentage of the points that we use must be equal to `1.0`. This ensures that the solver is selecting a point along one of our segments.
 
 ```fsharp
 // We create a constraint saying that we must 
 let totalOneConstraint = Constraint.create "TotalValue" (sum decs == 1.0)
 ```
 
-One of the other rules that we need to impose is that the Solver can only use adjacent points for interpolation. It would make no sense if the Solver interpolated between the points `-5.0` and `5.0`. To enforce this behavior we are going to need to create an additional set of Decisions which correspond to the adjacent points along our line. We use the `List.pairwise` function to iterate through the adjacent indices and create the corresponding `Decision`. This decision type will be a `Boolean` because we either want the solver to use the pair of points or to not use them at all.
+One of the other rules that we need to impose is that the Solver can only use adjacent points for interpolation. It would make no sense if the Solver interpolated between the points `-5.0` and `5.0`. To enforce this behavior, we are going to need to create an additional set of Decisions which correspond to the adjacent points along our line. We use the `List.pairwise` function to iterate through the adjacent indices and create the corresponding `Decision`. This decision type will be a `Boolean` because we either want the solver to use the pair of points or to not use them at all.
 
 ```fsharp
 // We create an indicator variable which corresponds to pairs of points
@@ -151,7 +151,7 @@ We can validate this result visually by looking at the plot above.
 
 ## Constraints on Non-Linear Functions
 
-To make things more interesting, let's add a constraint which says that our parabola can only go up to `-1.0`. This would correspond to saying $x\leq -1.0$. Now remember, we don't actually have a single $x$, we have a series of them which correspond to the different points on our plat. So how do we model this? Quite easily! We add a constraint which says the value of our decisions multiplied the corresponding `y` value, must be less or equal to `-1.0`.
+To make things more interesting, let's add a constraint which says that our parabola can only go up to `-1.0`. This would correspond to saying $x\leq -1.0$. Now remember, we do not actually have a single $x$, we have a series of them which correspond to the different points on our plat. So how do we model this? Quite easily! We add a constraint which says the value of our decisions multiplied the corresponding `y` value, must be less or equal to `-1.0`.
 
 ```fsharp
 let lessThanNegativeOne = 
@@ -185,4 +185,4 @@ Objective Value: 9.000000
 val it : unit = ()
 ```
 
-Again, we look at our plot and this makes sense. Hopefully that provides a little insight into how to model non-linear functions using linear approximations.
+Again, we look at our plot and this makes sense. Hopefully, that provides a little insight into how to model non-linear functions using linear approximations.
