@@ -1,7 +1,7 @@
 ---
 title: Modeling Non-Linear Functions with Flips
 date: 2020-12-01
-draft: true
+draft: false
 ---
 
 Recently I was asked if it would be possible to add the `log` function to the [Flips library](https://flipslibrary.com). Flips is a library for modeling and solving Linear and Mixed-Integer Programming problems. Both classes of problems are constrained to only having linear (i.e. straight) lines. You may ask, "What do you mean by straight?" The following are examples of linear functions.
