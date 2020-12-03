@@ -147,7 +147,11 @@ Objective Value: 10.000000
 val it : unit = ()
 ```
 
-This makes sense per the plot at the beginning. To make things more interesting, let's add a constraint which says that our parabola can only go up to `-1.0`. This would correspond to saying $x\leq -1.0$. Now remember, we don't actually have a single $x$, we have a series of them which correspond to the different points on our plat. So how do we model this? Quite easily! We add a constraint which says the value of our decisions multiplied the corresponding `y` value, must be less or equal to `-1.0`.
+We can validate this result visually by looking at the plot above.
+
+## Constraints on Non-Linear Functions
+
+To make things more interesting, let's add a constraint which says that our parabola can only go up to `-1.0`. This would correspond to saying $x\leq -1.0$. Now remember, we don't actually have a single $x$, we have a series of them which correspond to the different points on our plat. So how do we model this? Quite easily! We add a constraint which says the value of our decisions multiplied the corresponding `y` value, must be less or equal to `-1.0`.
 
 ```fsharp
 let lessThanNegativeOne = 
