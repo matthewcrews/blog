@@ -3,6 +3,8 @@ title: "About Me"
 layout: staticpage
 ---
 
-I love the problem of finding the best plan in the face of uncertainty. This often results in some mix of Mathematical Optimization and Machine Learning. I use whatever tool is best for the job. Helping people find an answer is more important than being dogmatic about any particular technology.
+The best answer to the right question. I partner with business to identify the decision processes that are driving their success then build tools based on Machine Learning and Mathematical Planning to ensure the best possible answer, every time.
 
-Feel free to [email me](matthewcrews@gmail.com) or reach out on [Twitter](https://twitter.com/McCrews) (@McCrews) or [LinkedIn](https://www.linkedin.com/in/mattcrews/).
+I produce articles and training material to equip software developers to build their own Mathematical Planning models to provide outstanding solutions for their clients. Few things bring me more joy than seeing others harness the tools of Mathematical Planning to help others.
+
+Feel free to [email me](mailto:matthewcrews@gmail.com), reach out on [Twitter](https://twitter.com/McCrews) (@McCrews) or [LinkedIn](https://www.linkedin.com/in/mattcrews/).
