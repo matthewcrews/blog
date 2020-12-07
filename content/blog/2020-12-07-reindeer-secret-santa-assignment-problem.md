@@ -1,20 +1,23 @@
 ---
 title: Reindeer Secret Santa Assignment Problem
-date: 2020-12-06
-draft: true
+date: 2020-12-07
+draft: false
+tag: optimization, model-mondays, assignment-problem
 ---
 
-I was having a chat with a friend about what types of problems are good candidates for Mathematical Planning. He posed the question, "Would a Secret Santa exchange be a good candidate?" At first I thought, no. As we kept chatting though, I changed my mind. This is actually a great problem for Mathematical Planning.
+> Note: To see the completed code, please go [here](https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-06-SecretSantaExchange.fs). All code for Model Mondays is kept in [this](https://github.com/matthewcrews/modelmondays) repo and is MIT licensed. Feel free to use it!
 
-For those who are not familiar with what a Secret Santa exchange is, it is when a group of people get together and all put their names in a hat. Everyone draws out a name. You then buy a gift for the person who's name you drew. Normally everyone would get back together at a party and exchange fits. The fun part is that you don't know who is giving you a gift so it is a double surprise.
+I was having a chat with a friend about what types of problems are good candidates for Mathematical Planning. He posed the question, "Would a Secret Santa exchange be a good candidate?" At first, I thought, "no." As we kept chatting though, I changed my mind. This is a great problem for Mathematical Planning.
 
-I initially did not think that this was a good candidate for Mathematical Planning because I didn't see a quantifiable objective. There was no way to measure the difference in quality of the different pairings. All valid pairings are equally as good. Normally you would use [Constraint Programming](https://en.wikipedia.org/wiki/Constraint_programming) and/or [SAT Solvers](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Online_SAT_solvers) for these problems. SAT Solvers and Constraint Programming is interested in answering the question, "Is there an answer which satisfies these constraints?" versus Mathematical Planning which asks, "What is the BEST answer which satisfies these constraints?" The difference seems small but the problem is wildly different. Find the **best** answer to a problem is more difficult than finding just any answer which fits.
+For those who are not familiar with what a Secret Santa exchange is, it is when a group of people get together and all put their names in a hat. Everyone draws out a name. You then buy a gift for the person who's name you drew. Normally everyone would get back together at a party and exchange gifts. The fun part is that you don't know who is giving you a gift, so it is a double surprise.
+
+I initially did not think that this was a good candidate for Mathematical Planning because I didn't see a quantifiable objective. There was no way to measure the difference in quality of the different pairings. All valid pairings are equally as good. Normally you would use [Constraint Programming](https://en.wikipedia.org/wiki/Constraint_programming) and/or [SAT Solvers](https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Online_SAT_solvers) for these problems. SAT Solvers and Constraint Programming is interested in answering the question, "Is there an answer which satisfies these constraints?" versus Mathematical Planning which asks, "What is the **best** answer which satisfies these constraints?" The difference seems small, but the problem is wildly different. Finding the **best** answer to a problem is more difficult than finding **an** answer.
 
 Our conversation continued and my mind was still turning. A new piece of information dropped. This family does Secret Santa every year. *Wait a minute*, I thought. *Don't we want an answer which pairs you with new people each year? Wouldn't it be better if you had someone different than you had the year before or the year before that?*. This problem just became a Mathematical Planning problem!
 
 ## A Reindeer Gift Exchange
 
-I decided to embrace a bit of whimsy in this example and instead of people exchanging gifts, I decided to make it Reindeer. I mean, wouldn't Santa's reindeer want gifts as well? I begin modeling my problem by creating a simple domain to describe my problem.
+I decide to embrace a bit of whimsy and instead of people exchanging gifts, I make it Reindeer. I mean, wouldn't Santa's reindeer want gifts as well? I begin modeling my problem by creating a simple domain to describe my problem.
 
 ```fsharp
 type Reindeer = Reindeer of string
@@ -26,7 +29,7 @@ type SecretSanta = {
 }
 ```
 
-I assume I am going to get the names of the Reindeer as `string` so I wrap them in a single case Discriminated Union to provide context to the data. The `Reindeer` will be both givers and receivers so I make additional types to represent the direction of relationships: `Giver` and `Receiver`. The `SecretSanta` type holds the data about the particular `Reindeer` in the `Reindeer` field and a list of reindeer they have been paired with in years past in the `PreviousReceivers` field. The `PreviousReceivers` is an ordered list where the first element was the last reindeer the `SecretSanta` gave a gift to. Our ideal solution has reindeer giving a gift to a reindeer they have not given to recently.
+I assume I am going to get the names of the Reindeer as `string` so I wrap them in a single case Discriminated Union to provide context to the data. The `Reindeer` will be both givers and receivers so I make additional types to represent the direction of relationships: `Giver` and `Receiver`. The `SecretSanta` type represents a `Reindeer` and the other `Reindeer` they have given gifts in years past. The `PreviousReceivers` for a `SecretSanta` is an ordered list where the first element was the last reindeer the `SecretSanta` gave a gift to, the second element was the receipent two years ago, the third element the receiver three years ago, and so on. Our ideal solution has reindeer giving a gift to a different reindeer they have not given a gift to recently.
 
 Now I create a function which takes a list of `SecretSanta`, builds the model, solves it, and returns the assignments. I will call the function `findAssignments`.
 
@@ -34,7 +37,7 @@ Now I create a function which takes a list of `SecretSanta`, builds the model, s
 let findAssignments (santas:SecretSanta list) =
 ```
 
-I now want to get the list of reindeer that I will be working with and create sets of `Giver` and `Receiver`. This reason for storing this data in a `Set` will become apparent in a few moments.
+I now want to get the list of reindeer that I will be working with and create sets of `Giver` and `Receiver`. The reason for storing this data in a `Set` will become apparent in a few moments.
 
 ```fsharp
 let reindeer =
@@ -46,11 +49,13 @@ let givers = reindeer |> Set.map Giver
 let receivers = reindeer |> Set.map Receiver
 ```
 
-I now need to create the penalty values for assigning a reindeer to a reindeer whom they have given a gift recently. I will do this by using the `List.mapi` function which allows me to iterate through the list with the index value of the item. I use a simple heuristic for calculating the penalty.
+## Measuring Solution Quality
+
+I now need to create the penalty values for assigning a reindeer to a reindeer whom they have given a gift to recently. I will do this by using the `List.mapi` function which allows me to iterate through a list while providing the index for the item you are on. I use a simple heuristic for calculating the penalty.
 
 $$\text{penalty} = \text{NumberOfPreviousRecipients}-\text{index}$$
 
-What this does is provide a high penatly cost for assigning a reindeer to the reindeer they just gave a gift to. From there the cost keeps going down. I will store the result in a `SMap2` that will be indexed by the `Giver` type in the first dimension and the `Receiver` type in the second dimension. I have found using simple Discriminated Unions as a powerful tool for tracking how data is indexed.
+What this does is provide a high penalty cost for assigning a reindeer to the reindeer they just given a gift to. From there the cost keeps going down. I will store the result in a `SMap2` that will be indexed by the `Giver` type in the first dimension and the `Receiver` type in the second dimension. I have found using simple Discriminated Unions as a powerful tool for tracking how data is indexed.
 
 ```fsharp
 let penalty =
@@ -63,4 +68,162 @@ let penalty =
     |> SMap2
 ```
 
-I now want to create the possible assignments. The key thing here is that it should not be possible to assign a reindeer to give a gift to itself. This is why I stored this data in `Set`
+I now want to create the possible assignments. The key thing here is that it should not be possible to assign a reindeer to give a gift to itself. Therefore, I stored this data in a `Set`. The `Set` module has a convenient function `Set.Remove` which returns a new set with the single value removed from it. I will wrap the `Reindeer` values in the `Giver` and `Receiver` Discriminated Unions to provide context on what the values represent. This becomes incredibly valuable with using the slice notation of SliceMaps.
+
+```fsharp
+let possibleAssignments =
+    seq { for giver in reindeer do
+            // We only want pairings with different reindeer
+            for receiver in reindeer.Remove giver ->
+                (Giver giver, Receiver receiver)
+    }
+```
+
+We now have all the possible assignments for this reindeer Secret Santa exchange. I need to create a `Boolean` decision variable for each assignment. This decision variable is what the `Solver` engine will use to adjust to find a solution to my problem. `1.0` will indicate that the assignment should be used. `0.0` will indicate that the assignment should not be used.
+
+```fsharp
+let assignDecisions =
+    DecisionBuilder "Assignment" {
+        for pairing in possibleAssignments ->
+            Boolean
+    } |> SMap2
+```
+
+The decision variables are stored in a 2-dimensional SliceMap, `SMap2`, where the first index is of type `Giver` and the second dimension is `Receiver`. We now need to create some constraints to ensure our solutions make sense.
+
+## The Secret Santa Constraints
+
+We now need to provides some Constraints for our problem. The Constraints describe what is and is not allowed. Without Constraints, our Model would give nonsensical answers
+
+The first set of constraints we will create are the `giveOnlyOnce` constraints. These state that a particular `Giver` may only give a gift once. We use the slice notation of SliceMaps to easily subset the values in `assignDecisions`. The compiler ensures that we are slicing the correct dimension because we have created types for `Giver` and `Receiver`.
+
+```fsharp
+let giveOnlyOnce =
+    ConstraintBuilder "GiveOnlyOnce" {
+        for giver in givers ->
+            sum assignDecisions.[giver, All] == 1.0
+    }
+```
+
+The second set of constraints stipulate that a `Receiver` may only receiver one gift. We iterate through the `receivers` values and create a constraint for each.
+
+```fsharp
+let receiveOnlyOnce =
+    ConstraintBuilder "ReceiveOnlyOnce" {
+        for receiver in receivers ->
+            sum assignDecisions.[All, receiver] == 1.0
+    }
+```
+
+## How We Quantify the Assignments
+
+We now want to create our penalty expression which is the function the solver engine will try to minimize. Because we stored our data in SliceMaps, we can use the `sum` function and the [Hadamard Product](https://en.wikipedia.org/wiki/Hadamard_product_(matrices)), `.*`, to express this in a single line.
+
+```fsharp
+let penaltyExpression = sum (penalty .* assignDecisions)
+```
+
+We now create an `Objective` which states we want to `Minimize` this expression.
+
+```fsharp
+let objective = 
+    Objective.create "MinimizePreviousPairings" Minimize penaltyExpression
+```
+
+Now let's build the model by composing these elements.
+
+```fsharp
+let model =
+    Model.create objective
+    |> Model.addConstraints giveOnlyOnce
+    |> Model.addConstraints receiveOnlyOnce
+```
+
+We now attempt to solve the model and get the result.
+
+```fsharp
+let result = Solver.solve Settings.basic model
+```
+
+We match on the case of the `result` to decide what to call next. In our case, we just want to print the assignments. If this were a production model, we would do something more sophisticated. If the model is solved successfully, we select the decisions where the value is equal to `1.0` which indicates that the solver thinks we should use that assignment. We return a list of parings if successful, we return an string saying we couldn't find a solution if the solve was unsuccessful.
+
+```fsharp
+match result with
+| Optimal solution ->
+    let selectedPairings =
+        Solution.getValues solution assignDecisions
+        |> Map.filter (fun pair value -> value = 1.0)
+        |> Map.toSeq
+        |> Seq.map fst
+    Result.Ok selectedPairings
+| _ -> Result.Error "Unable to find pairings"
+```
+
+We will create some data to test it out and use the amazing `Specture.Console` library to print it out as a nice table. Here is the function for printing out the results of solving our model.
+
+```fsharp
+let prettyPrintResults (pairings: seq<Giver * Receiver>) =
+    let table = Table()
+    table.AddColumn("Giver") |> ignore
+    table.AddColumn("Receiver") |> ignore
+
+    for (Giver (Reindeer g), Receiver (Reindeer r)) in pairings do
+        table.AddRow(g, r) |> ignore
+
+    AnsiConsole.Render(table)
+```
+
+## Finding the Santa Plan
+
+Now let's throw some data together and see what we get.
+
+```fsharp
+let santas =
+    [
+        { Reindeer = Reindeer "Rudolph"; PreviousReceivers = [ Receiver (Reindeer "Blitzen")]}
+        { Reindeer = Reindeer "Dasher";  PreviousReceivers = [ Receiver (Reindeer "Vixen")]}
+        { Reindeer = Reindeer "Dancer";  PreviousReceivers = [ Receiver (Reindeer "Rudolph")]}
+        { Reindeer = Reindeer "Prancer"; PreviousReceivers = [ Receiver (Reindeer "Cupid")]}
+        { Reindeer = Reindeer "Vixen";   PreviousReceivers = [ Receiver (Reindeer "Dancer")]}
+        { Reindeer = Reindeer "Comet";   PreviousReceivers = [ Receiver (Reindeer "Dasher")]}
+        { Reindeer = Reindeer "Cupid";   PreviousReceivers = [ Receiver (Reindeer "Donner")]}
+        { Reindeer = Reindeer "Donner";  PreviousReceivers = [ Receiver (Reindeer "Comet")]}
+        { Reindeer = Reindeer "Blitzen"; PreviousReceivers = [ Receiver (Reindeer "Prancer")]}
+    ]
+
+let findResult = findAssignments santas
+
+match findResult with
+| Ok pairings -> prettyPrintResults pairings
+| Error _ -> printfn "No Christmas this year :("
+```
+
+When we run this, the console reports...
+
+```console
+┌─────────┬──────────┐
+│ Giver   │ Receiver │
+├─────────┼──────────┤
+│ Blitzen │ Dasher   │
+│ Comet   │ Rudolph  │
+│ Cupid   │ Blitzen  │
+│ Dancer  │ Prancer  │
+│ Dasher  │ Dancer   │
+│ Donner  │ Cupid    │
+│ Prancer │ Vixen    │
+│ Rudolph │ Donner   │
+│ Vixen   │ Comet    │
+└─────────┴──────────┘
+```
+
+Excellent work! Another Secret Santa successfully planned! 
+
+## Real World Applications
+
+Though the domain for this problem was silly, the type of model this represents is common. Instead of reindeer and Secret Santa, this could have been operators and machines that they run. You would want operators to rotate through machines so that they are getting experience with all of them. This model would ensure that operators are regularly getting exposed to different machines.
+
+It could also be software developers and projects. Each project could have a set of technologies they require, and the developers have the type of project they were just on. To ensure that the developers are getting exposed to different tools, a model like the one we just built ensures they are being moved around.
+
+Assignment problems are incredibly common and normally there is some quantification of "goodness". Assigning people to projects, assigning tools to work sites, assigning jobs to groups. Assignment problems come up in every industry.
+
+Let me know if there are specific problems you would like me to work on. Feel free to use this model and modify it for your own purposes.
