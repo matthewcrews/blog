@@ -6,7 +6,7 @@ tag: design, fsharp
 ---
 
 > A designer knows he has achieved perfection not when there is nothing left to add, but when there is nothing left to take away
-> - Anoine de Saint-Exupery
+> - Antoine de Saint-Exupery
 
 On my journey of growing as a developer, I am consistently inspired by language features which seem incredibly simple but yield remarkable benefit. As I try to master F#, I am frequently surprised by how powerful the language is for expressing ideas while having so few features. Discussions frequently pop up about the need for ever more powerful abstractions, yet I find myself amazed by how far you can take the language with what is already there.
 
@@ -16,7 +16,7 @@ I am an Industrial Engineering turned Machine Learning Engineer, and I focus on 
 
 ## The Domain of Mathematical Planning
 
-The domain of Mathematical Planning is made up of Decisions, Constraints, and Objectives. A Decision is a choice that a business needs to make. It can be how many of Item X do we buy, do we build in Location A or Location B, or how many people do we assign to each job. Constraints are the rules we need to abide by, the limitations on what is possible. A Constraint could be that we only have 10 people available, or we can only build in Seattle or Portland, or we only have $1,000,000 to invest. The Objective is how we measure success. It is the function we want to maximize or minimize. We could minimize waste, maximize profit, or minimize cost.
+The domain of Mathematical Planning is made up of Decisions, Constraints, and Objectives. A Decision is a choice that a business needs to make. It can be how many of Item X do we buy, do we build in Location A or Location B, or how many people do we assign to each job. Constraints are the rules we need to abide by. They are the limitations on what is possible. A Constraint could be that we only have 10 people available, or we can only build in Seattle or Portland, or we only have $1,000,000 to invest. The Objective is how we measure success. It is the function we want to maximize or minimize. We could minimize waste, maximize profit, or minimize cost.
 
 Many of my colleagues are building their models with Python. Python is a great language and I have been productive with it in the past. Here is a snippet of what a mathematical planning model may look like in Python:
 
@@ -69,7 +69,7 @@ type Item = Item of string
 type Location = Location of string
 ```
 
-Instead of just using strings to describe our Items and Locations, we create simple, single-case Discriminated Unions (DU). These DUs provide context around what the strings are meant to represent. Let's go ahead and create our `item` and `locations` lists again. This time, wrapping them in DUs.
+Instead of just using strings to describe our Items and Locations, we create simple, single case Discriminated Unions (DU). These DUs provide context around what the strings are meant to represent. Let's go ahead and create our `item` and `locations` lists again. This time, wrapping them in DUs.
 
 ```fsharp
 let items = 
@@ -119,7 +119,7 @@ Except, the compiler is gives us an error on the indexing of `allocation`.
 
 What some of you may have noticed in the Python code is that the `allocation` collection is indexed by an `Item` then `Location`. The original code was trying to access it by `location` then by `item`. This would have thrown an error at runtime due to a missing value. In F# this becomes a compiler error. The type system itself it is helping you. This may seem small, but this is one of the most painful types of errors when debugging a Mathematical Planning model.
 
-Someone may say that this can be accomplished in other languages and I would agree. I believe where F# is unique is in the simplicity and ease of using single-case Disciminated Unions for wrapping primitives. It is virtually no additional effort.
+Someone may say that this can be accomplished in other languages and I would agree. I believe where F# is unique is in the simplicity and ease of using single case Discriminated Unions for wrapping primitives. It is virtually no additional effort.
 
 ## Units of Measure: The Achilles Heel of Numbers
 
