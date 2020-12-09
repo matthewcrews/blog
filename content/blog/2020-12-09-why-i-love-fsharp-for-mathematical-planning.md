@@ -123,7 +123,7 @@ Someone may say that this can be accomplished in other languages and I would agr
 
 ## Units of Measure: The Achilles Heel of Numbers
 
-There is an underappreciated problem in software development, and it is that numbers are rarely just numbers. They represent something: `cm`, `feet`, `kg`, or `meters`. It is rare that we care about a raw number. What we really concerned with is what the number represents. In most languages there are no easy mechanisms for tracking the Units of Measure associated with a number. F# on the other hand has baked the concept of a Unit of Measure into the type system.
+There is an underappreciated problem in software development, numbers are rarely just numbers. They represent something: `cm`, `feet`, `kg`, or `meters`. Normally we do not care about a raw number. Our primary concern is with what the number represents. In most languages there are no easy mechanisms for tracking the Units of Measure associated with a number. F# on the other hand has baked the concept of a Unit of Measure into the type system.
 
 The Units of Measure feature will reveal the second problem with the Python code that otherwise may remain undetected. Let's update our domain with some new types to track the units on our numbers.
 
