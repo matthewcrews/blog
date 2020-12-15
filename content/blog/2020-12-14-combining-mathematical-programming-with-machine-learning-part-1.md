@@ -1,6 +1,6 @@
 ---
-title: Mathematical Programming with Machine Learning Models - Part 1
-date: 2020-12-13
+title: Combining Mathematical Programming with Machine Learning - Part 1
+date: 2020-12-14
 draft: false
 tag: machine-learning, mathematical-planning, fsharp
 ---
