@@ -1,13 +1,13 @@
 ---
-title: Combining Mathematical Programming with Machine Learning - Part 1
+title: Combining Mathematical Planning with Machine Learning - Part 1
 date: 2020-12-14
 draft: false
 tag: machine-learning, mathematical-planning, fsharp
 ---
 
-One of the questions that I love to answer is, "What is the difference between Mathematical Programming and Machine Learning?" This is an excellent question. The fields are close to one another and solutions often involve both techniques. The way I differentiate is based on what question they are meant to answer. Mathematical Programming is primarily concerned with answering the question, "What should we do?" Machine Learning answers the question, "What is most likely?" We often ask these questions at the same time which is why the techniques can become conflated.
+One of the questions that I love to answer is, "What is the difference between Mathematical Planning and Machine Learning?" This is an excellent question. The fields are close to one another and solutions often involve both techniques. The way I differentiate is based on what question they are meant to answer. Mathematical Planning is primarily concerned with answering the question, "What should we do?" Machine Learning answers the question, "What is most likely?" We often ask these questions at the same time which is why the techniques can become conflated.
 
-I want to provide an example of a real-world problem that involves the marriage of these two techniques. Due to the amount of material to cover, I decided to break it into several posts. This first post will setup the problem, the Food Cart Packing Problem, and go over the tools we will use to evaluate the quality of different strategies. In the next post we will formulate a Mathematical Programming model to find a better strategy than the simple heuristic with start within this post. Finally, we will implement a Machine Learning model to make predictions on demand trends and feed that into the Mathematical Programming model for even more profitable strategies.
+I want to provide an example of a real-world problem that involves the marriage of these two techniques. Due to the amount of material to cover, I decided to break it into several posts. This first post will setup the problem, the Food Cart Packing Problem, and go over the tools we will use to evaluate the quality of different strategies. In the next post we will formulate a Mathematical Planning model to find a better strategy than the simple heuristic with start within this post. Finally, we will implement a Machine Learning model to make predictions on demand trends and feed that into the Mathematical Planning model for even more profitable strategies.
 
 ## The Food Cart Problem
 
@@ -278,4 +278,4 @@ Our model for revenue does not have many random variables so it shouldn't surpri
 
 ## Next Steps
 
-We've covered quite a bit of ground in this post. We have introduced a new problem, the Food Cart Problem. We formulated a simple simulation which allows us to perform some statistical experiments to understand how good our simple heuristic is for packing the Food Cart. We also introduced the idea of a Confidence Interval for understanding how good our estimates are. Next time we will show how to use Mathematical Programming to find a better plan for packing the Food Cart that achieves a higher expected revenue which is also more reliable.
+We've covered quite a bit of ground in this post. We have introduced a new problem, the Food Cart Problem. We formulated a simple simulation which allows us to perform some statistical experiments to understand how good our simple heuristic is for packing the Food Cart. We also introduced the idea of a Confidence Interval for understanding how good our estimates are. Next time we will show how to use Mathematical Planning to find a better plan for packing the Food Cart that achieves a higher expected revenue which is also more reliable.
