@@ -97,5 +97,172 @@ let evalute
 
 We provide an argument to `evaluate` called `numberSamples` which controls the number of simulations that we perform. We then use function from the `Math.NET` package to compute the descriptive statistics, `DescriptiveStatistics`. This will provide us with the sample mean, variance, and standard deviation. We will then be able to compute the confidence internal to ensure we have an accurate estimate of the revenue we expect to achieve.
 
-## A Simple Hueristic
+## Evaluating our Heuristic
 
+Now that we have the ability to simulate the affects of different plans on our revenue, lets see how well our simple hueristic does. First we define the data for the parameters of our model.
+
+```fsharp
+let burger = Food "Burger"
+let pizza = Food "Pizza"
+let taco = Food "Taco"
+
+let foods =
+    [
+        burger
+        pizza
+        taco
+    ]
+
+let revenue = 
+    [
+        burger, 1.3<USD/serving>
+        pizza,  1.6<USD/serving>
+        taco,   1.4<USD/serving>
+    ] |> SMap
+
+let storage =
+    [
+        burger, 700.0<cm^3/serving>
+        pizza,  950.0<cm^3/serving>
+        taco,   800.0<cm^3/serving>
+    ] |> SMap
+
+let fridgeSpace =
+    [
+        burger, 900.0<cm^3/serving>
+        pizza,  940.0<cm^3/serving>
+        taco,   850.0<cm^3/serving>
+    ] |> SMap
+
+let weight =
+    [
+        burger, 550.0<gm/serving>
+        pizza,  800.0<gm/serving>
+        taco,   600.0<gm/serving>
+    ] |> SMap
+
+let demandRates =
+    [
+        burger, DemandRate 600.0
+        pizza,  DemandRate 900.0
+        taco,   DemandRate 700.0
+    ]
+
+let maxItems = 1_000
+let maxWeight = 1_000_000.0<gm>
+let maxStorage = 3_000_000.0<cm^3>
+let maxFridge = 2_000_000.0<cm^3>
+```
+
+We then define some functions which implement our simple heuristic for prioritizing pizza, then tacos, then burgers.
+
+```fsharp
+    let floor (x: float<'Measure>) =
+        Math.Floor (float x)
+        |> FSharp.Core.LanguagePrimitives.FloatWithMeasure<'Measure>
+
+let pizzaQuantity = 900.0<serving>
+
+let tacoQuantity =
+    List.min [
+        (maxStorage - (pizzaQuantity * storage.[pizza])) / storage.[taco]
+        (maxFridge - (pizzaQuantity * fridgeSpace.[pizza])) / fridgeSpace.[taco]
+        (maxWeight - (pizzaQuantity * weight.[pizza])) / weight.[taco]
+    ] |> floor
+
+let burgerQuantity =
+    List.min [
+        (maxStorage - (pizzaQuantity * storage.[pizza]) - (tacoQuantity * storage.[taco])) / storage.[taco]
+        (maxFridge - (pizzaQuantity * fridgeSpace.[pizza]) - (tacoQuantity * fridgeSpace.[taco])) / fridgeSpace.[taco]
+        (maxWeight - (pizzaQuantity * weight.[pizza]) - (tacoQuantity * weight.[taco])) / weight.[taco]
+    ] |> floor
+
+let plan =
+    [
+        burger, burgerQuantity
+        pizza, pizzaQuantity
+        taco, tacoQuantity
+    ] |> Map
+```
+
+Now let's analyze the result of performing 1,000 simulations and analyzing the distribution of the Revenue.
+
+```fsharp
+let rng = System.Random ()
+let stats_1_000Runs = Simulation.evalute demandRates revenue plan rng 1_000
+```
+
+I like print things out in nice tables and I am loving the `Spectre.Console` project, so here's how I print out a clean table in the console.
+
+```fsharp
+let table = Table()
+table.AddColumn("NumberOfRuns") |> ignore
+table.AddColumn("Mean") |> ignore
+table.AddColumn("Variance") |> ignore
+table.AddColumn("StdDev") |> ignore
+
+table.AddRow("1,000", $"%.3f{stats_1_000Runs.Mean}", $"%.3f{stats_1_000Runs.Variance}", $"%.3f{stats_1_000Runs.StandardDeviation}") |> ignore
+AnsiConsole.Render(table)
+```
+
+Which gives use the following output.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │
+├──────────────┼─────────┼──────────┼────────┤
+│ 100          │ 2075.50 │ 605.37   │ 24.60  │
+└──────────────┴─────────┴──────────┴────────┘
+```
+
+Now we need to ask a critical question, "How confident are we in the answer?" Our initial run shows that on average, we appear to make $2,075.50. What happens if we run this experiment again?
+
+```console
+┌──────────────┬─────────┬──────────┬────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │
+├──────────────┼─────────┼──────────┼────────┤
+│ 100          │ 2071.54 │ 926.30   │ 30.44  │
+└──────────────┴─────────┴──────────┴────────┘
+```
+
+We get a slightly different answer, \\$2,071.54. Well this is interesting. Our numbers are making sense based on our earlier thought experiment. We are no longer carrying extra inventory so we do not benefit from days where demand is exceptionally high. We would have to have excess demand for pizza and tacos to achieve sell everything and achieve a revenue of \\$2,668.50. This is unlikely though.
+
+What we need to focus on answering now though is how well do we know that Mean. Fortunatley, there is a useful statistical tool called the [Confidence Interval](https://en.wikipedia.org/wiki/Confidence_interval). It allows us to put bounds on where we think the true expected revenue is. The formula for the Confidence Interval is:
+
+$$
+CI = \bar{x} \pm z \frac{s}{\sqrt{n}}
+$$
+
+The Confidence Interval ($CI$) is defined as a lower and upper bound. $\bar{x}$ is the average of the data. $s$ is the standard deviation of the sample. $n$ is the number of samples that were taken. $z$ is a parameter you choose based on how confident you want to be that the true mean of the distribution is between the lower and upper bound. If we want to be 95% confident that the true average revenue is between the lower and upper bound, we would use a $z$ of 1.960. If we wanted to be 99% percent sure, we would use a $z$ of 2.567. If you would like to know where the values of $z$ are coming from, look up the t-distribution and t-distribution Confident Intervals.
+
+> **Note:** For my stats friends. I am assuming that the error is normally distributed and has a mean of 0. Normally I would plot this to verify but the blog series is already turning into 3 posts so I have to cut some details somewhere.
+
+Let's add the confidence interval for 95% and 99% to our output table and see what we get.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┬──────────────────┬──────────────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │ 95% CI           │ 99% CI           │
+├──────────────┼─────────┼──────────┼────────┼──────────────────┼──────────────────┤
+│ 100          │ 2064.35 │ 997.13   │ 31.58  │ 2058.16, 2070.54 │ 2056.25, 2072.46 │
+└──────────────┴─────────┴──────────┴────────┴──────────────────┴──────────────────┘
+```
+
+This gives us a much clearer understanding of what we can expect out of our revenue. This is how we should interpret these Conficence Intervals. There is a 95% probability that the true average revenue is between 2058.16 and 2070.54. There is a 99% probability that the true average revenue is between 2056.25 and 2072.46. The average revenue of 2064.35 we observed in this most recent run is only the average of the data we simulated. It is more valuable to have an understanding of where the true revenue average actually is. Let's increase the number of simulations that we perform and see how that affects the Confidence Intervals.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┬──────────────────┬──────────────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │ 95% CI           │ 99% CI           │
+├──────────────┼─────────┼──────────┼────────┼──────────────────┼──────────────────┤
+│ 100          │ 2073.74 │ 735.74   │ 27.12  │ 2068.43, 2079.06 │ 2066.78, 2080.71 │
+│ 1,000        │ 2071.96 │ 895.10   │ 29.92  │ 2070.11, 2073.81 │ 2069.53, 2074.39 │
+│ 10,000       │ 2073.31 │ 776.40   │ 27.86  │ 2072.77, 2073.86 │ 2072.60, 2074.03 │
+│ 100,000      │ 2073.34 │ 773.98   │ 27.82  │ 2073.16, 2073.51 │ 2073.11, 2073.56 │
+│ 1,000,000    │ 2073.20 │ 778.17   │ 27.90  │ 2073.14, 2073.25 │ 2073.13, 2073.27 │
+└──────────────┴─────────┴──────────┴────────┴──────────────────┴──────────────────┘
+```
+
+We see that the mean, variance, and standard deviation are not changing significantly as we increase the number of simulations. What we do see though is that the Confidence Intervals are getting tighter. This is because as we gather more data, we become more confident of where the true average revenue is. We can see that by the time we get to 1,000,000 samples the CI for 95% is only 0.011 wide. Our model for revenue does not have many random variables so it shouldn't surprise us that it is easy to get a tight bounds on the CIs. As models becomes larger with more random variables though, the number of iterations to achieve tight bound goes up significantly. There is a cost trade off. The tighter the bounds, the more computation effort is required.
+
+## Next Steps
+
+We've covered quite a bit of ground in this post. We have introduced a new problem, the Food Cart Problem. We formulated a simple simulation which allows us to perform some statistical experiments to understand how good our simple heuristic is for packing the Food Cart. We also introduced the idea of a Confidence Interval for understanding how good our estimates are. Next time we will show how to use Mathematicla Programming to find a better plan for packing the Food Cart that achieves a higher expected revenue more reliably.z
