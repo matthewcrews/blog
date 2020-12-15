@@ -45,7 +45,7 @@ type Food = Food of string
 type DemandRate = DemandRate of float
 ```
 
-The `Food` type differentiates between which food item we are referring to. The `DemandRate` is the values for our distributions. We will also use Units of Measure to track the units. This will protect us from making silly conversion errors in our calculations.
+The `Food` type differentiates between which food item we are referring to. The `DemandRate` is the average demand we have observed and is the input for our distributions, $\lambda$. We will use Units of Measure to track the units in our calculations. This will protect us from making silly conversion errors.
 
 ```fsharp
 [<Measure>] type USD
@@ -54,7 +54,7 @@ The `Food` type differentiates between which food item we are referring to. The 
 [<Measure>] type serving
 ```
 
-`USD` stands for United States Dollars. `cm` and `gm` are the SI units for volume and mass. The `serving` measure is for the quantity of servings we are packing. We will be using the `Math.NET` library for performing calculations with distributions. We need a function for taking in our plan and then performing one random sample.
+`USD` stands for United States Dollars. `cm` and `gm` are the SI units for volume and mass. The `serving` measure is for the quantity of servings we are packing. We will be using the `Math.NET` library for performing calculations with distributions. We need a function for taking a plan and generating a random outcome. We will call this functions many, many times to get an idea of the distribution of revenue.
 
 ```fsharp
 let sample 
@@ -75,7 +75,7 @@ let sample
     |> Seq.sumBy (fun (food, soldQuantity) -> soldQuantity * revenue.[food])
 ```
 
-What `sample` does is take the plan and perform a single experiment. It generates a random demand value for the given food and compares that to what we planned to have in inventory. It takes the lesser of our planned quantity or the random demand that was generated. It takes the quantity for each food and multiplies it by the revenue and sums it up to get the hypothetical revenue. This functions only performs a single experiment. We want something that will perform many and then compute some statistics on the results.
+What `sample` does is take the plan and perform a single simulation. It generates a random demand value for the given food and compares that to what we planned to have in inventory. It takes the lesser of our planned quantity or the random demand that was generated which becomes the actual amount sold. It takes the quantity of each food that was sold and multiplies it by the revenue of the food. It sums this across all the foods which gives us our revenue for that single simulation. We create an `evaluate` function which will call the `sample` function many times and gather the results. `evaluate` then computes the descriptive statistics and the revenues that were generated in our simulations.
 
 ```fsharp
 let evalute 
@@ -95,4 +95,7 @@ let evalute
     DescriptiveStatistics samples
 ```
 
-The `evaluate` function is the driver of the simulation. It takes in our parameters and performs many iterations of the `sample` function and gathers the results. We provide a parameter `numberOfSamples` so that we can easily control how many simulations we want to perform. We then analyze the result using the ``
+We provide an argument to `evaluate` called `numberSamples` which controls the number of simulations that we perform. We then use function from the `Math.NET` package to compute the descriptive statistics, `DescriptiveStatistics`. This will provide us with the sample mean, variance, and standard deviation. We will then be able to compute the confidence internal to ensure we have an accurate estimate of the revenue we expect to achieve.
+
+## A Simple Hueristic
+
