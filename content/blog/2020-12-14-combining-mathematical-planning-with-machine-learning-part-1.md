@@ -9,6 +9,8 @@ One of the questions that I love to answer is, "What is the difference between M
 
 I want to provide an example of a real-world problem that involves the marriage of these two techniques. Due to the amount of material to cover, I decided to break it into several posts. This first post will setup the problem, the Food Cart Packing Problem, and go over the tools we will use to evaluate the quality of different strategies. In the next post we will formulate a Mathematical Planning model to find a better strategy than the simple heuristic with start within this post. Finally, we will implement a Machine Learning model to make predictions on demand trends and feed that into the Mathematical Planning model for even more profitable strategies.
 
+> **Note:** To see all the code for this post, go [here](https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-14-FoodCartSeries/2020-12-14-Part1.fs)
+
 ## The Food Cart Problem
 
 An example problem that I frequently use is the Food Cart Problem. It is easy for people to conceptualize so we can focus on the techniques. We are running a Food Cart and we want to know what items to pack at the beginning of the day to maximize our revenue. In this case we sell Burgers, Pizza, and Tacos (it's an eclectic food cart). Each food takes up a certain amount of pantry space, fridge space, and weight. Our food cart has recently been downsized so we must be purposeful about what we pack. We have kept track of how much we sell each day when we didn't use to run out of inventory.
