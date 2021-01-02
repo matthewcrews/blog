@@ -5,5 +5,3 @@ menu:
   main:
     - name: About
       url: about
-    - name: Workshop
-      url: workshop
