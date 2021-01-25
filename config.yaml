@@ -6,3 +6,19 @@ menu:
   main:
     - name: About
       url: about
+
+params:
+  ShowShareButtons: true
+
+  homeInfoParams:
+    Title: Optimal Decision Making
+    Content: I focus on the intersection of Mathematical Planning and Predictive Modeling.
+      Here you will how to apply these techniques to real world problems. Enjoy!
+
+  socialIcons: # optional
+    - name: "twitter"
+      url: "https://twitter.com/McCrews"
+    - name: "github"
+      url: "https://github.com/matthewcrews"
+    - name: "rss"
+      url: "https://matthewcrews.com/index.xml"
