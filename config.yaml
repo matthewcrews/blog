@@ -11,9 +11,10 @@ params:
   ShowShareButtons: true
 
   homeInfoParams:
-    Title: Optimal Decision Making
+    Title: F# + Mathematical Planning
     Content: I focus on the intersection of Mathematical Planning and Predictive Modeling.
-      Here you will how to apply these techniques to real world problems. Enjoy!
+      Here you will how to apply these techniques to real world problems.
+      Feel free to connect and ask questions. Enjoy!
 
   socialIcons: # optional
     - name: "twitter"
