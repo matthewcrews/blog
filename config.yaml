@@ -13,7 +13,7 @@ params:
   homeInfoParams:
     Title: F# + Mathematical Planning
     Content: I focus on the intersection of Mathematical Planning and Predictive Modeling.
-      Here you will how to apply these techniques to real world problems.
+      This blog is an exploration of applying these techniques to real world problems.
       Feel free to connect and ask questions. Enjoy!
 
   socialIcons: # optional
