@@ -17,6 +17,8 @@ params:
       Feel free to connect and ask questions. Enjoy!
 
   socialIcons: # optional
+    - name: "email"
+      url: "mailto:matthewcrews@gmail.com"
     - name: "twitter"
       url: "https://twitter.com/McCrews"
     - name: "github"
