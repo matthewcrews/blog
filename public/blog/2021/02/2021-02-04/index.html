@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Scheduling Jobs for Maximum Efficiency - Part 3 - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Scheduling Jobs for Maximum Efficiency - Part 3"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2021/02/2021-02-04/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Scheduling Jobs for Maximum Efficiency - Part 3</h1>
+      <div class="content"><p>I&rsquo;ve continued to consult with my friend on the job assignments problem that I have been discussing in <a href="/blog/2021/01/2021-01-25/">post 1</a> and <a href="/blog/2021/01/2021-01-28/">post 2</a>. At first, he was excited about what we had come up with but I knew there were likely more complexities that had not been uncovered yet. He went back to the client and came away with some new information. He told me, &ldquo;Mathew, it turns out that machines have limited capacity. We have to limit how much work is assigned to them.&rdquo;</p>
+<p>&ldquo;Not a problem,&rdquo; I respond. I tell me friend that it is straightforward to add constraints to the model which limit how much work is assigned to a machine. Let me walk you through how I update the model we created in <a href="/blog/2021/01/2021-01-25/">post 1</a> and <a href="/blog/2021/01/2021-01-28/">post 2</a> to take this new limitation into consideration.</p>
+<blockquote>
+<p><strong>Note</strong>: The full code for this post can be found <a href="https://github.com/matthewcrews/modelmondays/blob/main/2021-01-22-MachineAllocation/2021-02-02-MachineAllocationWithCapacity.fsx">here</a></p>
+</blockquote>
+<h2 id="machine-capacity-constraints">Machine Capacity Constraints</h2>
+<p>The first thing we need to know is how much capacity machines have. My friend tells me that they are limited to 24.0 units of work. Our jobs are coming in sizes of 1, 2, or 3. Let&rsquo;s create a constraint for each machine which states that the total loading cannot exceed this amount.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Limit on how much work a machine can be assigned
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> maxMachineCapacity <span style="color:#f92672">=</span> 24<span style="color:#f92672">.</span>0
+
+<span style="color:#75715e">// Machines have a limited capacity
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> maxMachineCapacityConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;MachineCapacity&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> machine <span style="color:#66d9ef">in</span> machines <span style="color:#f92672">-&gt;</span>
+            sum <span style="color:#f92672">(</span>assignments<span style="color:#f92672">[</span>machine<span style="color:#f92672">,</span> All<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">.*</span> jobSizes<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;==</span> maxMachineCapacity
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>Remember, <code>machines</code> is the list of machines available for us to assign work to. We are looping through each machine and creating a constraint which says the sum of the work assigned to the machine cannot exceed the max capacity, <code>maxMachineCapacity</code>. <code>assignments</code> is a <code>SliceMap</code> indexed by machine, job-type, and job where the value is a Boolean decision. <code>1</code> indicates that we are assigning the job to the machine and <code>0</code> indicates that we are not. The notation <code>assignments.[machine, All, All]</code> is a &ldquo;slice&rdquo; which says, &ldquo;Give me the assignments for this <code>machine</code> across all job-types and jobs.&rdquo; <code>jobSizes</code> is another <code>SliceMap</code> where the key is a <code>job</code> and the value is the size of the job. We multiply the decisions by the size of the job using the <a href="https://en.wikipedia.org/wiki/Hadamard_product_(matrices)">Hadamard Product</a> <code>.*</code>.</p>
+<p>Now that we have created some capacity constraints for the machines, let&rsquo;s add them to our model and try to solve.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Compose the model
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.addObjective minSetupsObjective
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints minWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraint maxWorkDifferenceConstraint
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints setupConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints jobsAssignmentConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxJobTypeDConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxMachineCapacityConstraints <span style="color:#75715e">// &lt;- New constraints
+</span><span style="color:#75715e"></span>
+<span style="color:#75715e">// Give the solver plenty of time to find a solution
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> settings <span style="color:#f92672">=</span> <span style="color:#f92672">{</span> Settings.basic <span style="color:#66d9ef">with</span> MaxDuration <span style="color:#f92672">=</span> 60_000L <span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve settings model
+</code></pre></div><p>We&rsquo;ve cleaned up some of our code from earlier posts. All the solving is now abstracted behind the <code>Scheduler.schedule</code> function. It returns a new type if the solver can find a solution, <code>MachineAssignments</code>. This type contains a list machines  and the jobs that are assigned to it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MachineAssignment</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    Machine <span style="color:#f92672">:</span> Machine
+    Jobs <span style="color:#f92672">:</span> Job <span style="color:#66d9ef">list</span>
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MachineAssignments</span> <span style="color:#f92672">=</span> MachineAssignments <span style="color:#66d9ef">of</span> MachineAssignment <span style="color:#66d9ef">list</span>
+</code></pre></div><p>We now call <code>Scheduler.schedule</code> to see if we can find a plan which fits our requirements.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> scheduleResult <span style="color:#f92672">=</span> 
+    Scheduler.schedule maxWorkDifference maxJobTypeDPercentage maxMachineCapacity jobs machines
+</code></pre></div><p>We would like to have the script print out some nice output. We created a function, <code>Printer.MachineAssignments.print</code>, which provides nice clean output if we are able to solve the problem. Let&rsquo;s call this function in the case that our solver successfully solved.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> scheduleResult <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Result.Ok assignments <span style="color:#f92672">-&gt;</span> Printer.MachineAssignments.print assignments
+<span style="color:#f92672">|</span> Result.Error msg <span style="color:#f92672">-&gt;</span> printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;{msg}&#34;</span>
+</code></pre></div><p>What do we get?</p>
+<pre tabindex="0"><code class="language-terminal" data-lang="terminal">&gt; match scheduleResult with
+- | Result.Ok assignments -&gt; Printer.MachineAssignments.print assignments
+- | Result.Error msg -&gt; printfn $&quot;{msg}&quot;;;
+Unable to solve
+val it : unit = ()
+</code></pre><p>Uh oh, the solver failed to find a solution to our problem. What went wrong?</p>
+<h2 id="when-the-solver-fails">When the Solver Fails</h2>
+<p>The solver was not able to find a solution. It is reporting &ldquo;Unable to solve&rdquo;. How can this be? We were able to solve this problem before. What has changed? Let&rsquo;s think about it. We have added constraints which state that a machine cannot be overloaded. Overloaded in this case means anything over <code>24.0</code>. Previously we were loading the machines up to <code>28.0</code>, <code>29.0</code>, or <code>30.0</code>. We need to introduce a new concept to our vocabulary, &ldquo;Infeasible&rdquo;. <a href="https://en.wikipedia.org/wiki/Feasible_region">Infeasible</a> is a term you will find frequently in the optimization literature. In this context what it means is that there is no solution to the problem. Our problem is overly constrained. What other constraints combined with our new machine capacity constraints could be causing this problem?</p>
+<p>I&rsquo;ll give you a hint, it&rsquo;s the machine assignment constraints. Previously we defined a set of constraints, <code>jobsAssignmentConstraints</code>, which stated that every job must be assigned to a machine. In this new world though, that is not possible. There is simply too much work given the capacity of the machines. Therefore, the solver cannot find a solution. This is when we need to go back to the business and discuss priorities. What is truly the most important thing?</p>
+<p>In this scenario, I was able to discuss the problem with my friend. We agreed that the first priority is to fully utilize the machines. After that, we want to minimize the number of different jobs that a machine processes. This is an example of <a href="https://en.wikipedia.org/wiki/Multi-objective_optimization">multi-objective optimization</a>.</p>
+<p>The idea is that there is a series of objective in order of importance. You iteratively solve for each objective. The mechanics of how this works will need to wait for another post. Fortunately, multi-objective models are simple to express with <code>Flips</code>. We add the objectives to the model in the order of their priority.</p>
+<h2 id="mult-objective-formulation">Mult-Objective Formulation</h2>
+<p>We need to create a new objective for maximizing the loading of machines. Let&rsquo;s do that by first creating an expression which evaluates the total machine loading.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Maximize Utilization expression
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> maxUtilizationExpression <span style="color:#f92672">=</span> sum <span style="color:#f92672">(</span>assignments <span style="color:#f92672">.*</span> jobSizes<span style="color:#f92672">)</span> 
+</code></pre></div><p>The <code>maxUtilizationExpression</code> expression evaluates just how much we we have assigned to all machines. We can use this to create an objective.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> maxUtilizationObjective <span style="color:#f92672">=</span>
+    Objective.create <span style="color:#e6db74">&#34;MaxUtilization&#34;</span> Maximize maxUtilizationExpression
+</code></pre></div><p>This objective states that we would like to maximize the loading of the machines. We will use this new objective as the first objective of our model. We will also omit the <code>jobsAssignmentConstraints</code> that existed before since we no longer anticipate being able to assign all of the jobs to machines. Let&rsquo;s compose our new model.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Compose the model
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.create maxUtilizationObjective <span style="color:#75715e">// First priority objective
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">|&gt;</span> Model.addObjective minSetupsObjective <span style="color:#75715e">// Second priority objective
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints minWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraint maxWorkDifferenceConstraint
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints setupConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxJobTypeDConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxMachineCapacityConstraints
+</code></pre></div><p>Note that we create the initial model using the <code>maxUtilizationObjective</code> objective then add the <code>minSetupsObjective</code> to the model. This means that the solver will find a solution which maximizes the machine utilization first and then search for a solution that minimizes the number of different job-types. Let&rsquo;s try to solve this and see what we get. This code comes from the <code>Scheduler.schedule</code> function. If the solver is successful, it returns a <code>Result.Ok</code> with the machine assignments. If it fails to find a solution, it returns a <code>Result.Error</code> with &ldquo;Unable to solve&rdquo; as the message.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Give the solver plenty of time to find a solution
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> settings <span style="color:#f92672">=</span> <span style="color:#f92672">{</span> Settings.basic <span style="color:#66d9ef">with</span> MaxDuration <span style="color:#f92672">=</span> 60_000L <span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve settings model
+
+<span style="color:#66d9ef">match</span> result <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Optimal solution <span style="color:#f92672">-&gt;</span> 
+    getMachineAssignments solution assignments
+    <span style="color:#f92672">|&gt;</span> MachineAssignments
+    <span style="color:#f92672">|&gt;</span> Result.Ok
+<span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> Result.Error <span style="color:#e6db74">&#34;Unable to solve&#34;</span>
+</code></pre></div><p>If we use our pretty printer function, we get the following.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> scheduleResult <span style="color:#f92672">=</span> 
+    Scheduler.schedule maxWorkDifference maxJobTypeDPercentage maxMachineCapacity jobs machines
+
+<span style="color:#66d9ef">match</span> scheduleResult <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Result.Ok assignments <span style="color:#f92672">-&gt;</span> Printer.MachineAssignments.print assignments
+<span style="color:#f92672">|</span> Result.Error msg <span style="color:#f92672">-&gt;</span> printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;{msg}&#34;</span>
+</code></pre></div><p>I use the <a href="https://github.com/spectresystems/spectre.console">Specture.Console</a> library for printing these tables to the console.</p>
+<pre tabindex="0"><code class="language-terminal" data-lang="terminal">Machine Loading:
+┌─────────┬────────────┬─────────────────────┬────────────────────┐
+│ Machine │ Total Work │ Percent Type D Work │ Distinct Job Count │
+├─────────┼────────────┼─────────────────────┼────────────────────┤
+│ 1       │ 24         │ 0.00%               │ 1                  │
+│ 2       │ 24         │ 0.00%               │ 1                  │
+│ 3       │ 24         │ 0.00%               │ 1                  │
+│ 4       │ 24         │ 0.00%               │ 1                  │
+│ 5       │ 24         │ 0.00%               │ 1                  │
+└─────────┴────────────┴─────────────────────┴────────────────────┘
+</code></pre><p>We see that the solver is filling up each machine with the maximum capacity available. Each machine is also only processing a single job-type. None of job-type D is being processed on any of these machines, interesting. Is that what we want? Maybe we want a policy which prioritizes some of the jobs above others? Maybe when work carries over from the previous day, it needs to be prioritized over new work coming in?</p>
+<p>These are some interesting questions that we will explore in the next post! I hope you are enjoying this series and it is giving you insight into how Mathematical Planning can be used to deal with many different scheduling challenges. More posts to come!</p>
+<p>Please send me an email at <a href="mailto:matthewcrews@gmail.com">matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p>
+<script async data-uid="32100bd90e" src="https://dedicated-trader-4923.ck.page/32100bd90e/index.js"></script>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

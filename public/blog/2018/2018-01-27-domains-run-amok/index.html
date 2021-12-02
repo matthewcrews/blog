@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Domains Run Amok - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Domains Run Amok"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2018/2018-01-27-domains-run-amok/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Domains Run Amok</h1>
+      <div class="content"><p>I am a huge fan of Domain Driven Design and I have been trying to apply it more and more. I ran into a problem last week that kept beating me over the head though. I kept using a bottom up approach and kept coming up with terrible solutions. Finally, I took a more outside to in approach which cleaned up the solution. I credit <a href="http://blog.ploeh.dk/">Mark Seemann</a> for the idea to work from the outside in. I am wanting to show some of the difficulties you can run into using a bottom up approach so that others don&rsquo;t make the same mistakes that I did. Hopefully this little exercise helps provide others some guidance on how to get unstuck when attempting Domain Driven Design.</p>
+<h2 id="our-refactoring-problem">Our Refactoring Problem</h2>
+<p>I have a project where we are rebuilding how we calculate the replenishment logic for our Supply Chain. Replenishment is the process of ordering product from Vendors for your Warehouses so that we can fill customer orders. I work for an e-commerce company so Replenishment is at the heart of what we do.</p>
+<p>The current solution is a monolith application which is all fed from an Azure SQL instance. It is comprised of a large set of batch process that run in order and populate tables in the database. This mess was inherited from an old system and has been warped beyond comprehension at this point. It is so fragile we don&rsquo;t dare touch it. The plan is to decompose the monolith into separate services which communicate via messages. To do this though, we need to create those separate services. At the heart of one of those services is the analysis of Time Series data. This is my attempt to create a tiny little domain for modeling this analysis and the mistakes I made along the way.</p>
+<h2 id="modeling-timeseries-take-1-from-the-bottom-up">Modeling TimeSeries Take 1: From the Bottom Up</h2>
+<p>All of our Replenishment logic is built on analyzing Time Series data. This data can be thought of as a array of tuples where one value is the timestamp and the other is the observed value, <code>DateTimeOffset * 'a</code>.</p>
+<p>What I set out to do is create a domain model that allows us to analyze these Time Series in a robust and performant way. My initial thought was, &ldquo;I know that my data will always be <code>Decimal</code> or <code>String</code> so I can think of an <code>ObservedValue</code> in my Time Series as a Discriminated Union and an <code>Observation</code> is a record with a <code>DateTimeOffset</code> and an <code>ObservedValue</code>. A <code>TimeSeries</code> is just an array of the type <code>Observation</code>. When I am done with an analysis the result will be either <code>decimal</code> or <code>string</code> so I&rsquo;ll define an <code>AnalysisResult</code> type to contain the result.&rdquo;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ObservedValue</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> Decimal <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span>
+    <span style="color:#f92672">|</span> String <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Observation</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    DateTime <span style="color:#f92672">:</span> DateTimeOffset
+    Value <span style="color:#f92672">:</span> ObservedValue
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TimeSeries</span> <span style="color:#f92672">=</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&gt;</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">AnalysisResult</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> Decimal <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span>
+    <span style="color:#f92672">|</span> String <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+</code></pre></div><p>This doesn&rsquo;t seem bad so far. Now I need to add some basic functions for analyzing my <code>TimeSeries</code>. Some simple and obvious ones are <code>mean</code>, <code>first</code>, and <code>last</code>. There are actually many functions I will need but these will suffice to make my point. I now try to write these simple functions for my <code>TimeSeries</code> type.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">module</span> TimeSeries <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> private create observedType t <span style="color:#f92672">:</span> TimeSeries <span style="color:#f92672">=</span>
+        t
+        <span style="color:#f92672">|&gt;</span> Seq.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t<span style="color:#f92672">,</span> v<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>DateTime <span style="color:#f92672">=</span> t<span style="color:#f92672">;</span> Value <span style="color:#f92672">=</span> observedType v<span style="color:#f92672">})</span>
+        <span style="color:#f92672">|&gt;</span> Seq.toArray
+
+    <span style="color:#66d9ef">let</span> fromDecimal s <span style="color:#f92672">:</span> TimeSeries <span style="color:#f92672">=</span>
+        create ObservedValue.Decimal s
+
+    <span style="color:#66d9ef">let</span> fromString s <span style="color:#f92672">:</span> TimeSeries <span style="color:#f92672">=</span>
+        create ObservedValue.String s
+
+    <span style="color:#66d9ef">let</span> first <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        ts<span style="color:#f92672">.[</span>0<span style="color:#f92672">].</span>Value
+
+    <span style="color:#66d9ef">let</span> last <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        ts<span style="color:#f92672">.[-</span>1<span style="color:#f92672">].</span>Value
+
+    <span style="color:#66d9ef">let</span> mean <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        ts
+        <span style="color:#f92672">|&gt;</span> Array.averageBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> x <span style="color:#f92672">-&gt;</span> x<span style="color:#f92672">.</span>Value<span style="color:#f92672">)</span> <span style="color:#75715e">// Error: The type ObservedValue does not support the operator &#39;+&#39;
+</span></code></pre></div><p>I have encountered my first problem with this approach. I want to be able to take the <code>mean</code> of my <code>TimeSeries</code> but the <code>ObservedValue</code> type does not support the <code>+</code> operator. I think, &ldquo;No problem, I&rsquo;ll just add the <code>+</code> operator.&rdquo; I then look at the type again and realize I may be doing something wrong. Adding a <code>decimal</code> to a <code>decimal</code> makes sense and I also understand adding <code>string</code> to <code>string</code> but this is going to require me to have a <code>+</code> defined for <code>decimal</code> to <code>string</code> and <code>string</code> to <code>decimal</code>. That does not make any sense.</p>
+<h2 id="modeling-timeseries-take-2-homogenous-values">Modeling TimeSeries Take 2: Homogenous Values</h2>
+<p>My problem is that I am allowing a single <code>TimeSeries</code> to be heterogenous, containing both <code>decimal</code> and <code>string</code> values. Really a single <code>TimeSeries</code> needs to be homogeneous, containing only <code>decimal</code> or only <code>string</code>. Okay, no problem! I&rsquo;ll reformulate the domain to have the <code>TimeSeries</code> be a Discriminated Union instead of the <code>ObservedValue</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">open</span> System
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Observation</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    DateTime <span style="color:#f92672">:</span> DateTimeOffset
+    Value <span style="color:#f92672">:</span> <span style="color:#66d9ef">&#39;</span>a
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TimeSeries</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> Decimal <span style="color:#66d9ef">of</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">decimal</span><span style="color:#f92672">&gt;&gt;</span>
+    <span style="color:#f92672">|</span> String <span style="color:#66d9ef">of</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">string</span><span style="color:#f92672">&gt;&gt;</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">AnalysisResult</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> Decimal <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span>
+    <span style="color:#f92672">|</span> String <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+</code></pre></div><p>Now let&rsquo;s try to implement our analysis functions again. Don&rsquo;t judge me for what you see next. Once I wrote it, I felt a little ill. I&rsquo;ll go into why after the code.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">module</span> TimeSeries <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> private create observedType t <span style="color:#f92672">:</span> TimeSeries <span style="color:#f92672">=</span>
+        t
+        <span style="color:#f92672">|&gt;</span> Seq.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t<span style="color:#f92672">,</span> v<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>DateTime <span style="color:#f92672">=</span> t<span style="color:#f92672">;</span> Value <span style="color:#f92672">=</span> v<span style="color:#f92672">})</span>
+        <span style="color:#f92672">|&gt;</span> Seq.toArray
+        <span style="color:#f92672">|&gt;</span> observedType
+
+    <span style="color:#66d9ef">let</span> fromDecimal t <span style="color:#f92672">=</span>
+        create TimeSeries.Decimal t
+
+    <span style="color:#66d9ef">let</span> fromString t <span style="color:#f92672">=</span>
+        create TimeSeries.String t
+
+    <span style="color:#66d9ef">let</span> private map df sf ts <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">match</span> ts <span style="color:#66d9ef">with</span>
+        <span style="color:#f92672">|</span> TimeSeries.Decimal t <span style="color:#f92672">-&gt;</span> df t
+        <span style="color:#f92672">|</span> TimeSeries.String t <span style="color:#f92672">-&gt;</span> sf t
+
+    <span style="color:#66d9ef">let</span> first <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> f <span style="color:#f92672">=</span> <span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t <span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;&gt;)</span> <span style="color:#f92672">-&gt;</span> t<span style="color:#f92672">.[</span>0<span style="color:#f92672">].</span>Value
+        map <span style="color:#f92672">(</span>f <span style="color:#f92672">&gt;&gt;</span> AnalysisResult.Decimal<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>f <span style="color:#f92672">&gt;&gt;</span> AnalysisResult.String<span style="color:#f92672">)</span> ts
+
+    <span style="color:#66d9ef">let</span> last <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> f <span style="color:#f92672">=</span> <span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t <span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;&gt;)</span> <span style="color:#f92672">-&gt;</span> t<span style="color:#f92672">.[-</span>1<span style="color:#f92672">].</span>Value
+        map <span style="color:#f92672">(</span>f <span style="color:#f92672">&gt;&gt;</span> AnalysisResult.Decimal<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>f <span style="color:#f92672">&gt;&gt;</span> AnalysisResult.String<span style="color:#f92672">)</span> ts
+
+    <span style="color:#66d9ef">let</span> mean <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> df <span style="color:#f92672">=</span>
+            <span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t <span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">decimal</span><span style="color:#f92672">&gt;&gt;)</span> <span style="color:#f92672">-&gt;</span>
+                t <span style="color:#f92672">|&gt;</span> Array.averageBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> x <span style="color:#f92672">-&gt;</span> x<span style="color:#f92672">.</span>Value<span style="color:#f92672">)</span> <span style="color:#f92672">|&gt;</span> AnalysisResult.Decimal
+        <span style="color:#66d9ef">let</span> sf <span style="color:#f92672">=</span>
+            <span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t <span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">string</span><span style="color:#f92672">&gt;&gt;)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#e6db74">&#34;&#34;</span> <span style="color:#f92672">|&gt;</span> AnalysisResult.String
+        map df sf ts
+</code></pre></div><p>I will readily admit this is clunky. Let me explain the thought process. I know that the <code>TimeSeries</code> type is a Discriminated Union and therefore I should have a <code>map</code> like function for easily applying the correct function, depending on which value <code>TimeSeries</code> takes on. In many cases I would use the exact same logic (Ex: <code>first</code> and <code>last</code>) so I just defined a generic function and used that for both arguments of the <code>map</code> function.</p>
+<p>When I get to the <code>mean</code> function I run into another problem. It does not make sense to take the <code>mean</code> of a set of <code>string</code> observations but the code allows it. In this code I am returning an empty <code>string</code> but that is not in line with the heart of what I am going for. If something does not make sense, I don&rsquo;t want to allow it. I want invalid states to be unrepresentable in the code. I don&rsquo;t want myself or someone else to even be able to call <code>mean</code> with a <code>TimeSeries</code> containing <code>string</code> values.</p>
+<p>It&rsquo;s at this point I start to feel really dumb. How can this be so hard? Here is what I am wanting to accomplish:</p>
+<ul>
+<li>Model a TimeSeries made up of either <code>decimal</code> or <code>string</code></li>
+<li>Reuse function logic wherever I can (DRY principle)</li>
+<li>Prevent unrepresentable states</li>
+</ul>
+<h2 id="modeling-timeseries-take-3-generic-timeseries">Modeling TimeSeries Take 3: Generic TimeSeries</h2>
+<p>I would rather not admit how long I was stumped at this point. It felt like I was missing something glaringly obvious. I mulled on this problem for awhile until the next thought came to me, &ldquo;What is really going on is that I have two special cases of <code>TimeSeries&lt;'a&gt;</code> here. I have a <code>TimeSeries&lt;decimal&gt;</code> and a <code>TimeSeries&lt;string&gt;</code>. Why not have a full set of functions for <code>TimeSeries&lt;'a&gt;</code> and then have two different types for the <code>TimeSeries&lt;decimal&gt;</code> case and the <code>TimeSeries&lt;string&gt;</code> case which only have a subset of the functions available?&rdquo; Here is what I came up with.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">open</span> System
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Observation</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    DateTime <span style="color:#f92672">:</span> DateTimeOffset
+    Value <span style="color:#f92672">:</span> <span style="color:#66d9ef">&#39;</span>a
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">TimeSeries</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span> array<span style="color:#f92672">&lt;</span>Observation<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;&gt;</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">DecimalSeries</span> <span style="color:#f92672">=</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">decimal</span><span style="color:#f92672">&gt;</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">StringSeries</span> <span style="color:#f92672">=</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">string</span><span style="color:#f92672">&gt;</span>
+
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">AnalysisResult</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> Decimal <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span>
+    <span style="color:#f92672">|</span> String <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+
+<span style="color:#66d9ef">module</span> TimeSeries <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> private create t <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;=</span>
+        t
+        <span style="color:#f92672">|&gt;</span> Seq.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>t<span style="color:#f92672">,</span> v<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">{</span>DateTime <span style="color:#f92672">=</span> t<span style="color:#f92672">;</span> Value <span style="color:#f92672">=</span> v<span style="color:#f92672">}</span> <span style="color:#f92672">)</span>
+        <span style="color:#f92672">|&gt;</span> Seq.toArray
+
+    <span style="color:#66d9ef">let</span> private first <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+        ts<span style="color:#f92672">.[</span>0<span style="color:#f92672">].</span>Value
+
+    <span style="color:#66d9ef">let</span> private last <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+        ts<span style="color:#f92672">.[-</span>1<span style="color:#f92672">].</span>Value
+
+    <span style="color:#66d9ef">let</span> inline <span style="color:#66d9ef">private</span> mean <span style="color:#f92672">(</span>ts <span style="color:#f92672">:</span> TimeSeries<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+        ts
+        <span style="color:#f92672">|&gt;</span> Array.averageBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> x <span style="color:#f92672">-&gt;</span> x<span style="color:#f92672">.</span>Value<span style="color:#f92672">)</span>
+
+    <span style="color:#66d9ef">module</span> DecimalSeries <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> create t <span style="color:#f92672">:</span> DecimalSeries <span style="color:#f92672">=</span>
+            create t
+
+        <span style="color:#66d9ef">let</span> first <span style="color:#f92672">(</span>ds <span style="color:#f92672">:</span> DecimalSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+            first ds <span style="color:#f92672">|&gt;</span> AnalysisResult.Decimal
+
+        <span style="color:#66d9ef">let</span> last <span style="color:#f92672">(</span>ds <span style="color:#f92672">:</span> DecimalSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+            last ds <span style="color:#f92672">|&gt;</span> AnalysisResult.Decimal
+
+        <span style="color:#66d9ef">let</span> mean <span style="color:#f92672">(</span>ds <span style="color:#f92672">:</span> DecimalSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+            mean ds <span style="color:#f92672">|&gt;</span> AnalysisResult.Decimal
+
+    <span style="color:#66d9ef">module</span> StringSeries <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> create t <span style="color:#f92672">:</span> StringSeries <span style="color:#f92672">=</span>
+            create t
+
+        <span style="color:#66d9ef">let</span> first <span style="color:#f92672">(</span>ds <span style="color:#f92672">:</span> StringSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+            first ds <span style="color:#f92672">|&gt;</span> AnalysisResult.String
+
+        <span style="color:#66d9ef">let</span> last <span style="color:#f92672">(</span>ds <span style="color:#f92672">:</span> StringSeries<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+            last ds <span style="color:#f92672">|&gt;</span> AnalysisResult.String
+</code></pre></div><p>One thing to note, I had to add the keyword <code>inline</code> to the <code>mean</code> function in the <code>TimeSeries</code> module. This makes the compiler figure out the types at the point the function is used. Now I am still not really proud of this code yet but it is accomplishing most of my goals. I am getting code reuse while being able to control which functions can be used by which type of <code>TimeSeries</code>. Since I only define a <code>create</code> function for the <code>DecimalSeries</code> and <code>StringSeries</code> types, I don&rsquo;t have to fear someone creating a random <code>TimeSeries&lt;'a&gt;</code> if they follow the convention of using the <code>create</code> function. The functions for <code>TimeSeries</code> are also private and can only be called from the sub-modules <code>DecimalSeries</code> and <code>StringSeries</code>.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>I hope my failures prove useful and an encouragement to others wandering through the process of learning Domain Driven Design. This was just one small problem that made me feel rather silly as I wrestled with it. Maybe I will come up with a more elegant solution but as of now, I like the code reuse and guarantees this is providing me. If you have a better solution, please message me on Twitter (@McCrews). When you get stuck coding, remember most of progress feels like wandering down dark halls until you come to the light. Keep calm and curry on!</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

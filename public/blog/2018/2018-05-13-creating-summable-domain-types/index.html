@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Creating Summable Domain Types - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Creating Summable Domain Types"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2018/2018-05-13-creating-summable-domain-types/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Creating Summable Domain Types</h1>
+      <div class="content"><p>One of the reasons that I love F# is that is makes it incredibly easy to model domains. By creating a Domain Model which represents the business domain it becomes relatively easy to create workflows and algorithms which streamline business processes. In this post I show how to create types for a domain which are summable, a feature I use frequently in my work.</p>
+<h2 id="the-value-of-restricting-values">The Value of Restricting Values</h2>
+<p>When I have to create a new Domain Model one of the first things that I do is define a single case Discriminated Union of <code>decimal</code> for the basic building blocks that I am going to work with (Costs, Items, Sales Rates, Days of Inventory, etc.). For example, when I am creating an algorithm to evaluate the financial viability of a product on marketplaces I have to calculate costs, I therefore create a <code>Cost</code> type. In my domain, a <code>Cost</code> is never negative therefore I can create a constructor which will enforce this behavior.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Cost</span> <span style="color:#f92672">=</span> Cost <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span> <span style="color:#75715e">// Define a single case DU &#39;Cost&#39; for decimal
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">module</span> Cost <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> create c <span style="color:#f92672">=</span>         <span style="color:#75715e">// Function for creating &#39;Cost&#39; values
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">if</span> c <span style="color:#f92672">&lt;=</span> 0M <span style="color:#66d9ef">then</span>    <span style="color:#75715e">// Check that the value is greater than 0.0M
+</span><span style="color:#75715e"></span>            None           <span style="color:#75715e">// Return None if outside bounds
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">else</span>
+            Some<span style="color:#f92672">(</span>Cost c<span style="color:#f92672">)</span>   <span style="color:#75715e">// Return input wrapped in a &#39;Cost&#39; value
+</span></code></pre></div><p>The beautiful thing about this is that when I am working with a <code>Cost</code> type I never have to worry about it being negative. This is a powerful thing when it comes to composing algorithms because I have eliminated a whole host of possible values that I would need to handle. It is amazing how easy it is for a negative numbers to sneak in and cause havoc. I force myself to deal with this bad data at the boundary of the domain instead of inside the algorithm performing the analysis.</p>
+<h2 id="the-downside-where-did-addition-go">The Downside: Where Did Addition Go?</h2>
+<p>There is a downside to doing this though, basic math operations will not work. At this point if I try to add two different <code>Cost</code> values I will get a compiler error.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> totalCost <span style="color:#f92672">=</span> cost1 <span style="color:#f92672">+</span> cost2 <span style="color:#75715e">// Error: The type &#39;Cost&#39; does not support the &#39;+&#39; operator
+</span></code></pre></div><p>Fortunately this is easy to overcome. All we need to do is implement the <code>+</code> operator for the type. We do this by adding a <code>static member</code> to our type alias. We add the keyword <code>with</code> to the end of our previous type alias definition and provide the <code>+</code> static member.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Updated definition of &#39;Cost&#39;
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Cost</span> <span style="color:#f92672">=</span> Cost <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span> <span style="color:#66d9ef">with</span>
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> <span style="color:#f92672">(+)</span> <span style="color:#f92672">(</span>Cost c1<span style="color:#f92672">,</span> Cost c2<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        Cost <span style="color:#f92672">(</span>c1 <span style="color:#f92672">+</span> c2<span style="color:#f92672">)</span>
+</code></pre></div><p>The arguments for the <code>+</code> function may look a little odd so let me explain. By declaring the arguments of the function as <code>(Cost c1, Cost c2)</code> I am telling the compiler that I expect a <code>Cost</code> type as the input and I want you to unpack the value inside of <code>Cost</code> and put it in the <code>c1</code> and <code>c2</code> values respectively. This allows me to work with the <code>decimal</code> values inside of the <code>Cost</code> type. The function itself adds the two values together and then wraps the result in a <code>Cost</code>. Now when we go to add two <code>Cost</code> values we no longer get an error.</p>
+<p>The beauty of this is that I have maintained control over the values that <code>Cost</code> can take on. I declared a <code>create</code> function which insures positive values. I only allow addition of <code>Cost</code> types which means that a <code>Cost</code> will only ever be positive. Some people may brush this off as trivial but as someone who has seen the damage that can happen from values going outside of the expected range, this extra work for reliability and peace of mind is worth it. For me, it is more efficient to ensure values cannot go outside their allowed bounds through controlling construction and operator definitions than to have value checks all over the place.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> totalCost <span style="color:#f92672">=</span> cost1 <span style="color:#f92672">+</span> cost2
+<span style="color:#75715e">// Result: val totalCost : Cost = Cost 15.0M
+</span></code></pre></div><h2 id="enabling-summation">Enabling Summation</h2>
+<p>Well, that is great and all but what happens when we have a <code>List</code> of <code>Cost</code> values and we want to sum them. What happens then?</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> sumCosts <span style="color:#f92672">=</span>
+    <span style="color:#f92672">[</span>cost1<span style="color:#f92672">;</span> cost2<span style="color:#f92672">]</span>
+    <span style="color:#f92672">|&gt;</span> List.sum <span style="color:#75715e">// Error: The type &#39;Cost&#39; does not support the operator &#39;get_Zero&#39;
+</span></code></pre></div><p>Now when I first came across this I was confused. I had no idea what this <code>get_Zero</code> operator meant. After digging around for a while I was able to find some examples of what it was referring to. The <code>sum</code> function wants a starting point for the summation and it gets that by calling the <code>Zero</code> function on the type. I don&rsquo;t know why the compiler is saying <code>does not support the operator 'get_Zero'</code> instead of saying <code>the type does not have a function named 'Zero'</code>. Again, F# makes this easy to implement.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Summable &#39;Cost&#39; type
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Cost</span> <span style="color:#f92672">=</span> Cost <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">decimal</span> <span style="color:#66d9ef">with</span>
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> <span style="color:#f92672">(+)</span> <span style="color:#f92672">(</span>Cost c1<span style="color:#f92672">,</span> Cost c2<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        Cost <span style="color:#f92672">(</span>c1 <span style="color:#f92672">+</span> c2<span style="color:#f92672">)</span>
+
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> Zero <span style="color:#f92672">=</span>
+        Cost 0<span style="color:#f92672">.</span>0M
+</code></pre></div><p>Now when we try to sum a list of <code>Cost</code> values we get the expected result.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> sumCosts <span style="color:#f92672">=</span>
+    <span style="color:#f92672">[</span>cost1<span style="color:#f92672">;</span> cost2<span style="color:#f92672">]</span>
+    <span style="color:#f92672">|&gt;</span> List.sum
+<span style="color:#75715e">// Result: val sumCosts : Cost = Cost 15.0M
+</span></code></pre></div><h2 id="freedom-through-constraints">Freedom Through Constraints</h2>
+<p>The more I dive into Domain Driven Design with F#, the more I love it. By ensuring values comply with expectations at the boundary of the domain, I am freed to reason about my algorithms without worrying about data going awry inside the domain. While it takes a few more keystrokes to define operations on these domain types, I hope that I showed you that it takes little effort in F# and can lead to more reliable and robust code. Keep calm and curry on!</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

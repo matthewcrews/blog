@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Minimizing Waste for the Cutting Stock Problem - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Minimizing Waste for the Cutting Stock Problem"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2021/01/2021-01-11/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Minimizing Waste for the Cutting Stock Problem</h1>
+      <div class="content"><p>I was recently posed the question, &ldquo;Can you use Mathematical Planning to optimize the Cutting Stock problem?&rdquo; For those who are not familiar with this problem, you can find the Wikipedia article <a href="https://en.wikipedia.org/wiki/Cutting_stock_problem">here</a>. In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm. The ideal plan is one which minimizes the amount of waste. This is a classic planning problem that can actually be reduced to the <a href="https://en.wikipedia.org/wiki/Knapsack_problem">knapsack problem</a>.</p>
+<blockquote>
+<p><strong>Note</strong>: Full code for this post can be found <a href="https://github.com/matthewcrews/modelmondays/blob/main/CuttingStockProblem.fsx">here</a></p>
+</blockquote>
+<p>These are the cut lengths and quantities you need to produce in the example problem.</p>
+<table>
+<thead>
+<tr>
+<th>Width [mm]</th>
+<th>Number of Items</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1380</td>
+<td>22</td>
+</tr>
+<tr>
+<td>1520</td>
+<td>25</td>
+</tr>
+<tr>
+<td>1560</td>
+<td>12</td>
+</tr>
+<tr>
+<td>1710</td>
+<td>14</td>
+</tr>
+<tr>
+<td>1820</td>
+<td>18</td>
+</tr>
+<tr>
+<td>1880</td>
+<td>18</td>
+</tr>
+<tr>
+<td>1930</td>
+<td>20</td>
+</tr>
+<tr>
+<td>2000</td>
+<td>10</td>
+</tr>
+<tr>
+<td>2050</td>
+<td>12</td>
+</tr>
+<tr>
+<td>2100</td>
+<td>14</td>
+</tr>
+<tr>
+<td>2140</td>
+<td>16</td>
+</tr>
+<tr>
+<td>2150</td>
+<td>18</td>
+</tr>
+<tr>
+<td>2200</td>
+<td>20</td>
+</tr>
+</tbody>
+</table>
+<p>There are a variety of different ways you can cut the stock size into the smaller sizes. For example, you could produce 3 x 1820mm cuts from a 5600mm stock roll. You could also do 2200mm, 1820mm, and 1560mm. In total there are 308 possible combinations of cuts, not including the empty combination which has zero cuts. The most important thing to realize when approaching this problem is that the order you make the cuts does not matter. A more technical term would be that the order of cuts is <a href="https://en.wikipedia.org/wiki/Commutative_property">commutative</a>.</p>
+<h2 id="generating-the-possible-cuts">Generating the Possible Cuts</h2>
+<p>The most difficult part of this problem turned out to be the generating of the possible cuts. Before we dive right into that though, let&rsquo;s create some simple domain types to describe our problem.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Cut</span> <span style="color:#f92672">=</span> Cut <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">float</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Plan</span> <span style="color:#f92672">=</span> Plan <span style="color:#66d9ef">of</span> Map<span style="color:#f92672">&lt;</span>Cut<span style="color:#f92672">,</span> int<span style="color:#f92672">&gt;</span>
+</code></pre></div><p>A <code>Cut</code> is a length we want to create from our stock rolls. A <code>Plan</code> is a set of cuts. We want an algorithm which will generate the possible <code>Plan</code>s for a set of <code>Cut</code>s for our stock roll. To make our lives easier, I am going to go ahead and write some functions which allow us to work with these types more easily.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">module</span> Cut <span style="color:#f92672">=</span>
+
+    <span style="color:#e6db74">/// Take a Cut and return the length as a float
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">let</span> length <span style="color:#f92672">(</span>Cut length<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        length
+
+<span style="color:#66d9ef">module</span> Plan <span style="color:#f92672">=</span>
+
+    <span style="color:#e6db74">/// Give me a Plan with no cuts
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">let</span> empty <span style="color:#f92672">:</span> Plan <span style="color:#f92672">=</span>
+        Plan Map.empty
+
+    <span style="color:#e6db74">/// Give me the total length of cuts in the plan
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">let</span> length <span style="color:#f92672">(</span>Plan plan<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+       plan
+       <span style="color:#f92672">|&gt;</span> Seq.sumBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>KeyValue<span style="color:#f92672">(</span>Cut cut<span style="color:#f92672">,</span> count<span style="color:#f92672">))</span> <span style="color:#f92672">-&gt;</span> cut <span style="color:#f92672">*</span> <span style="color:#66d9ef">float</span> count<span style="color:#f92672">)</span>
+
+    <span style="color:#e6db74">/// Add a Cut to a Plan and return a new Plan
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">let</span> addCut <span style="color:#f92672">(</span>cut<span style="color:#f92672">:</span> Cut<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>Plan plan<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">match</span> Map.tryFind cut plan <span style="color:#66d9ef">with</span>
+        <span style="color:#f92672">|</span> Some count <span style="color:#f92672">-&gt;</span> Plan <span style="color:#f92672">(</span>Map.add cut <span style="color:#f92672">(</span>count <span style="color:#f92672">+</span> 1<span style="color:#f92672">)</span> plan<span style="color:#f92672">)</span>
+        <span style="color:#f92672">|</span> None <span style="color:#f92672">-&gt;</span> Plan <span style="color:#f92672">(</span>Map.add cut 1 plan<span style="color:#f92672">)</span>
+
+    <span style="color:#e6db74">/// Give me the count of each distinct cut in a given Plan
+</span><span style="color:#e6db74"></span>    <span style="color:#66d9ef">let</span> cutCounts <span style="color:#f92672">(</span>Plan plan<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        plan
+        <span style="color:#f92672">|&gt;</span> Seq.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>KeyValue<span style="color:#f92672">(</span>cut<span style="color:#f92672">,</span> count<span style="color:#f92672">))</span> <span style="color:#f92672">-&gt;</span> cut<span style="color:#f92672">,</span> count<span style="color:#f92672">)</span>
+</code></pre></div><p>We now have our domain for working in this space. Let&rsquo;s talk about the function which will generate the possible <code>Plan</code>s given a set of <code>Cut</code>s and a Stock Length. We want something like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> generatePlans <span style="color:#f92672">(</span>stockLength<span style="color:#f92672">:</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">)</span> <span style="color:#f92672">(</span>cuts<span style="color:#f92672">:</span> Cut <span style="color:#66d9ef">list</span><span style="color:#f92672">)</span> <span style="color:#f92672">:</span> Plan <span style="color:#66d9ef">list</span> <span style="color:#f92672">=</span>
+    <span style="color:#75715e">// Do some magic here??
+</span></code></pre></div><p>Now, I&rsquo;m going to show you the answer that I came up with. What you are not seeing though is the couple of hours I spent with my notebook sketching out how this would work. It was not intuitive to me, so I don&rsquo;t want you to think that this stuff just materializes out of thin air. I had to struggle. It was not intuitive but by the time I was done, I felt immense satisfaction.</p>
+<p>The first thing I am going to do is sort <code>cuts</code> from the shortest length to the longest and ensure that I only have distinct cuts.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> sortedCuts <span style="color:#f92672">=</span> 
+    cuts 
+    <span style="color:#f92672">|&gt;</span> List.distinct
+    <span style="color:#f92672">|&gt;</span> List.sortBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>Cut length<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> length<span style="color:#f92672">)</span>
+</code></pre></div><p>This algorithm is going to take advantage of the fact that the cuts are sorted from shortest to longest so that it can terminate early. Now I want to write a recursive function which is going to take an initially empty <code>Plan</code> and try adding cuts to it. It will keep adding cuts until it exceeds the Stock Length. You can think of this as a sort of <a href="https://en.wikipedia.org/wiki/Constructive_heuristic">Constructive Heuristic</a>. I&rsquo;m going to show you the full function but then we will unpack it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> rec generate <span style="color:#f92672">(</span>candidates<span style="color:#f92672">:</span> <span style="color:#f92672">(</span>Plan <span style="color:#f92672">*</span> Cut <span style="color:#66d9ef">list</span><span style="color:#f92672">)</span> <span style="color:#66d9ef">list</span><span style="color:#f92672">)</span> <span style="color:#f92672">(</span>approved<span style="color:#f92672">:</span> Plan <span style="color:#66d9ef">list</span><span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">match</span> candidates <span style="color:#66d9ef">with</span>
+    <span style="color:#f92672">|</span> [] <span style="color:#f92672">-&gt;</span> approved
+    <span style="color:#f92672">|</span> testCandidate<span style="color:#f92672">::</span>remainingCandidates <span style="color:#f92672">-&gt;</span>
+        <span style="color:#66d9ef">let</span> plan<span style="color:#f92672">,</span> cuts <span style="color:#f92672">=</span> testCandidate
+        <span style="color:#66d9ef">match</span> cuts <span style="color:#66d9ef">with</span>
+        <span style="color:#f92672">|</span> [] <span style="color:#f92672">-&gt;</span> 
+            <span style="color:#66d9ef">let</span> newApproved <span style="color:#f92672">=</span> plan<span style="color:#f92672">::</span>approved
+            generate remainingCandidates newApproved
+        <span style="color:#f92672">|</span> nextCut<span style="color:#f92672">::</span>remainingCuts <span style="color:#f92672">-&gt;</span>
+            <span style="color:#66d9ef">if</span> Plan.length plan <span style="color:#f92672">+</span> Cut.length nextCut <span style="color:#f92672">&lt;=</span> stockLength <span style="color:#66d9ef">then</span>
+                <span style="color:#66d9ef">let</span> newPlan <span style="color:#f92672">=</span> Plan.addCut nextCut plan
+                <span style="color:#66d9ef">let</span> newCandidates <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>newPlan<span style="color:#f92672">,</span> cuts<span style="color:#f92672">)::(</span>plan<span style="color:#f92672">,</span> remainingCuts<span style="color:#f92672">)::</span>remainingCandidates
+                generate newCandidates approved
+            <span style="color:#66d9ef">else</span>
+                <span style="color:#66d9ef">let</span> newApproved <span style="color:#f92672">=</span> plan<span style="color:#f92672">::</span>approved
+                generate remainingCandidates newApproved
+</code></pre></div><p>We have a list of plans and possible cuts which we are exploring called <code>candidates</code>. As candidates are approved, they are added to the <code>approved</code> list of plans. Keep in mind, this function will be initially called with an empty <code>Plan</code> and the full list of <code>Cut</code>s available. Let&rsquo;s go through the cases step by step.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> candidates <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> [] <span style="color:#f92672">-&gt;</span> approved
+</code></pre></div><p>This is the terminal case. We have evaluated all the <code>Plan</code>s that were generated, and we return the <code>Plan</code>s in the <code>approved</code> list. Now for the case where we still have remaining candidates.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">|</span> testCandidate<span style="color:#f92672">::</span>remainingCandidates <span style="color:#f92672">-&gt;</span>
+    <span style="color:#66d9ef">let</span> plan<span style="color:#f92672">,</span> cuts <span style="color:#f92672">=</span> testCandidate
+</code></pre></div><p>In this case, there is at least one remaining candidate to evaluate, <code>testCandidate</code>. We create <code>plan</code> and <code>cuts</code> values using structural unpacking of <code>testCandidate</code>. <code>plan</code> is the <code>Plan</code> we are testing. <code>cuts</code> is the list of possible cuts we can add to <code>plan</code>. You will see that this list will shrink as our algorithm continues.</p>
+<p>Now let&rsquo;s match against the list of <code>Cut</code>s to see what we should do.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> cuts <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> [] <span style="color:#f92672">-&gt;</span> 
+    <span style="color:#66d9ef">let</span> newApproved <span style="color:#f92672">=</span> plan<span style="color:#f92672">::</span>approved
+    generate remainingCandidates newApproved
+</code></pre></div><p>If the list of cuts is empty, as indicated by the <code>[]</code> case, then we create <code>newApproved</code> by adding <code>plan</code> to <code>approved</code> and calling <code>generate</code> again. Now let&rsquo;s look at the case where there are <code>Cut</code>s remaining.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">|</span> nextCut<span style="color:#f92672">::</span>remainingCuts <span style="color:#f92672">-&gt;</span>
+    <span style="color:#66d9ef">if</span> Plan.length plan <span style="color:#f92672">+</span> Cut.length nextCut <span style="color:#f92672">&lt;=</span> stockLength <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">let</span> newPlan <span style="color:#f92672">=</span> Plan.addCut nextCut plan
+        <span style="color:#66d9ef">let</span> newCandidates <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>newPlan<span style="color:#f92672">,</span> cuts<span style="color:#f92672">)::(</span>plan<span style="color:#f92672">,</span> remainingCuts<span style="color:#f92672">)::</span>remainingCandidates
+        generate newCandidates approved
+    <span style="color:#66d9ef">else</span>
+        <span style="color:#66d9ef">let</span> newApproved <span style="color:#f92672">=</span> plan<span style="color:#f92672">::</span>approved
+        generate remainingCandidates newApproved
+</code></pre></div><p>We now look at <code>nextCut</code> which we know is the shortest of the <code>Cut</code>s in the list due to our sorting. We check that if we add this <code>Cut</code> to <code>plan</code> whether we will exceed the <code>stockLength</code> limit. If we do not exceed the limit, we create a new plan <code>newPlan</code>. We will add <code>newPlan</code> to the list of <code>candidates</code> with <code>cuts</code> as the list of possible <code>Cut</code>s to explore. We also add the current <code>Plan</code> we are testing, <code>plan</code>, to the list of <code>candidates</code> but now with <code>remainingCuts</code> as the possible <code>Cut</code>s to add. Take your time with that. That puzzle took me awhile to figure out.</p>
+<p>In the case that the length of <code>nextCut</code> is too long, we add <code>plan</code> to <code>approved</code> and then continue to search the remaining <code>candidates</code>.</p>
+<p>We call our recursive function with an empty <code>Plan</code> to start and the full list of <code>Cut</code>s to get all the possible <code>Plan</code>s we would want to consider.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> initialCandidate <span style="color:#f92672">=</span> Plan.empty<span style="color:#f92672">,</span> sortedCuts
+generate <span style="color:#f92672">[</span>initialCandidate<span style="color:#f92672">]</span> []
+</code></pre></div><h2 id="the-optimization-problem">The Optimization Problem</h2>
+<p>The optimization model for this is rather simple. We will create the list of possible <code>Plan</code>s using the function we just described. We will associate an integer <code>Decision</code> with each <code>Plan</code> which is to indicate how many of each of those plans we will schedule. Let&rsquo;s setup the data for our model so that we can build it. All this data is taken from the Wikipedia example.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> cuts <span style="color:#f92672">=</span> 
+    <span style="color:#f92672">[</span>
+        1380<span style="color:#f92672">.</span>0
+        1520<span style="color:#f92672">.</span>0
+        1560<span style="color:#f92672">.</span>0
+        1710<span style="color:#f92672">.</span>0
+        1820<span style="color:#f92672">.</span>0
+        1880<span style="color:#f92672">.</span>0
+        1930<span style="color:#f92672">.</span>0
+        2000<span style="color:#f92672">.</span>0
+        2050<span style="color:#f92672">.</span>0
+        2100<span style="color:#f92672">.</span>0
+        2140<span style="color:#f92672">.</span>0
+        2150<span style="color:#f92672">.</span>0
+        2200<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">]</span> <span style="color:#f92672">|&gt;</span> List.map Cut
+
+<span style="color:#66d9ef">let</span> cutRequirements <span style="color:#f92672">=</span>
+    <span style="color:#f92672">[</span>
+        Cut 1380<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 22<span style="color:#f92672">.</span>0
+        Cut 1520<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 25<span style="color:#f92672">.</span>0
+        Cut 1560<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 12<span style="color:#f92672">.</span>0
+        Cut 1710<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 14<span style="color:#f92672">.</span>0
+        Cut 1820<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 18<span style="color:#f92672">.</span>0
+        Cut 1880<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 18<span style="color:#f92672">.</span>0
+        Cut 1930<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 20<span style="color:#f92672">.</span>0
+        Cut 2000<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 10<span style="color:#f92672">.</span>0
+        Cut 2050<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 12<span style="color:#f92672">.</span>0
+        Cut 2100<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 14<span style="color:#f92672">.</span>0
+        Cut 2140<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 16<span style="color:#f92672">.</span>0
+        Cut 2150<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 18<span style="color:#f92672">.</span>0
+        Cut 2200<span style="color:#f92672">.</span>0 <span style="color:#f92672">,</span> 20<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">]</span> <span style="color:#f92672">|&gt;</span> Map
+
+<span style="color:#66d9ef">let</span> stockLength <span style="color:#f92672">=</span> 5600<span style="color:#f92672">.</span>0
+<span style="color:#66d9ef">let</span> plans <span style="color:#f92672">=</span> generatePlans stockLength cuts
+</code></pre></div><p>We now want to start building our model. We&rsquo;ll open the namespaces we need and create our set of <code>Decision</code>s associated with each <code>Plan</code> in <code>plans</code>. We are using <a href="http://matthewcrews.com/SliceMap/#/">SliceMaps</a> to simplify formulation.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">open</span> Flips
+<span style="color:#66d9ef">open</span> Flips.Types
+<span style="color:#66d9ef">open</span> Flips.SliceMap
+
+<span style="color:#66d9ef">let</span> planDecs <span style="color:#f92672">=</span>
+    DecisionBuilder <span style="color:#e6db74">&#34;PlanCount&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> plan <span style="color:#66d9ef">in</span> plans <span style="color:#f92672">-&gt;</span>
+        Integer <span style="color:#f92672">(</span>0<span style="color:#f92672">.</span>0<span style="color:#f92672">,</span> infinity<span style="color:#f92672">)</span>
+    <span style="color:#f92672">}</span> <span style="color:#f92672">|&gt;</span> SMap
+</code></pre></div><p>We then need to calculate the number of each <code>Cut</code> that is associated with each <code>Plan</code>. This will be important for us to formulate the constraints around meeting the minimum cut requirements. We will store this information in a 2-D <code>SliceMap</code> where the first index is the <code>Plan</code> and the second index is the <code>Cut</code>. The value in the <code>SliceMap</code> is the number of a given <code>Cut</code> in the <code>Plan</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> planCutCounts <span style="color:#f92672">=</span>
+    plans
+    <span style="color:#f92672">|&gt;</span> Seq.collect <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> plan <span style="color:#f92672">-&gt;</span> Plan.cutCounts plan
+                                <span style="color:#f92672">|&gt;</span> Seq.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>cut<span style="color:#f92672">,</span> count<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">(</span>plan<span style="color:#f92672">,</span> cut<span style="color:#f92672">),</span> <span style="color:#66d9ef">float</span> count<span style="color:#f92672">)</span>
+    <span style="color:#f92672">)</span> <span style="color:#f92672">|&gt;</span> SMap2
+</code></pre></div><p>It&rsquo;s now actually simple to create our constraints. We will create a constraint for each <code>Cut</code> in our data stating that the solution must meet the minimum quantity of each <code>Cut</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> cutRequirementConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;CutRequirements&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> cut <span style="color:#66d9ef">in</span> cuts <span style="color:#f92672">-&gt;</span>
+        sum <span style="color:#f92672">(</span>planDecs <span style="color:#f92672">.*</span> planCutCounts<span style="color:#f92672">.[</span>All<span style="color:#f92672">,</span> cut<span style="color:#f92672">])</span> <span style="color:#f92672">&gt;==</span> cutRequirements<span style="color:#f92672">.[</span>cut<span style="color:#f92672">]</span>
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>Our objective is to minimize the total number of stock rolls required to meet the demand for each <code>Cut</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> objective <span style="color:#f92672">=</span> Objective.create <span style="color:#e6db74">&#34;MinRolls&#34;</span> Minimize <span style="color:#f92672">(</span>sum planDecs<span style="color:#f92672">)</span>
+</code></pre></div><p>We combine these into our model and solve.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.create objective
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints cutRequirementConstraints
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve Settings.basic model
+</code></pre></div><p>Let&rsquo;s go ahead and provide some nice printing of the results to the console.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> result <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Optimal solution <span style="color:#f92672">-&gt;</span>
+    <span style="color:#66d9ef">let</span> values <span style="color:#f92672">=</span> 
+        Solution.getValues solution planDecs
+        <span style="color:#f92672">|&gt;</span> Map.filter <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">_</span> quantity <span style="color:#f92672">-&gt;</span> quantity <span style="color:#f92672">&gt;</span> 0<span style="color:#f92672">.</span>0<span style="color:#f92672">)</span>
+
+    <span style="color:#66d9ef">let</span> totalNumberOfRolls <span style="color:#f92672">=</span>
+        values
+        <span style="color:#f92672">|&gt;</span> Seq.sumBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>KeyValue<span style="color:#f92672">(_,</span> count<span style="color:#f92672">))</span> <span style="color:#f92672">-&gt;</span> count<span style="color:#f92672">)</span>
+
+    printfn <span style="color:#e6db74">&#34;Quantity | Plan&#34;</span>
+    <span style="color:#66d9ef">for</span> KeyValue<span style="color:#f92672">(</span>plan<span style="color:#f92672">,</span> quantity<span style="color:#f92672">)</span> <span style="color:#66d9ef">in</span> values <span style="color:#66d9ef">do</span>
+        printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;%8.0f{quantity} | {plan}&#34;</span>
+
+    printfn <span style="color:#e6db74">&#34;==========================================&#34;</span>
+    printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;Total Number of Rolls: {totalNumberOfRolls}&#34;</span>
+    printfn <span style="color:#e6db74">&#34;==========================================&#34;</span>
+
+<span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> failwith <span style="color:#e6db74">&#34;Unable to solve&#34;</span>
+</code></pre></div><p>When you run the full script, you will see the following printed out.</p>
+<pre tabindex="0"><code class="language-terminal" data-lang="terminal">Quantity | Plan
+8 | Plan (map [(Cut 1380.0, 1); (Cut 2000.0, 1); (Cut 2200.0, 1)])
+7 | Plan (map [(Cut 1380.0, 1); (Cut 2050.0, 1); (Cut 2150.0, 1)])
+7 | Plan (map [(Cut 1380.0, 1); (Cut 2100.0, 2)])
+10 | Plan (map [(Cut 1520.0, 1); (Cut 1880.0, 1); (Cut 2200.0, 1)])
+10 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2140.0, 1)])
+3 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2150.0, 1)])
+2 | Plan (map [(Cut 1520.0, 1); (Cut 2000.0, 1); (Cut 2050.0, 1)])
+2 | Plan (map [(Cut 1560.0, 1); (Cut 1820.0, 1); (Cut 2200.0, 1)])
+8 | Plan (map [(Cut 1560.0, 1); (Cut 1880.0, 1); (Cut 2150.0, 1)])
+1 | Plan (map [(Cut 1560.0, 2); (Cut 2050.0, 1)])
+2 | Plan (map [(Cut 1710.0, 1); (Cut 1820.0, 1); (Cut 2050.0, 1)])
+6 | Plan (map [(Cut 1710.0, 2); (Cut 2140.0, 1)])
+7 | Plan (map [(Cut 1820.0, 2); (Cut 1930.0, 1)])
+==========================================
+Total Number of Cuts: 73
+==========================================
+</code></pre><p>If you check the Wikipedia article, you will see that the best possible answer is 73. There are multiple, equally good solutions. This is called Degeneracy. Problems with high levels of Degeneracy can be difficult to solve but fortunately this one was not. You may run this code on your machine and get a different set of plans, but you&rsquo;ll still have a total of 73 stock rolls required.</p>
+<h2 id="next-steps">Next Steps</h2>
+<p>This was a fun challenge and was a bit of a brain teaser. These types of problems are everywhere in manufacturing planning and scheduling. Minimizing the amount of raw resources required is incredibly important but can be brutally difficult. It&rsquo;s often done by domain experts spending hours with Excel finding a plan that meets all the requirements. These are some of my favorite problems to turn into Mathematical Planning models. Thank you for your time and I look forward to chatting next week!</p>
+<p>Please send me an email at <a href="mailto:matthewcrews@gmail.com">matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p>
+<script async data-uid="32100bd90e" src="https://dedicated-trader-4923.ck.page/32100bd90e/index.js"></script>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

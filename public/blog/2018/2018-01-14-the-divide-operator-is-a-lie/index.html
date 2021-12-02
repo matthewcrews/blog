@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>The Divide Operator is a Lie - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="The Divide Operator is a Lie"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2018/2018-01-14-the-divide-operator-is-a-lie/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">The Divide Operator is a Lie</h1>
+      <div class="content"><p>One of the things that most attracted me to F# is the ability to accurately model your domain. What first turned me on to this was a talk by <a href="https://www.youtube.com/watch?v=E8I19uA-wGY&amp;t=1102s">Scott Wlaschin on Functional programming design patterns</a>. Scott has a more focused talk on <a href="https://www.youtube.com/watch?v=Up7LcbGZFuo&amp;t=229s">Domain Modeling Made Functional</a> that he did a few years later and a <a href="https://fsharpforfunandprofit.com/books/">book with the same title</a>. This whole concept was blowing my mind. The idea of modeling your domain such that illegal states are unrepresentable sounds immensely satisfying to me.</p>
+<p>This new way of looking at the world has been slowly transforming all of my code. Everywhere I look now I am asking, &ldquo;Is it possible for this state to be illegal? What can I do to ensure I am covering all scenarios?&rdquo; With this new focus I quickly came across an operator in F# that lies, the division operator.</p>
+<h2 id="the-divide-lie">The Divide Lie</h2>
+<p>If you hover over the / operator in Visual Studio you will get the following function signature</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">val</span><span style="color:#f92672">(/):</span> x<span style="color:#f92672">:</span><span style="color:#66d9ef">&#39;</span>T1 <span style="color:#f92672">-&gt;</span> y<span style="color:#f92672">:</span><span style="color:#66d9ef">&#39;</span>T2 <span style="color:#f92672">-&gt;</span> <span style="color:#66d9ef">&#39;</span>T3 <span style="color:#f92672">(</span>requires <span style="color:#66d9ef">member</span> <span style="color:#f92672">(/))</span>
+</code></pre></div><p>There is nothing surprising here. The <code>/</code> operator is expecting two values and will produce a third. Now let&rsquo;s look at what the compiler says is supposed to happen when we divide two decimals. If I input the following lines into a fsx script in Visual Studio I will get the following types from the compiler.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> a <span style="color:#f92672">=</span> 10M     <span style="color:#75715e">// val a : decimal
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> b <span style="color:#f92672">=</span> 5M      <span style="color:#75715e">// val b : decimal
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> c <span style="color:#f92672">=</span> a <span style="color:#f92672">/</span> b   <span style="color:#75715e">// val c : decimal
+</span></code></pre></div><p>This is where my problem is. The compiler says that taking two decimal values and dividing them will produce a third decimal value. This is not always the case though. If <code>b = 0M</code> then this will throw an exception. This runs counter to the idea of making illegal states unrepresentable. We would rather that the operator returned <code>'T option</code> which would force us to deal with both scenarios.</p>
+<h2 id="defining-a-new-operator">Defining a new Operator</h2>
+<p>Fortunately for us, it is easy to add operators to F# but there are a couple of gotchas I will cover here. The F# Language Reference has a great page describing the rules around <a href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/operator-overloading">Operator Overloading</a>. The key thing to know is that there are a limited set of characters that are permitted: <code>!</code>, <code>%</code>, <code>&amp;</code>, <code>*</code>, <code>+</code>, <code>-</code>, <code>.</code>, <code>/</code>, <code>&lt;</code>, <code>=</code>, <code>&gt;</code>, <code>?</code>, <code>@</code>, <code>^</code>, <code>|</code>, and <code>~</code>. <code>~</code> is a special character to be used when making a unary operator. In this case, I need a binary operator so I will avoid using it.</p>
+<p>I want to create a new divide operator that will check if the divisor is <code>0</code>. If the divisor is equivalent to <code>0</code>, I want the operator to return <code>None</code>. Since I want this to be intuitive when looking at the operator I will combine the divide symbol, <code>/</code>, with the bang symbol, <code>!</code>, to make my new operator <code>/!</code>. The reason I am using the <code>!</code> symbol is because it often indicates a warning which is what I am wanting to communicate to the developer. This means my function signature needs to look like this:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">val</span><span style="color:#f92672">(/!):</span> x<span style="color:#f92672">:</span><span style="color:#66d9ef">&#39;</span>T1 <span style="color:#f92672">-&gt;</span> y<span style="color:#f92672">:</span><span style="color:#66d9ef">&#39;</span>T2 <span style="color:#f92672">-&gt;</span> <span style="color:#66d9ef">&#39;</span>T3 option <span style="color:#f92672">(</span>requires <span style="color:#66d9ef">member</span> <span style="color:#f92672">(/))</span>
+</code></pre></div><p>My first attempt looked like the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> <span style="color:#f92672">(/!)</span> a b <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">match</span> b <span style="color:#f92672">&lt;&gt;</span> 0 <span style="color:#66d9ef">with</span>
+    <span style="color:#f92672">|</span> <span style="color:#66d9ef">true</span> <span style="color:#f92672">-&gt;</span> a <span style="color:#f92672">/</span> b <span style="color:#f92672">|&gt;</span> Some
+    <span style="color:#f92672">|</span> <span style="color:#66d9ef">false</span> <span style="color:#f92672">-&gt;</span> None
+</code></pre></div><p>When I look at the function signature of my operator though I see the following:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">val</span><span style="color:#f92672">(/!):</span> x<span style="color:#f92672">:</span>int <span style="color:#f92672">-&gt;</span> y<span style="color:#f92672">:</span>int <span style="color:#f92672">-&gt;</span> int option
+</code></pre></div><p>This is no good. This will only work with inputs of <code>int</code> and I am wanting something that is generic. The problem is in two places. The first, and more obvious one, is that I am comparing the value of <code>b</code> with the value of <code>0</code> which is an <code>int</code>. The F# compiler is therefore restricting the input types to be <code>int</code>. I know this because I can change the value <code>b</code> is compared to and change the function signature. For example if I change <code>0</code> to <code>0M</code>, the type of <code>a</code> and <code>b</code> is restricted to <code>decimal</code>. If I change <code>0</code> to <code>0.</code>, making it a float, the type of <code>a</code> and <code>b</code> is restricted to <code>float</code>.</p>
+<h2 id="making-the-operator-generic">Making the Operator Generic</h2>
+<p>Fortunately, F# has a fix for this, it is called <code>GenericZero</code>. <code>GenericZero</code> is a type function which returns the <code>0</code> equivalent for any numeric type or type with a static member called <code>Zero</code>. It is contained in the F# Language Primitives, <code>Microsoft.FSharp.Core.LanguagePrimitives</code>. More information can be found in the <a href="https://msdn.microsoft.com/visualfsharpdocs/conceptual/languageprimitives.genericzero%5b%5et%5d-type-function-%5bfsharp%5d">language reference entry on GenericZero</a>.</p>
+<p>The other problem with this function is that it needs to be an <code>inline</code> function. The <code>inline</code> keyword in F# tells the compiler to figure out the types for the function at the place of usage instead of restricting the types. Here is a simple example of an <code>add</code> function without the <code>inline</code> keyword.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// non-inlined function
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> add a b <span style="color:#f92672">=</span>
+    a <span style="color:#f92672">+</span> b
+<span style="color:#75715e">// val add : a:int -&gt; b:int -&gt; int
+</span></code></pre></div><p>You would think that the <code>add</code> function would be generic but the F# compiler will restrict this to <code>int</code> because that is the best match it can deduce from the context. Now, if we use the <code>add</code> function with <code>float</code> values it will change the function signature but it will still be restricted to only a single type. Here I show using the <code>add</code> function with <code>float</code> values before trying to use it with <code>int</code> values. F# updates the function signature to using <code>float</code> but now throws an error when we try to use <code>int</code> values.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// non-inlined function
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> add a b <span style="color:#f92672">=</span>
+    a <span style="color:#f92672">+</span> b
+<span style="color:#75715e">// val add : a:float -&gt; b:float -&gt; float
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">let</span> r <span style="color:#f92672">=</span> add 1<span style="color:#f92672">.</span> 2<span style="color:#f92672">.</span> <span style="color:#75715e">// r : float
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> r2 <span style="color:#f92672">=</span> add 1 2 <span style="color:#75715e">// compiler error
+</span></code></pre></div><p>The <code>inline</code> keyword can be added to the beginning of the function to have the compiler deduce the types at the point the function is used.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> inline add a b <span style="color:#f92672">=</span>
+    a <span style="color:#f92672">+</span> b
+<span style="color:#75715e">// val add : a:&#39;a -&gt; b:&#39;b -&gt; &#39;c (requires member(+))
+</span><span style="color:#75715e"></span>
+<span style="color:#66d9ef">let</span> r <span style="color:#f92672">=</span> add 1<span style="color:#f92672">.</span> 2<span style="color:#f92672">.</span> <span style="color:#75715e">// r : float
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> r2 <span style="color:#f92672">=</span> add 1 2  <span style="color:#75715e">// r2 : int
+</span></code></pre></div><p>We now have all of the ingredients we need to update our new operator <code>/!</code> so that it will work with generic types.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">open</span> Microsoft.FSharp.Core.LanguagePrimitives
+
+<span style="color:#66d9ef">let</span> inline <span style="color:#f92672">(/!)</span> a b <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">match</span> b <span style="color:#f92672">&lt;&gt;</span> GenericZero <span style="color:#66d9ef">with</span>
+    <span style="color:#f92672">|</span> <span style="color:#66d9ef">true</span> <span style="color:#f92672">-&gt;</span> a <span style="color:#f92672">/</span> b <span style="color:#f92672">|&gt;</span> Some
+    <span style="color:#f92672">|</span> <span style="color:#66d9ef">false</span> <span style="color:#f92672">-&gt;</span> None
+<span style="color:#75715e">// val (/!) : a:&#39;a -&gt; b:&#39;b -&gt; &#39;c option (requires member (/) and member get_Zero and equality)
+</span></code></pre></div><p>This is exactly what we were looking for in the beginning. Now when we use our new operator we are forced to deal with a situation where the divisor is possibly <code>0</code>. This solution for dealing with a possible <code>0</code> divisor may not be for everyone. Perhaps having to deal with the <code>None</code> scenario is too cumbersome for you. I find that I like having this additional safety in place because it forces me to write more robust code.</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

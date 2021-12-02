@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Homepage on Matthew Crews</title>
+    <link>/</link>
+    <description>Recent content in Homepage on Matthew Crews</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <lastBuildDate>Sun, 21 Nov 2021 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Custom Solution</title>
+      <link>/services/custom-solution/</link>
+      <pubDate>Sun, 18 Nov 2018 12:33:46 +1000</pubDate>
+      
+      <guid>/services/custom-solution/</guid>
+      <description>You are sick and tired manually calculating purchase order quantities and are ready get your time back while maximizing your profit
+To start, you and I will spend 1-hour discussing where your inventory management is at and see if we are a good fit for one another. If we agree to move forward, I will then meet with your stakeholders and any technical staff that I would need support from. This meeting takes up to 2 hours for me to get input from your team.</description>
+    </item>
+    
+    <item>
+      <title>Project Advisor</title>
+      <link>/services/project-advisor/</link>
+      <pubDate>Wed, 28 Nov 2018 15:14:39 +1000</pubDate>
+      
+      <guid>/services/project-advisor/</guid>
+      <description>You have a team ready to build and deploy an inventory optimization tool, but you need someone to ensure that the tool doesn&amp;rsquo;t bury the business by making incorrect recommendations.
+Inventory optimization tools regularly increase profits by over 10% while reduce carrying costs over 20%. For them to be successful though, you need to ensure that the data is good, and the assumptions are correct. When you bring me on to advise your team, I can ensure that your tool will give you the returns you are looking for and will not cause you to make poor buying decisions that drag down your profits.</description>
+    </item>
+    
+    <item>
+      <title>Blueprint</title>
+      <link>/services/blueprint/</link>
+      <pubDate>Wed, 28 Nov 2018 15:15:26 +1000</pubDate>
+      
+      <guid>/services/blueprint/</guid>
+      <description>You want to reduce your carrying costs by 25%, you have developers ready to build the tool, you just don&amp;rsquo;t know what to build.
+How It Works We start with a one-hour call to dig into your pain points around managing your inventory. If we decide that a Blueprint is the right thing for you, we will spend two weeks putting together a detailed architecture and process flow for an inventory optimization tool for your business.</description>
+    </item>
+    
+    <item>
+      <title>Strategy Call</title>
+      <link>/services/strategy-call/</link>
+      <pubDate>Wed, 28 Nov 2018 15:15:34 +1000</pubDate>
+      
+      <guid>/services/strategy-call/</guid>
+      <description>You&amp;rsquo;re struggling to get a handle on your inventory, and you need someone with experience to help you figure out where to even start.
+You book a 1-hour call with me, and we will figure out what your biggest struggles are and what your critical next step is. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck. I guarantee you will have actionable information to start transforming how you manage inventory or your money back.</description>
+    </item>
+    
+    <item>
+      <title>Team Desk Assignments</title>
+      <link>/blog/2021/11/team-desk-assignments/</link>
+      <pubDate>Sun, 21 Nov 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/11/team-desk-assignments/</guid>
+      <description>I was recently asked a question on the Flips GitHub page which I felt warranted a full blog post. It is an interesting problem that I have seen several variations on so I wanted to provide a more detailed model. The largest example of this problem I have seen is at Rocket Technology (formerly Quicken Loans) where they must assign desks to thousands of people across several buildings in downtown Detroit, MI.</description>
+    </item>
+    
+    <item>
+      <title>BenchmarkDotNet Gotcha with F#</title>
+      <link>/blog/2021/11/benchmarkdotnet-gotcha/</link>
+      <pubDate>Tue, 16 Nov 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/11/benchmarkdotnet-gotcha/</guid>
+      <description>I have been working on creating some types which allow me to wrap an array and index it with an int which has a Unit of Measure (UoM). Right now, if you want to index into an array with an int that has a UoM, you need to remove the units.
+[&amp;lt;Measure&amp;gt;] type ItemIdx let a = [|1.0 .. 10.0|] let idx = 1&amp;lt;ItemIdx&amp;gt; let x = a[idx] // This will raise an error saying that the type `int&amp;lt;ItemIdx&amp;gt;` is not correct  let y = a[int idx] // This will work because the units are removed when calling `int` You may think, &amp;ldquo;Matthew, that call to int is going to cause a problem, isn&amp;rsquo;t it?</description>
+    </item>
+    
+    <item>
+      <title>Accelerating Dictionary Lookup with Records as Keys</title>
+      <link>/blog/2021/11/records-as-keys-for-dictionaries/</link>
+      <pubDate>Sat, 13 Nov 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/11/records-as-keys-for-dictionaries/</guid>
+      <description>NOTE: All the code can be found here. Feel free to follow along!
+ The Problem I ran into an interesting problem a week ago and I think others may find some value in it. I am currently working on writing a small Discrete-Event Simulation engine for a manufacturing facility. This problem required a bespoke solution since the current products that are available on the market are built with Modelers in mind and not deployment.</description>
+    </item>
+    
+    <item>
+      <title>SliceMap Rework - Part 2</title>
+      <link>/blog/2021/08/slicemap-rework-part-2/</link>
+      <pubDate>Mon, 23 Aug 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/08/slicemap-rework-part-2/</guid>
+      <description>Welcome to part 2 of this series. In the previous post we setup our problem which is to speed up the SliceMap family of types for sparse data. We created benchmarks and measured the performance of the current implementation. I gave a brief overview of a new approach I had come up with and showed how it failed miserably.
+We were in a depressing place at the end of the last post but hope burns eternal!</description>
+    </item>
+    
+    <item>
+      <title>SliceMap Rework - Part 1</title>
+      <link>/blog/2021/08/slicemap-rework-part-1/</link>
+      <pubDate>Mon, 16 Aug 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/08/slicemap-rework-part-1/</guid>
+      <description>I have been on a journey to overhaul the underpinnings of the Flips library and it has been a humbling experience. Part of what I believe provides a unique value add compared to other libraries for Mathematical Planning is the SliceMap types. They provide a convenient method for subsetting your data that is intuitive for someone who writes optimization models. The SliceMap types are heavily influenced by the TupleDict type in the Gurobi library for Python.</description>
+    </item>
+    
+    <item>
+      <title>Resources for Linear Programming</title>
+      <link>/blog/2021/05/2021-05-04/</link>
+      <pubDate>Tue, 04 May 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/05/2021-05-04/</guid>
+      <description>I was recently asked about what resources I would recommend for Linear Programming. My response was, &amp;ldquo;Are you interested in problem formulation? Solution techniques? Algorithmic implementation?&amp;rdquo; The answer was, &amp;ldquo;Yes!&amp;rdquo; Here are the resources that I would recommend for those wanting to dive deep into Linear Programming (LP). Note, I will be focusing strictly on LP instead of Mixed-Integer Programming (MIP). MIP is a logical evolution of LP but brings in a whole host of other challenges.</description>
+    </item>
+    
+    <item>
+      <title>Scheduling Jobs for Maximum Efficiency - Part 3</title>
+      <link>/blog/2021/02/2021-02-04/</link>
+      <pubDate>Wed, 03 Feb 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/02/2021-02-04/</guid>
+      <description>I&amp;rsquo;ve continued to consult with my friend on the job assignments problem that I have been discussing in post 1 and post 2. At first, he was excited about what we had come up with but I knew there were likely more complexities that had not been uncovered yet. He went back to the client and came away with some new information. He told me, &amp;ldquo;Mathew, it turns out that machines have limited capacity.</description>
+    </item>
+    
+    <item>
+      <title>Scheduling Jobs for Maximum Efficiency - Part 2</title>
+      <link>/blog/2021/01/2021-01-28/</link>
+      <pubDate>Thu, 28 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/01/2021-01-28/</guid>
+      <description>In my previous post I introduced a scheduling problem where I needed to assign jobs to machines to achieve the maximum efficiency. We say efficiency is calculated as the number of times a machine must change the job-type it is working on. I want to continue exploring this problem by adding some nuance.
+ Note: Full code for this post can be found here
+ Not Too Many Bad Jobs As my conversation continued with my friend regarding this problem a new constraint came up.</description>
+    </item>
+    
+    <item>
+      <title>Scheduling Jobs for Maximum Efficiency - Part 1</title>
+      <link>/blog/2021/01/2021-01-25/</link>
+      <pubDate>Mon, 25 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/01/2021-01-25/</guid>
+      <description>I was recently having a discussion with a friend when they brought up a new problem they were looking into. He asked me if it was a good candidate for Mathematical Planning and I said, &amp;ldquo;Absolutely!&amp;rdquo; I am abstracting away the specific domain, but this is the essence of the problem.
+There are a set of machines which can process jobs. The jobs are of different types and sizes.</description>
+    </item>
+    
+    <item>
+      <title>Minimizing Waste for the Cutting Stock Problem</title>
+      <link>/blog/2021/01/2021-01-11/</link>
+      <pubDate>Mon, 11 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/01/2021-01-11/</guid>
+      <description>I was recently posed the question, &amp;ldquo;Can you use Mathematical Planning to optimize the Cutting Stock problem?&amp;rdquo; For those who are not familiar with this problem, you can find the Wikipedia article here. In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm.</description>
+    </item>
+    
+    <item>
+      <title>Learning Resources for F#</title>
+      <link>/blog/2021/01/2021-01-09/</link>
+      <pubDate>Sat, 09 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/01/2021-01-09/</guid>
+      <description>One of the questions that I get quite a bit is, &amp;ldquo;How did you learn F#?&amp;rdquo; I keep getting this question, so I decided to write a short post where I laid out what I have found to be the most useful resources to develop my F# skills.
+Practice This first piece of advice that I give to people is to choose an algorithm they already know and write it in F#.</description>
+    </item>
+    
+    <item>
+      <title>Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3</title>
+      <link>/blog/2021/01/2020-01-01/</link>
+      <pubDate>Fri, 01 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/01/2020-01-01/</guid>
+      <description>In the previous two posts in this series we introduced the Food Cart Problem. We want a plan for stocking our Food Cart which will maximizes our revenue. In the first post we discussed the foods that we can stock and the restrictions we are operating under. We introduced a simple heuristic for stocking the food cart and created a simulation in order to validate what our expected revenue is.</description>
+    </item>
+    
+    <item>
+      <title>Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 2</title>
+      <link>/blog/2020/12/2020-12-21/</link>
+      <pubDate>Mon, 21 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-21/</guid>
+      <description>In a previous post we discussed the problem of stocking our food cart to maximize our profitability. We created a simple heuristic and then performed simulations to evaluate the expected profitability. We discussed that knowing the expected profitability was not enough, we calculated Confidence Intervals to understand the where the true expected profitability lies. This week we want to find a better plan for packing the food cart. We will use Mathematical Planning to find an answer which maximize the expected profitability which outperforms the heuristic used in the first post.</description>
+    </item>
+    
+    <item>
+      <title>Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 1</title>
+      <link>/blog/2020/12/2020-12-14/</link>
+      <pubDate>Mon, 14 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-14/</guid>
+      <description>One of the questions that I love to answer is, &amp;ldquo;What is the difference between Mathematical Planning and Machine Learning?&amp;rdquo; This is an excellent question. The fields are close to one another and solutions often involve both techniques. The way I differentiate is based on what question they are meant to answer. Mathematical Planning is primarily concerned with answering the question, &amp;ldquo;What should we do?&amp;rdquo; Machine Learning answers the question, &amp;ldquo;What is most likely?</description>
+    </item>
+    
+    <item>
+      <title>Why I Love F# for Mathematical Planning</title>
+      <link>/blog/2020/12/2020-12-09/</link>
+      <pubDate>Wed, 09 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-09/</guid>
+      <description>A designer knows he has achieved perfection not when there is nothing left to add, but when there is nothing left to take away
+ Antoine de Saint-Exupery   On my journey of growing as a developer, I am consistently inspired by language features which seem incredibly simple but yield remarkable benefit. As I try to master F#, I am frequently surprised by how powerful the language is for expressing ideas while having so few features.</description>
+    </item>
+    
+    <item>
+      <title>Reindeer Secret Santa Assignment Problem</title>
+      <link>/blog/2020/12/2020-12-07/</link>
+      <pubDate>Mon, 07 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-07/</guid>
+      <description>Note: To see the completed code, please go here. All code for Model Mondays is kept in this repo and is MIT licensed. Feel free to use it!
+ I was having a chat with a friend about what types of problems are good candidates for Mathematical Planning. He posed the question, &amp;ldquo;Would a Secret Santa exchange be a good candidate?&amp;rdquo; At first, I thought, &amp;ldquo;no.&amp;rdquo; As we kept chatting though, I changed my mind.</description>
+    </item>
+    
+    <item>
+      <title>The Under Appreciated Power of Object Expressions</title>
+      <link>/blog/2020/12/2020-12-04/</link>
+      <pubDate>Fri, 04 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-04/</guid>
+      <description>There is a feature of F# this is incredibly powerful and rarely talked about: The Object Expression. It is such a simple idea that it is almost boring but the implications of it are profound. We often define an interface to abstract the implementation of an object so that we can code against different implementations. By programming against an IEnumerable or IDictionary, we can write algorithms which work against a host of different backing data structures.</description>
+    </item>
+    
+    <item>
+      <title>The Mentor Matching Problem</title>
+      <link>/blog/2020/12/2020-12-03/</link>
+      <pubDate>Thu, 03 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-03/</guid>
+      <description>There are few things I love more than a fresh mathematical planning challenge so I was delighted when Kevin Avignon reached out to me and asked me to look at a question he had posted on the Software Engineer Stack Exchange site. He wanted to know whether the question was a candidate for Mathematical Planning. The question is a really interesting problem of pairing Mentors and Mentees. Mentors have a set of skills they can teach.</description>
+    </item>
+    
+    <item>
+      <title>Modeling Non-Linear Functions with Flips</title>
+      <link>/blog/2020/12/2020-12-01/</link>
+      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/12/2020-12-01/</guid>
+      <description>Recently I was asked if it would be possible to add the log function to the Flips library. Flips is a library for modeling and solving Linear and Mixed-Integer Programming problems. Both classes of problems are constrained to only having linear (i.e. straight) lines. You may ask, &amp;ldquo;What do you mean by straight?&amp;rdquo; The following are examples of linear functions.
+$$ \displaylines{ \text{Linear Functions}\\ y=1.0x+2.0 \\ y=2.0x_{1}+3.0x_{2} \\ y=1.2x_{1}+1.7x_{2}+x_{3} } $$</description>
+    </item>
+    
+    <item>
+      <title>What I Look for in a Machine Learning Engineer</title>
+      <link>/blog/2020/10/2020-10-08/</link>
+      <pubDate>Wed, 07 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2020/10/2020-10-08/</guid>
+      <description>I was recently asked by someone, &amp;ldquo;What do I need to do to get into Machine Learning and Finance industry?&amp;rdquo; I told them that I would think about it and get back to them. I have been in many interviews for Machine Learning Engineers and I do have a set of questions that I frequently use to get a feeling for where someone is in their career and where they are hoping to go.</description>
+    </item>
+    
+    <item>
+      <title>The Anatomy of an Optimization Model</title>
+      <link>/blog/2019/2019-10-27-the-anatomy-of-an-optimization-model/</link>
+      <pubDate>Mon, 11 Nov 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2019/2019-10-27-the-anatomy-of-an-optimization-model/</guid>
+      <description>I am on a bit of a quest to bring Mathematical Optimization to the masses, or at least to Software Developers. I often come across problems where people are wanting to find the best plan for their problem but they lack to tools to express the problem. Typically the way this is &amp;ldquo;solved&amp;rdquo; is by some domain expert coming up with a laborious heuristic in Excel which involves outrageous amount of copying and pasting.</description>
+    </item>
+    
+    <item>
+      <title>Discrete Optimization with Cutting Planes</title>
+      <link>/blog/2018/2018-05-24-discrete-optimization-with-cutting-planes/</link>
+      <pubDate>Fri, 25 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-05-24-discrete-optimization-with-cutting-planes/</guid>
+      <description>Previously I described how we can perform Discrete Optimization using the Branch and Bound technique. Today I want to describe another foundational technique for Discrete Optimization, Cutting Planes. Cutting Planes is like the Branch and Bound technique in that it uses a series of LP Relaxations to search for solutions. Where it is different from Branch and Bound is in how it refines the LP Formulations. Branch and Bound would subdivide the solution space by branching on a decision variable and creating two new subproblems.</description>
+    </item>
+    
+    <item>
+      <title>Discrete Optimization with Branch and Bound</title>
+      <link>/blog/2018/2018-05-22-discrete-optimization-with-branch-and-bound/</link>
+      <pubDate>Tue, 22 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-05-22-discrete-optimization-with-branch-and-bound/</guid>
+      <description>If you have spent any time with me you will know that I am passionate about Optimization. Now, you may pass this off as a bit of geekiness on my part but the reason I care about Optimization is that it has profound implications for how we care for people. When I get a moment to describe Optimization to someone the way I start off is by saying, &amp;ldquo;Optimization is the mathematics of caring for people.</description>
+    </item>
+    
+    <item>
+      <title>Creating Summable Domain Types</title>
+      <link>/blog/2018/2018-05-13-creating-summable-domain-types/</link>
+      <pubDate>Sun, 13 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-05-13-creating-summable-domain-types/</guid>
+      <description>One of the reasons that I love F# is that is makes it incredibly easy to model domains. By creating a Domain Model which represents the business domain it becomes relatively easy to create workflows and algorithms which streamline business processes. In this post I show how to create types for a domain which are summable, a feature I use frequently in my work.
+The Value of Restricting Values When I have to create a new Domain Model one of the first things that I do is define a single case Discriminated Union of decimal for the basic building blocks that I am going to work with (Costs, Items, Sales Rates, Days of Inventory, etc.</description>
+    </item>
+    
+    <item>
+      <title>F# for Optimization Modeling</title>
+      <link>/blog/2018/2018-05-04-fsharp-for-optimization-modeling/</link>
+      <pubDate>Fri, 04 May 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-05-04-fsharp-for-optimization-modeling/</guid>
+      <description>I recently attended a training event hosted by Gurobi. For those who don&amp;rsquo;t know, Gurobi produces one of the best mathematical solvers in the industry. It was a great event and we were able to spend ample time with engineers and experts in the field.
+Using a mathematical solver requires the ability to formulate models and at this time one of the easiest languages for doing that is Python. Python is a great language for many use cases.</description>
+    </item>
+    
+    <item>
+      <title>Domains Run Amok</title>
+      <link>/blog/2018/2018-01-27-domains-run-amok/</link>
+      <pubDate>Sat, 27 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-01-27-domains-run-amok/</guid>
+      <description>I am a huge fan of Domain Driven Design and I have been trying to apply it more and more. I ran into a problem last week that kept beating me over the head though. I kept using a bottom up approach and kept coming up with terrible solutions. Finally, I took a more outside to in approach which cleaned up the solution. I credit Mark Seemann for the idea to work from the outside in.</description>
+    </item>
+    
+    <item>
+      <title>The Divide Operator is a Lie</title>
+      <link>/blog/2018/2018-01-14-the-divide-operator-is-a-lie/</link>
+      <pubDate>Sun, 14 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-01-14-the-divide-operator-is-a-lie/</guid>
+      <description>One of the things that most attracted me to F# is the ability to accurately model your domain. What first turned me on to this was a talk by Scott Wlaschin on Functional programming design patterns. Scott has a more focused talk on Domain Modeling Made Functional that he did a few years later and a book with the same title. This whole concept was blowing my mind. The idea of modeling your domain such that illegal states are unrepresentable sounds immensely satisfying to me.</description>
+    </item>
+    
+    <item>
+      <title>My Most Expensive error</title>
+      <link>/blog/2018/2018-01-06-my-most-expensive-error/</link>
+      <pubDate>Sat, 06 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-01-06-my-most-expensive-error/</guid>
+      <description>The title for this may be a little over the top but it is not far from the truth. I am wanting to show how Units of Measure in F# can protect against some of the most insidious types of errors, mismatched units.
+One of the most difficult parts of putting together algorithms has been making sure that the Units of Measure for numbers match. For example, you should not be able to add lbs and cm, it doesn&amp;rsquo;t make sense.</description>
+    </item>
+    
+    <item>
+      <title>Using F# to Parse HTML</title>
+      <link>/blog/2018/2018-01-05-using-fsharp-to-parse-html/</link>
+      <pubDate>Fri, 05 Jan 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2018/2018-01-05-using-fsharp-to-parse-html/</guid>
+      <description>At work I have been tasked with extracting the product description information for several of our products to be used as an import for an external system. Normally I would just write a query for the database to get all of this information but in this case I do not have access to the database directly. Even if I did have it, I am not familiar with the schema so I would rather not have to spend the effort digging into if I do not have to.</description>
+    </item>
+    
+    <item>
+      <title>Eradicate Manual Planning</title>
+      <link>/about/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/about/</guid>
+      <description>E-commerce retailers live and die based on how well they plan their inventory and cash flow. I am obsessed with maximizing their profit through optimal planning and scheduling. I have worked at the largest of enterprises (Intel, Quicken Loans) and at e-commerce startups. Every place I worked I was able to dramatically increase revenue and decrease costs by automating and optimizing decision making.
+My obsessions with efficiency and optimization began with board games.</description>
+    </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Scheduling Jobs for Maximum Efficiency - Part 2 - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Scheduling Jobs for Maximum Efficiency - Part 2"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2021/01/2021-01-28/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Scheduling Jobs for Maximum Efficiency - Part 2</h1>
+      <div class="content"><p>In my previous <a href="/blog/2021/01/2021-01-25/">post</a> I introduced a scheduling problem where I needed to assign jobs to machines to achieve the maximum efficiency. We say efficiency is calculated as the number of times a machine must change the job-type it is working on. I want to continue exploring this problem by adding some nuance.</p>
+<blockquote>
+<p><strong>Note</strong>: Full code for this post can be found <a href="https://github.com/matthewcrews/modelmondays/blob/main/2021-01-22-MachineAllocation/2021-01-28-MachineAllocationPercentConstraints.fsx">here</a></p>
+</blockquote>
+<h2 id="not-too-many-bad-jobs">Not Too Many Bad Jobs</h2>
+<p>As my conversation continued with my friend regarding this problem a new constraint came up. It turns out there is a fourth job-type, let&rsquo;s call it job-type D, that can cause significant wear on a machine if it is run for too long. He wanted to add a constraint to the problem which would limit that amount of job-type D assigned to any given machine. In his case, he wanted a machine to have no more than 50% of the total work assigned to it to be of job-type D. Fortunately this is a relatively simple update to our model.</p>
+<h2 id="refactoring-the-domain">Refactoring the Domain</h2>
+<p>The great thing about F# is that it is easy to refactor our domain. In our case the <code>Job</code> type and the <code>Machine</code> type don&rsquo;t need to change. What does need to be updated is the <code>JobType</code> type. We will add another case to the discriminated union to represent job-type D. I have also decided to do some refactoring and clean up how the code is organized. We are also going to move all the type definitions into their own Module.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">module</span> Types <span style="color:#f92672">=</span>
+
+    <span style="color:#75715e">// The Domain
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">[&lt;</span>RequireQualifiedAccess<span style="color:#f92672">&gt;]</span>
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">JobType</span> <span style="color:#f92672">=</span>
+        <span style="color:#f92672">|</span> A
+        <span style="color:#f92672">|</span> B
+        <span style="color:#f92672">|</span> C
+        <span style="color:#f92672">|</span> D <span style="color:#75715e">// This is the new case we have added
+</span><span style="color:#75715e"></span>
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Job</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+        Id <span style="color:#f92672">:</span> int
+        JobType <span style="color:#f92672">:</span> JobType
+        Size <span style="color:#f92672">:</span> <span style="color:#66d9ef">float</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">with</span>
+        <span style="color:#66d9ef">override</span> this.<span style="color:#a6e22e">ToString</span> () <span style="color:#f92672">=</span>
+            <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;Job_{this.Id}&#34;</span>
+
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Machine</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+        Id <span style="color:#f92672">:</span> int
+        JobTypes <span style="color:#f92672">:</span> Set<span style="color:#f92672">&lt;</span>JobType<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">}</span> <span style="color:#66d9ef">with</span>
+        <span style="color:#66d9ef">override</span> this.<span style="color:#a6e22e">ToString</span> () <span style="color:#f92672">=</span>
+            <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;Machine_{this.Id}&#34;</span>
+</code></pre></div><p>Next, we need to adjust our data generation. Again, we are going to do some code cleanup and move all the code for generating random jobs and machines into its own module. We are adjusting two thing from the <a href="/blog/2021/01/2021-01-25/">previous post</a>. The <code>jobTypes</code> Array had the new <code>JobType</code> case. We are also going to adjust the <code>jobTypeSets</code>. This is the possible job qualifications for a machine. In our new problem, job-type A is the most difficult and therefore fewer machines are qualified. All machines are capable of job-type D, even though it is not preferred.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">module</span> DataGeneration <span style="color:#f92672">=</span>
+
+    <span style="color:#66d9ef">open</span> System
+    <span style="color:#66d9ef">open</span> Types
+
+    <span style="color:#75715e">// Set of JobTypes for iterating over and sampling from
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> jobTypes <span style="color:#f92672">=</span> 
+        <span style="color:#f92672">[|</span>
+            JobType.A
+            JobType.B
+            JobType.C
+            JobType.D <span style="color:#75715e">// The new DU case we added
+</span><span style="color:#75715e"></span>        <span style="color:#f92672">|]</span>
+
+    <span style="color:#75715e">// Some theoretical JobTypeSets to be used in generating
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// random Machines
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> jobTypeSets <span style="color:#f92672">=</span>
+        <span style="color:#f92672">[|</span>
+            Set jobTypes
+            Set jobTypes<span style="color:#f92672">[</span>1<span style="color:#f92672">..]</span>
+            Set jobTypes<span style="color:#f92672">[</span>2<span style="color:#f92672">..]</span>
+        <span style="color:#f92672">|]</span>
+
+    <span style="color:#66d9ef">let</span> minJobSize <span style="color:#f92672">=</span> 1
+    <span style="color:#66d9ef">let</span> maxJobSize <span style="color:#f92672">=</span> 3
+
+    <span style="color:#66d9ef">let</span> randomJobSize <span style="color:#f92672">(</span>rng<span style="color:#f92672">:</span> Random<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        rng<span style="color:#f92672">.</span>Next<span style="color:#f92672">(</span>minJobSize<span style="color:#f92672">,</span> maxJobSize<span style="color:#f92672">)</span>
+        <span style="color:#f92672">|&gt;</span> <span style="color:#66d9ef">float</span>
+
+    <span style="color:#66d9ef">let</span> randomJobType <span style="color:#f92672">(</span>rng<span style="color:#f92672">:</span> Random<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        jobTypes<span style="color:#f92672">.[</span>rng<span style="color:#f92672">.</span>Next<span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> jobTypes<span style="color:#f92672">.</span>Length<span style="color:#f92672">)]</span>
+
+    <span style="color:#66d9ef">let</span> randomJobTypeSet <span style="color:#f92672">(</span>rng<span style="color:#f92672">:</span> Random<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        jobTypeSets<span style="color:#f92672">.[</span>rng<span style="color:#f92672">.</span>Next<span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> jobTypeSets<span style="color:#f92672">.</span>Length<span style="color:#f92672">)]</span>
+
+    <span style="color:#66d9ef">let</span> randomJob <span style="color:#f92672">(</span>rng<span style="color:#f92672">:</span> Random<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>id<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#f92672">{</span> 
+            Id <span style="color:#f92672">=</span> id
+            JobType <span style="color:#f92672">=</span> randomJobType rng
+            Size <span style="color:#f92672">=</span> randomJobSize rng 
+        <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">let</span> randomMachine <span style="color:#f92672">(</span>rng<span style="color:#f92672">:</span> Random<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>id<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#f92672">{</span>
+            Id <span style="color:#f92672">=</span> id
+            JobTypes <span style="color:#f92672">=</span> randomJobTypeSet rng
+        <span style="color:#f92672">}</span>
+</code></pre></div><h2 id="updating-our-model">Updating Our Model</h2>
+<p>I won&rsquo;t go over all the model code that we created before. I am just going to show the new constraints that we need to add to the original formulation. One of the reasons I love Mathematical Planning is that it makes it relatively easy to tweak and update models over time. If the code is well organized, it&rsquo;s trivial to turn features on and off. To add our limits on the amount of job-type D that a machine has, let&rsquo;s define a value which is the maximum percent of D allowed.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Limit on the amount of JobType D on any given machine
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> maxJobTypeDPercentage <span style="color:#f92672">=</span> 0<span style="color:#f92672">.</span>30
+</code></pre></div><p>Now we want to create a constraint for each of our machines which says the the percent of the total work assigned to the machine is no more than this percentage. Fortunately, this is relatively easy with Flips.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> maxJobTypeDConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;MaxTypeD&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> machine <span style="color:#66d9ef">in</span> machines <span style="color:#f92672">-&gt;</span>
+            <span style="color:#66d9ef">let</span> totalWork <span style="color:#f92672">=</span> sum <span style="color:#f92672">(</span>assignments<span style="color:#f92672">[</span>machine<span style="color:#f92672">,</span> All<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">.*</span> jobSizes<span style="color:#f92672">)</span>
+            <span style="color:#66d9ef">let</span> jobTypeDWork <span style="color:#f92672">=</span> sum <span style="color:#f92672">(</span>assignments<span style="color:#f92672">[</span>machine<span style="color:#f92672">,</span> JobType.D<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">.*</span> jobSizes<span style="color:#f92672">)</span>
+            jobTypeDWork <span style="color:#f92672">&lt;==</span> maxJobTypeDPercentage <span style="color:#f92672">*</span> totalWork
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>Okay, let&rsquo;s unpack this. We are using the <code>ConstraintBuilder</code> Computation Expression to create a constraint for each <code>machine</code> in <code>machines</code>. We then calculate the total amount of work assigned to a <code>machine</code> by using the <code>assignments</code> SliceMap and selecting all the assignments for our <code>machine</code> and performing elementwise multiplication, <code>.*</code>, by the <code>jobSizes</code>. We then sum that up to get the total amount of work assigned to the <code>machine</code>. We store that expression in the <code>totalWork</code> value.</p>
+<p>To get the total amount of job-type D work assigned to the machine, we need to sub-select the <code>assignments</code> SliceMap for the <code>machine</code> and <code>JobType.D</code> then elementwise multiply by the <code>jobSizes</code>. We sum these values up to get the <code>jobTypeDWork</code> expression. <code>totalWork</code> is an expression which represents the total amount of work assigned to the <code>machine</code>. <code>jobTypeDWork</code> represent the total amount of job-type D assigned to the <code>machine</code>.</p>
+<p>We can now create our constraint expression. We state that <code>jobTypeDWork</code> must be less or equal to the <code>totalWork</code> expression multiplied by the max allowed percentage of job-type D, <code>maxJobTypeDPercentage</code>. This constraint will limit just how much work of job-type D that is allowed on the machine. That&rsquo;s all we must do to accommodate this new restriction from my friend.</p>
+<h2 id="unpacking-the-results">Unpacking the Results</h2>
+<p>The only other change my friend asked for was to increase the number of jobs up to 100 because it would be more represented of the size of the real-world problem. With that adjustment, we can now compose our new model with these new constraints included.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.create minSetupsObjective
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints minWorkConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraint maxWorkDifferenceConstraint
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints setupConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints jobsAssignmentConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints maxJobTypeDConstraints <span style="color:#75715e">// Our new constraints
+</span></code></pre></div><p>We setup our solver settings and attempt to solve.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Give the solver plenty of time to find a solution
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> settings <span style="color:#f92672">=</span> <span style="color:#f92672">{</span> Settings.basic <span style="color:#66d9ef">with</span> MaxDuration <span style="color:#f92672">=</span> 60_000L <span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve settings model
+</code></pre></div><p>We now inspect the result. We add a couple of functions for getting the job assignments for each machine and summarizing the total loading of the machines.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// This will return a list&lt;Machine * list&lt;Job&gt;&gt;
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> getMachineAssignments <span style="color:#f92672">(</span>solution<span style="color:#f92672">:</span> Solution<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>assignments<span style="color:#f92672">:</span> SMap3<span style="color:#f92672">&lt;</span>Machine<span style="color:#f92672">,</span> JobType<span style="color:#f92672">,</span> Job<span style="color:#f92672">,</span> Decision<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+    Solution.getValues solution assignments
+    <span style="color:#f92672">|&gt;</span> Map.filter <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">_</span> v <span style="color:#f92672">-&gt;</span> v <span style="color:#f92672">=</span> 1<span style="color:#f92672">.</span>0<span style="color:#f92672">)</span>
+    <span style="color:#f92672">|&gt;</span> Map.toList
+    <span style="color:#f92672">|&gt;</span> List.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">((</span>machine<span style="color:#f92672">,</span> <span style="color:#f92672">_,</span> job<span style="color:#f92672">),</span> <span style="color:#f92672">_)</span> <span style="color:#f92672">-&gt;</span> machine<span style="color:#f92672">,</span> job<span style="color:#f92672">)</span>
+    <span style="color:#f92672">|&gt;</span> List.sortBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>machine<span style="color:#f92672">,</span> job<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> machine<span style="color:#f92672">.</span>Id<span style="color:#f92672">,</span> job<span style="color:#f92672">.</span>Id<span style="color:#f92672">)</span>
+    <span style="color:#f92672">|&gt;</span> List.groupBy fst
+    <span style="color:#f92672">|&gt;</span> List.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>machine<span style="color:#f92672">,</span> jobs<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> machine<span style="color:#f92672">,</span> jobs <span style="color:#f92672">|&gt;</span> List.map snd<span style="color:#f92672">)</span>
+
+<span style="color:#75715e">// This create an anonymous record which holds the Machine,
+</span><span style="color:#75715e">// the total loading and the job-type D loading
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> getMachineLoading jobAssignments <span style="color:#f92672">=</span>
+    jobAssignments
+    <span style="color:#f92672">|&gt;</span> List.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>machine<span style="color:#f92672">,</span> jobs<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> 
+        <span style="color:#f92672">{|</span> Machine <span style="color:#f92672">=</span> machine
+           TotalWork <span style="color:#f92672">=</span> 
+                jobs 
+                <span style="color:#f92672">|&gt;</span> List.sumBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> j <span style="color:#f92672">-&gt;</span> j<span style="color:#f92672">.</span>Size<span style="color:#f92672">)</span>
+           JobTypeDWork <span style="color:#f92672">=</span> 
+                jobs 
+                <span style="color:#f92672">|&gt;</span> List.filter <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> j <span style="color:#f92672">-&gt;</span> j<span style="color:#f92672">.</span>JobType <span style="color:#f92672">=</span> JobType.D<span style="color:#f92672">)</span> 
+                <span style="color:#f92672">|&gt;</span> List.sumBy <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> j <span style="color:#f92672">-&gt;</span> j<span style="color:#f92672">.</span>Size<span style="color:#f92672">)</span>
+        <span style="color:#f92672">|})</span>
+</code></pre></div><p>We then use these to analyze the result and print out what we found.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> result <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Optimal solution <span style="color:#f92672">-&gt;</span>
+
+    <span style="color:#75715e">// Get which jobs are assigned to each machine
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> machineAssignments <span style="color:#f92672">=</span> getMachineAssignments solution assignments
+
+    <span style="color:#75715e">// Calculate the total work for each machine and the amount of job-type D
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> machineLoads <span style="color:#f92672">=</span> getMachineLoading machineAssignments
+
+    printfn <span style="color:#e6db74">&#34;&#34;</span>
+    printfn <span style="color:#e6db74">&#34;Machine Loading:&#34;</span>
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>m<span style="color:#f92672">)</span> <span style="color:#66d9ef">in</span> machineLoads <span style="color:#66d9ef">do</span>
+        <span style="color:#75715e">// Print out the loading for each machine and the percent of job-type D work
+</span><span style="color:#75715e"></span>        printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;Machine: {m.Machine.Id} | Total Work: {m.TotalWork} | Type D Work %.2f{m.JobTypeDWork / m.TotalWork} %%&#34;</span>
+
+    <span style="color:#75715e">// Find the min and max loads and calculate the difference
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> maxDifference <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> loads <span style="color:#f92672">=</span> machineLoads <span style="color:#f92672">|&gt;</span> List.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> m <span style="color:#f92672">-&gt;</span> m<span style="color:#f92672">.</span>TotalWork<span style="color:#f92672">)</span>
+        <span style="color:#f92672">(</span>List.max loads<span style="color:#f92672">)</span> <span style="color:#f92672">-</span> <span style="color:#f92672">(</span>List.min loads<span style="color:#f92672">)</span>
+
+    printfn <span style="color:#e6db74">&#34;&#34;</span>
+    printfn <span style="color:#f92672">$</span><span style="color:#e6db74">&#34;Max Difference in Loading: { maxDifference }&#34;</span>
+
+<span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> printfn <span style="color:#e6db74">&#34;%A&#34;</span> result
+</code></pre></div><p>This will show the following results.</p>
+<pre tabindex="0"><code class="language-terminal" data-lang="terminal">Machine Loading:
+Machine: 1 | Total Work: 28 | Type D Work 0.00 %
+Machine: 2 | Total Work: 28 | Type D Work 0.50 %
+Machine: 3 | Total Work: 29 | Type D Work 0.00 %
+Machine: 4 | Total Work: 30 | Type D Work 0.50 %
+Machine: 5 | Total Work: 29 | Type D Work 0.00 %
+
+Max Difference in Loading: 2
+</code></pre><p>You can see that the machines are evenly loaded according to the maximum allowable difference and that no machine has more than 50% loading of job-type D. I would say that we have a success!</p>
+<h2 id="takeaways">Takeaways</h2>
+<p>We are only beginning to look at variations of this problem. Hopefully, what you have been able to observe was that it was simple to update our model code to add this new requirement my friend found. I think that is part of the beautify of Mathematical Planning. Updating and adjusting the logic can be simple. In our next post we are going to look at what happens when we add capacity for the machines and our problem becomes unsolvable!</p>
+<p>Please send me an email at <a href="mailto:matthewcrews@gmail.com">matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p>
+<script async data-uid="32100bd90e" src="https://dedicated-trader-4923.ck.page/32100bd90e/index.js"></script>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

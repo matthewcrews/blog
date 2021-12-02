@@ -14,6 +14,6 @@ Inventory optimization tools regularly increase profits by over 10% while reduce
 
 **1 spot remaining**
 
-{{< calendly calendar="matthewcrews/advising" >}}
+{{< calendly calendar="matthewcrews/advising" type="popupLink" >}}
 Book Initial Discussion
 {{< /calendly >}}

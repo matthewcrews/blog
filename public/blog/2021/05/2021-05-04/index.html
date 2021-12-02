@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Resources for Linear Programming - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Resources for Linear Programming"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2021/05/2021-05-04/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Resources for Linear Programming</h1>
+      <div class="content"><p>I was recently asked about what resources I would recommend for Linear Programming. My response was, &ldquo;Are you interested in problem formulation? Solution techniques? Algorithmic implementation?&rdquo; The answer was, &ldquo;Yes!&rdquo; Here are the resources that I would recommend for those wanting to dive deep into Linear Programming (LP). Note, I will be focusing strictly on LP instead of Mixed-Integer Programming (MIP). MIP is a logical evolution of LP but brings in a whole host of other challenges. LP is the foundation for any MIP solver, so it is worth starting with LP.</p>
+<h2 id="formulation">Formulation</h2>
+<p>I believe the foundation of Linear Programming begins with model formulation. Many textbooks start with Simplex Algorithm and explain how it works. I believe this is backwards. As a practitioner, I spend little time implementing the Simplex Algorithm and all of my time on writing models. Therefore, I believe understanding what kinds of problems can be modeled with LP should be where someone starts. I have found no better book for this than <a href="https://read.amazon.com/kp/embed?asin=B00B8Y6MIG&amp;preview=newtab&amp;linkCode=kpe&amp;ref_=cm_sw_r_kb_dp_C1XK0D6FPDQXY9AP603E">Model Building in Mathematical Programming</a> by H. Paul Williams. It does a fantastic job of talking through real world problems and explaining how to model them. I have referred to this book more than any other in my time actually &ldquo;doing&rdquo; Linear Programming.</p>
+<p>Another great intro book would be <a href="https://www.amazon.com/Illustrated-Guide-Linear-Programming/dp/0486262588/">An Illustrated Guide to Linear Programming</a> by Saul I. Gass. This is possibly the gentlest introduction to the subject outside of a workshop. It is short, sweet, and to point. The example problems are straightforward and easy to follow. As the title suggests, there are lots of illustrations. Saul is trying to make the tool of LP as approachable as possible.</p>
+<h2 id="solution-techniques">Solution Techniques</h2>
+<p>I think of the workflow around Mathematical Planning as being like writing queries for a database. You can use a database if you can write a query for it, typically in SQL. You don&rsquo;t have to understand the internals of how a database works to get tremendous value out of it. In the same way, you can derive significant value from Mathematical Planning without needing to understand how a Solver works.</p>
+<p>For the curious though, it&rsquo;s fun to understand how things work. Modern LP Solvers are miracles of engineering and the math behind them is still comprehensible for someone with a background in Linear Algebra. If you want to understand the variety of ways that LPs can be solved I would recommend <a href="https://www.amazon.com/Linear-Programming-Books-Mathematical-Sciences/dp/0716715872/">Linear Programming</a> by Vasek Chvatal and <a href="https://www.amazon.com/Introduction-Linear-Optimization-Scientific-Computation/dp/1886529191/">Introduction to Linear Optimization</a> by Dimitris Bertsimas and John N. Tsitsiklis. I have gotten more out of Chvatal&rsquo;s book, but it is rarer and more difficult to get ahold of. You may need to search around for a good price on it. It&rsquo;s worth it if you can though. There are nuances covered in it that I haven&rsquo;t found in any other textbook.</p>
+<p>I also offered up “Introduction to Linear Optimization” as an easier book to get ahold of. It covers much of the same material, but I found their pseudocode a little more difficult to follow. I eventually got it, but it was a struggle at times. This is in part due to multiple ways of stating the Linear Programming problem. Every book claims they are presenting the &ldquo;standard form&rdquo; of the problem. This is not true. There is no &ldquo;standard form&rdquo;. Standard Form only exists within a given book. I would often keep notes for each book on what they meant by &ldquo;standard form&rdquo;.</p>
+<h2 id="algorithmic-implementation">Algorithmic Implementation</h2>
+<p>We&rsquo;ve offered some resources on formulation and solution techniques, but what about actually building a solver? First, I would suggest against it unless your motivation is purely out of curiosity. Solvers are complex and there are many edge cases that you must deal with.</p>
+<p>Let&rsquo;s say you are committed to the task though and you really wanted to write one. First, make sure you grasp the resources in the previous sections. Chvatal&rsquo;s book has some refinements on the Simplex and Dual Simplex that will be critical if you want to write a high-performance solver.</p>
+<p>One book that I have really enjoyed that explicitly focuses on writing a LP Solver is <a href="https://www.amazon.com/Computational-Techniques-International-Operations-Management/dp/1402073321/">Computational Techniques of the Simplex Method</a> by Istvan Maros. Unfortunately, it is expensive. You could probably get away without this one, but I found it useful for finding the appropriate research papers. When I was at university it was available as a PDF from the library. When I left university, I bought a copy once I had some extra cash for books.</p>
+<p>If you plan on writing a solver, you will be doing an enormous amount of sparse linear algebra. Almost all real-world problems involve sparse, if not hyper-sparse, matrices. A fast solver must take advantage of the sparsity of the data. The best resource I have found is <a href="https://www.amazon.com/Direct-Methods-Systems-Fundamentals-Algorithms/dp/0898716136/">Direct Methods for Sparse Linear Systems</a> by Timothy Davis. You can even find Dr. Davis&rsquo;s lectures on <a href="https://www.youtube.com/playlist?list=PL5EvFKC69QIyRLFuxWRnH6hIw6e1-bBXB">YouTube</a>. The example code is all in C but if you have come this far, understanding C will not be much of an obstacle for you.</p>
+<p>Alright, I may have saved the best for last. Dr. Robert Bixby is one of the founders of <a href="https://www.gurobi.com/">Gurobi</a> and the first author of <a href="https://en.wikipedia.org/wiki/CPLEX">CPLEX</a>. He&rsquo;s a bit of a legend when it comes to writing LP solvers. I randomly came across a lecture he gave on how to implement a high-quality LP solver on YouTube. It&rsquo;s three parts and if you are serious about writing a solver, they are gold. You can find the videos here: <a href="https://www.youtube.com/watch?v=z1xvqwQR6xU">Part1</a>, <a href="https://www.youtube.com/watch?v=ZNf84y4M-Dw">Part2</a>, and <a href="https://www.youtube.com/watch?v=uccbVoamiUM">Part3</a>. These are extremely valuable in giving you an overview of what it takes to write a good solver and where the big pain points are. You will come to admire the amazing engineering that has gone into modern solvers.</p>
+<h2 id="wrap-up">Wrap Up</h2>
+<p>So that&rsquo;s what I would recommend. I know that was a lot of books but that&rsquo;s where the resources are for understanding LP. To go deeper you will need to start diving into research papers. This blog will also continue to feature modeling examples. I took a short break from blogging as I was changing jobs, but I am picking it back up again. You will see plenty of examples on how to formulate problems on this blog.</p>
+<p>Please send me an email at <a href="mailto:matthewcrews@gmail.com">matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p>
+<script async data-uid="32100bd90e" src="https://dedicated-trader-4923.ck.page/32100bd90e/index.js"></script>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

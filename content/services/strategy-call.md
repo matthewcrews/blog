@@ -12,6 +12,6 @@ You book a 1-hour call with me, and we will figure out what your biggest struggl
 
 **Price: $495 USD**
 
-{{< calendly calendar="matthewcrews/strategy" >}}
+{{< calendly calendar="matthewcrews/strategy" type="popupLink" >}}
 Book Meeting
 {{< /calendly >}}

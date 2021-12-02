@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>The Mentor Matching Problem - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="The Mentor Matching Problem"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2020/12/2020-12-03/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">The Mentor Matching Problem</h1>
+      <div class="content"><p>There are few things I love more than a fresh mathematical planning challenge so I was delighted when <a href="https://twitter.com/KAvignon">Kevin Avignon</a> reached out to me and asked me to look at a question he had posted on the Software Engineer Stack Exchange site. He wanted to know whether the question was a candidate for Mathematical Planning. <a href="https://softwareengineering.stackexchange.com/questions/418268/mentorship-schedule-matchmaking-algorithm">The question</a> is a really interesting problem of pairing Mentors and Mentees. Mentors have a set of skills they can teach. Mentees have a set of skills they are interested in learning. Both Mentors and Mentees only have certain times they are available. Mentors are also capable of mentoring multiple mentees.</p>
+<p>So, for this sounds like a straightforward assignment problem but then there is a twist. The questioner wanted pairings of rare skills to be a higher priority than pairings of more common skills. Ah, now we have a Mathematical Planning problem! We have the three key ingredients:</p>
+<ol>
+<li>A Quantifiable Objective: We want to maximize the value of pairings based on the rarity of the skill</li>
+<li>Constraints to follow: Mentors and Mentees must match on skills and availability</li>
+<li>Decision to make: Which Mentors and Mentees do we pair at what time?</li>
+</ol>
+<p>Any time I see those three ingredients, I know I have a Mathematical Planning problem on my hands. I respond to Kevin and say, &ldquo;Yes! You have a great candidate for Mathematical Planning! I&rsquo;ll put something together for you this evening.&rdquo; I begin mulling this problem as the day goes by. Once the family is all in bed, I turn on my PC and start modeling!</p>
+<h2 id="define-the-domain">Define the Domain</h2>
+<p>The first thing I do is put together a tiny domain of types to represent my problem. I encourage anyone who is writing these models in F# to take advantage of domain modeling because it will protect you again some nefarious bugs. To learn more, check out Scott Wlaschin&rsquo;s book <a href="https://fsharpforfunandprofit.com/books/">Domain Modeling Made Functional</a>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">namespace</span> MentorMatching
+
+<span style="color:#66d9ef">module</span> Types <span style="color:#f92672">=</span>
+    
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MentorId</span> <span style="color:#f92672">=</span> MentorId <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MenteeId</span> <span style="color:#f92672">=</span> MenteeId <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Skill</span> <span style="color:#f92672">=</span> Skill <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Period</span> <span style="color:#f92672">=</span> Period <span style="color:#66d9ef">of</span> int
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MenteeCapacity</span> <span style="color:#f92672">=</span> MenteeCapacity <span style="color:#66d9ef">of</span> int
+
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Mentor</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+        MentorId <span style="color:#f92672">:</span> MentorId
+        Skills <span style="color:#f92672">:</span> Skill Set
+        Periods <span style="color:#f92672">:</span> Period Set
+        MaxMentees <span style="color:#f92672">:</span> MenteeCapacity
+    <span style="color:#f92672">}</span>
+
+    <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Mentee</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+        MenteeId <span style="color:#f92672">:</span> MenteeId
+        Skills <span style="color:#f92672">:</span> Skill Set
+        Periods <span style="color:#f92672">:</span> Period Set
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>This simple set of types represent the problem space that I will build a mathematical planning model around. I now want to create a function which builds the model. I like to type out the functions signatures of what I am trying to implement beforehand as a way to get a high-level overview for that I am about to build. It&rsquo;s an idea I got from <a href="https://blog.ploeh.dk/">Mark Seemann</a> in his excellent PluralSight course <a href="https://app.pluralsight.com/library/courses/fsharp-type-driven-development/table-of-contents">Type-Driven Development with F#</a>. Here is the function signature that I come to.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> private buildModel <span style="color:#f92672">(</span>mentees<span style="color:#f92672">:</span>Mentee seq<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>mentors<span style="color:#f92672">:</span>Mentor seq<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>skillValue<span style="color:#f92672">:</span>SMap<span style="color:#f92672">&lt;</span>Skill<span style="color:#f92672">,</span><span style="color:#66d9ef">float</span><span style="color:#f92672">&gt;)</span> <span style="color:#f92672">(</span>pairingDecision<span style="color:#f92672">:</span>SMap4<span style="color:#f92672">&lt;</span>Skill<span style="color:#f92672">,</span>Period<span style="color:#f92672">,</span>Mentor<span style="color:#f92672">,</span>Mentee<span style="color:#f92672">,</span>Decision<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">:</span> Model <span style="color:#f92672">=</span>
+</code></pre></div><p>The <code>mentees</code> and <code>mentors</code> arguments are self-explanatory. They are the mentors and mentees we want to pair up. The <code>skillValue</code> argument is the value we have assigned to each <code>Skill</code> for this problem. I will discuss the heuristic we use to calculate the value for a skill in a following section. The <code>pairingDecision</code> argument is a 4-dimensional <a href="http://matthewcrews.com/SliceMap/#/">SliceMap</a>. The first dimension is the <code>Skill</code>, the second dimension is the <code>Period</code>, the third dimension is the <code>Mentor</code>, and the final dimension is the <code>Mentee</code>. The value in the SliceMap is a <code>Boolean</code> decision which indicates whether to use the pairing or not. We will be taking advantage of the slicing capabilities of SliceMaps to make the formulation more streamlined.</p>
+<p>The first thing we need to do is create a set of constraints which state that a given <code>Mentee</code> may only be assigned once. We use a <code>ConstraintBuilder</code> Computation Expression and iterate through the <code>mentees</code>, creating a constraint for each <code>mentee</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> menteeSingleAssignmentConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;MenteeSingleAssignment&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> mentee <span style="color:#66d9ef">in</span> mentees <span style="color:#f92672">-&gt;</span>
+            sum pairingDecision<span style="color:#f92672">[</span>All<span style="color:#f92672">,</span> All<span style="color:#f92672">,</span> All<span style="color:#f92672">,</span> mentee<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;==</span> 1<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>Now we need to limit how many Mentees a Mentor can take on. This value is the <code>MenteeCapacity</code> of the <code>Mentor</code>. We will loop through the sequence of Mentors and create the constraints that we need.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> mentorMaxAssignmentConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;MentorMaxAssignments&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> mentor <span style="color:#66d9ef">in</span> mentors <span style="color:#f92672">-&gt;</span>
+            <span style="color:#66d9ef">let</span> <span style="color:#f92672">(</span>MenteeCapacity menteeCapacity<span style="color:#f92672">)</span> <span style="color:#f92672">=</span> mentor<span style="color:#f92672">.</span>MaxMentees
+            sum pairingDecision<span style="color:#f92672">[</span>All<span style="color:#f92672">,</span> All<span style="color:#f92672">,</span> mentor<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;==</span> <span style="color:#66d9ef">float</span> menteeCapacity
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>There is an important nuance to this problem that could easily be missed. Mentors can take on multiple Mentees. It is entirely possible that the same Mentor is mentoring two different Mentees at the same time. This does not make sense. We need to create a set of constraints which prevents this from happening. We will create a constraint for each Mentor and each period to ensure this is not the case.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> mentorSingleAssignmentForPeriodConstraints <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;MentorSingleAssignmentForPeriod&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> mentor <span style="color:#66d9ef">in</span> mentors <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">for</span> period <span style="color:#66d9ef">in</span> mentor<span style="color:#f92672">.</span>Periods <span style="color:#f92672">-&gt;</span>
+                <span style="color:#66d9ef">let</span> x <span style="color:#f92672">=</span> pairingDecision<span style="color:#f92672">[</span>All<span style="color:#f92672">,</span> period<span style="color:#f92672">,</span> mentor<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span>
+                sum pairingDecision<span style="color:#f92672">[</span>All<span style="color:#f92672">,</span> period<span style="color:#f92672">,</span> mentor<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;==</span> 1<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>That is all the constraints that we need but we still need to create an expression that quantifies success, our objective function. We have assigned a value to each <code>Skill</code>. We want to award pairings of valuable skills. To do that we can multiply the <code>Value</code> of the <code>Skill</code> by the decision that corresponds to that skill. The <code>SliceMap</code> library provides a couple of conveniences for expressing this. The <code>sum</code> function and the <code>.*</code> operator. The <code>sum</code> function is a function meant to be used with SliceMaps to make translating from math notation to code more straightforward. It is not strictly necessary, but it does make this kind of work more straightforward. The <code>.*</code> operator is known as the <a href="https://en.wikipedia.org/wiki/Hadamard_product_(matrices)">Hadamard Product</a>. If you have worked in Matlab, you probably recognize it. It is an element by element multiplication along matching dimensions. In this case it is going to multiply the value associated with each <code>Skill</code> by the pairing decision that it corresponds to.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"> <span style="color:#66d9ef">let</span> assignmentValueExpr <span style="color:#f92672">=</span> sum <span style="color:#f92672">(</span>skillValue <span style="color:#f92672">.*</span> pairingDecision<span style="color:#f92672">)</span>
+</code></pre></div><p><code>assignmentValueExpr</code> is a mathematical expression which quantifies how good of a solution the Solver has found. This is the thing we are wanting the Solver to make as large as possible. From here we create an <code>Objective</code> and compose our model.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> maxAssignmentValueObjecitve <span style="color:#f92672">=</span>
+    Objective.create <span style="color:#e6db74">&#34;MaxAssignmentValue&#34;</span> Maximize assignmentValueExpr
+
+<span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.create maxAssignmentValueObjecitve
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints menteeSingleAssignmentConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints mentorMaxAssignmentConstraints
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints mentorSingleAssignmentForPeriodConstraints
+</code></pre></div><p>From here we can call the <code>Solver.solve</code> function and get our results.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> solveSettings <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    SolverType <span style="color:#f92672">=</span> CBC
+    MaxDuration <span style="color:#f92672">=</span> 1_000L
+    WriteLPFile <span style="color:#f92672">=</span> None
+<span style="color:#f92672">}</span>
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve solveSettings model
+
+<span style="color:#66d9ef">match</span> result <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Optimal sln <span style="color:#f92672">-&gt;</span>
+    Solution.getValues sln <span style="color:#f92672">(</span>pairingDecision<span style="color:#f92672">.</span>AsMap()<span style="color:#f92672">)</span>
+    <span style="color:#f92672">|&gt;</span> Map.toSeq
+    <span style="color:#f92672">|&gt;</span> Seq.filter <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> <span style="color:#f92672">(</span>k<span style="color:#f92672">,</span> v<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span> v <span style="color:#f92672">&gt;=</span> 1<span style="color:#f92672">.</span>0<span style="color:#f92672">)</span> <span style="color:#75715e">// Get the Pairings that the solver selected
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">|&gt;</span> Seq.map fst <span style="color:#75715e">// Return just the tuple representing the pairing
+</span><span style="color:#75715e"></span>    <span style="color:#f92672">|&gt;</span> Result.Ok
+<span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> Result.Error <span style="color:#e6db74">&#34;Error Solving
+</span></code></pre></div><p>If you want to see the full solution, check out <a href="https://github.com/matthewcrews/MentorMatching">the repo</a> where I put it together.</p>
+<h2 id="quantifying-the-value-of-a-skill">Quantifying the Value of a Skill</h2>
+<p>Earlier I mentioned that I would talk about the heuristic that was used to evaluate the value of a skill. I propose that we just rank the skills by the frequency of their occurrence and assign value based on its rank.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> private getSkillValue <span style="color:#f92672">(</span>mentees<span style="color:#f92672">:</span>Mentee seq<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>mentors<span style="color:#f92672">:</span>Mentor seq<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    
+    <span style="color:#66d9ef">let</span> menteeSkills <span style="color:#f92672">=</span>
+        mentees
+        <span style="color:#f92672">|&gt;</span> Seq.collect <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> m <span style="color:#f92672">-&gt;</span> m<span style="color:#f92672">.</span>Skills<span style="color:#f92672">)</span>
+
+    <span style="color:#66d9ef">let</span> mentorSkills <span style="color:#f92672">=</span>
+        mentors
+        <span style="color:#f92672">|&gt;</span> Seq.collect <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> m <span style="color:#f92672">-&gt;</span> m<span style="color:#f92672">.</span>Skills<span style="color:#f92672">)</span>
+
+    <span style="color:#66d9ef">let</span> skillCounts <span style="color:#f92672">=</span>
+        Seq.append menteeSkills mentorSkills
+        <span style="color:#f92672">|&gt;</span> Seq.countBy id
+
+    <span style="color:#66d9ef">let</span> numberOfSkills <span style="color:#f92672">=</span> Seq.length skillCounts
+
+    skillCounts
+    <span style="color:#f92672">|&gt;</span> Seq.sortBy snd
+    <span style="color:#f92672">|&gt;</span> Seq.mapi <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> i <span style="color:#f92672">(</span>skill<span style="color:#f92672">,</span> <span style="color:#f92672">_)</span> <span style="color:#f92672">-&gt;</span> skill<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span> <span style="color:#f92672">(</span>numberOfSkills <span style="color:#f92672">-</span> i<span style="color:#f92672">))</span>
+    <span style="color:#f92672">|&gt;</span> Map.ofSeq
+</code></pre></div><p>This ranking and scoring will ensure that the solver will choose low frequency skills over high frequency skills. There are some bizarre edge cases that could crop up, but I don&rsquo;t have the space to cover them here.</p>
+<h2 id="why-mathematical-planning-instead-some-other-algorithm">Why Mathematical Planning instead some other algorithm?</h2>
+<p>While this was a fun challenge, it is important to step back and ask, &ldquo;Why would I choose this technique over some other?&rdquo; The question on Stack Exchange has an interesting discussion of different approaches people proposed. Each of them has their own merit. The reason that I often propose Mathematical Planning that it is easy to modify should the nature of the problem change. If some new constraint was required, it would be relatively easy to refactor the code and add it. Bespoke implementations of heuristics are often difficult to refactor and evolve over time.</p>
+<p>This was a fun challenge and I hope it ends up being useful. If you have questions about whether your problem is a good candidate for Mathematical Planning, please reach out!</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

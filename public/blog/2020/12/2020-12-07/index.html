@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Reindeer Secret Santa Assignment Problem - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Reindeer Secret Santa Assignment Problem"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2020/12/2020-12-07/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Reindeer Secret Santa Assignment Problem</h1>
+      <div class="content"><blockquote>
+<p>Note: To see the completed code, please go <a href="https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-06-SecretSantaExchange.fs">here</a>. All code for Model Mondays is kept in <a href="https://github.com/matthewcrews/modelmondays">this</a> repo and is MIT licensed. Feel free to use it!</p>
+</blockquote>
+<p>I was having a chat with a friend about what types of problems are good candidates for Mathematical Planning. He posed the question, &ldquo;Would a Secret Santa exchange be a good candidate?&rdquo; At first, I thought, &ldquo;no.&rdquo; As we kept chatting though, I changed my mind. This is a great problem for Mathematical Planning.</p>
+<p>For those who are not familiar with what a Secret Santa exchange is, it is when a group of people get together and all put their names in a hat. Everyone draws out a name. You then buy a gift for the person who&rsquo;s name you drew. Normally everyone would get back together at a party and exchange gifts. The fun part is that you don&rsquo;t know who is giving you a gift, so it is a double surprise.</p>
+<p>I initially did not think that this was a good candidate for Mathematical Planning because I didn&rsquo;t see a quantifiable objective. There was no way to measure the difference in quality of the different pairings. All valid pairings are equally as good. Normally you would use <a href="https://en.wikipedia.org/wiki/Constraint_programming">Constraint Programming</a> and/or <a href="https://en.wikipedia.org/wiki/Boolean_satisfiability_problem#Online_SAT_solvers">SAT Solvers</a> for these problems. SAT Solvers and Constraint Programming is interested in answering the question, &ldquo;Is there an answer which satisfies these constraints?&rdquo; versus Mathematical Planning which asks, &ldquo;What is the <strong>best</strong> answer which satisfies these constraints?&rdquo; The difference seems small, but the problem is wildly different. Finding the <strong>best</strong> answer to a problem is more difficult than finding <strong>an</strong> answer.</p>
+<p>Our conversation continued and my mind was still turning. A new piece of information dropped. This family does Secret Santa every year. <em>Wait a minute</em>, I thought. <em>Don&rsquo;t we want an answer which pairs you with new people each year? Wouldn&rsquo;t it be better if you had someone different than you had the year before or the year before that?</em>. This problem just became a Mathematical Planning problem!</p>
+<h2 id="a-reindeer-gift-exchange">A Reindeer Gift Exchange</h2>
+<p>I decide to embrace a bit of whimsy and instead of people exchanging gifts, I make it Reindeer. I mean, wouldn&rsquo;t Santa&rsquo;s reindeer want gifts as well? I begin modeling my problem by creating a simple domain to describe my problem.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Reindeer</span> <span style="color:#f92672">=</span> Reindeer <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">string</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Giver</span> <span style="color:#f92672">=</span> Giver <span style="color:#66d9ef">of</span> Reindeer
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Receiver</span> <span style="color:#f92672">=</span> Receiver <span style="color:#66d9ef">of</span> Reindeer
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SecretSanta</span> <span style="color:#f92672">=</span> <span style="color:#f92672">{</span>
+    Reindeer <span style="color:#f92672">:</span> Reindeer
+    PreviousReceivers <span style="color:#f92672">:</span> Receiver <span style="color:#66d9ef">list</span>
+<span style="color:#f92672">}</span>
+</code></pre></div><p>I assume I am going to get the names of the Reindeer as <code>string</code> so I wrap them in a single case Discriminated Union to provide context to the data. The <code>Reindeer</code> will be both givers and receivers so I make additional types to represent the direction of relationships: <code>Giver</code> and <code>Receiver</code>. The <code>SecretSanta</code> type represents a <code>Reindeer</code> and the other <code>Reindeer</code> they have given gifts in years past. The <code>PreviousReceivers</code> for a <code>SecretSanta</code> is an ordered list where the first element was the last reindeer the <code>SecretSanta</code> gave a gift to, the second element was the receipent two years ago, the third element the receiver three years ago, and so on. Our ideal solution has reindeer giving a gift to a different reindeer they have not given a gift to recently.</p>
+<p>Now I create a function which takes a list of <code>SecretSanta</code>, builds the model, solves it, and returns the assignments. I will call the function <code>findAssignments</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> findAssignments <span style="color:#f92672">(</span>santas<span style="color:#f92672">:</span>SecretSanta <span style="color:#66d9ef">list</span><span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+</code></pre></div><p>I now want to get the list of reindeer that I will be working with and create sets of <code>Giver</code> and <code>Receiver</code>. The reason for storing this data in a <code>Set</code> will become apparent in a few moments.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> reindeer <span style="color:#f92672">=</span>
+    santas
+    <span style="color:#f92672">|&gt;</span> List.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> s <span style="color:#f92672">-&gt;</span> s<span style="color:#f92672">.</span>Reindeer<span style="color:#f92672">)</span>
+    <span style="color:#f92672">|&gt;</span> Set
+
+<span style="color:#66d9ef">let</span> givers <span style="color:#f92672">=</span> reindeer <span style="color:#f92672">|&gt;</span> Set.map Giver
+<span style="color:#66d9ef">let</span> receivers <span style="color:#f92672">=</span> reindeer <span style="color:#f92672">|&gt;</span> Set.map Receiver
+</code></pre></div><h2 id="measuring-solution-quality">Measuring Solution Quality</h2>
+<p>I now need to create the penalty values for assigning a reindeer to a reindeer whom they have given a gift to recently. I will do this by using the <code>List.mapi</code> function which allows me to iterate through a list while providing the index for the item you are on. I use a simple heuristic for calculating the penalty.</p>
+<p>$$\text{penalty} = \text{NumberOfPreviousRecipients}-\text{index}$$</p>
+<p>What this does is provide a high penalty cost for assigning a reindeer to the reindeer they just given a gift to. From there the cost keeps going down. I will store the result in a <code>SMap2</code> that will be indexed by the <code>Giver</code> type in the first dimension and the <code>Receiver</code> type in the second dimension. I have found using simple Discriminated Unions as a powerful tool for tracking how data is indexed.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> penalty <span style="color:#f92672">=</span>
+    <span style="color:#f92672">[</span> <span style="color:#66d9ef">for</span> s <span style="color:#66d9ef">in</span> santas <span style="color:#66d9ef">do</span>
+        <span style="color:#75715e">// Get the number of receivers once
+</span><span style="color:#75715e"></span>        <span style="color:#66d9ef">let</span> numberOfReceivers <span style="color:#f92672">=</span> s<span style="color:#f92672">.</span>PreviousReceivers<span style="color:#f92672">.</span>Length
+        s<span style="color:#f92672">.</span>PreviousReceivers
+        <span style="color:#f92672">|&gt;</span> List.mapi <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> idx r <span style="color:#f92672">-&gt;</span> <span style="color:#f92672">((</span>Giver s<span style="color:#f92672">.</span>Reindeer<span style="color:#f92672">),</span> r<span style="color:#f92672">),</span> <span style="color:#66d9ef">float</span> <span style="color:#f92672">(</span>numberOfReceivers <span style="color:#f92672">-</span> idx<span style="color:#f92672">))</span>
+    <span style="color:#f92672">]</span> <span style="color:#f92672">|&gt;</span> List.concat
+    <span style="color:#f92672">|&gt;</span> SMap2
+</code></pre></div><p>I now want to create the possible assignments. The key thing here is that it should not be possible to assign a reindeer to give a gift to itself. Therefore, I stored this data in a <code>Set</code>. The <code>Set</code> module has a convenient function <code>Set.Remove</code> which returns a new set with the single value removed from it. I will wrap the <code>Reindeer</code> values in the <code>Giver</code> and <code>Receiver</code> Discriminated Unions to provide context on what the values represent. This becomes incredibly valuable with using the slice notation of SliceMaps.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> possibleAssignments <span style="color:#f92672">=</span>
+    seq <span style="color:#f92672">{</span> <span style="color:#66d9ef">for</span> giver <span style="color:#66d9ef">in</span> reindeer <span style="color:#66d9ef">do</span>
+            <span style="color:#75715e">// We only want pairings with different reindeer
+</span><span style="color:#75715e"></span>            <span style="color:#66d9ef">for</span> receiver <span style="color:#66d9ef">in</span> reindeer<span style="color:#f92672">.</span>Remove giver <span style="color:#f92672">-&gt;</span>
+                <span style="color:#f92672">(</span>Giver giver<span style="color:#f92672">,</span> Receiver receiver<span style="color:#f92672">)</span>
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>We now have all the possible assignments for this reindeer Secret Santa exchange. I need to create a <code>Boolean</code> decision variable for each assignment. This decision variable is what the <code>Solver</code> engine will use to adjust to find a solution to my problem. <code>1.0</code> will indicate that the assignment should be used. <code>0.0</code> will indicate that the assignment should not be used.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> assignDecisions <span style="color:#f92672">=</span>
+    DecisionBuilder <span style="color:#e6db74">&#34;Assignment&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> pairing <span style="color:#66d9ef">in</span> possibleAssignments <span style="color:#f92672">-&gt;</span>
+            Boolean
+    <span style="color:#f92672">}</span> <span style="color:#f92672">|&gt;</span> SMap2
+</code></pre></div><p>The decision variables are stored in a 2-dimensional SliceMap, <code>SMap2</code>, where the first index is of type <code>Giver</code> and the second dimension is <code>Receiver</code>. We now need to create some constraints to ensure our solutions make sense.</p>
+<h2 id="the-secret-santa-constraints">The Secret Santa Constraints</h2>
+<p>We now need to provides some Constraints for our problem. The Constraints describe what is and is not allowed. Without Constraints, our Model would give nonsensical answers</p>
+<p>The first set of constraints we will create are the <code>giveOnlyOnce</code> constraints. These state that a particular <code>Giver</code> may only give a gift once. We use the slice notation of SliceMaps to easily subset the values in <code>assignDecisions</code>. The compiler ensures that we are slicing the correct dimension because we have created types for <code>Giver</code> and <code>Receiver</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> giveOnlyOnce <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;GiveOnlyOnce&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> giver <span style="color:#66d9ef">in</span> givers <span style="color:#f92672">-&gt;</span>
+            sum assignDecisions<span style="color:#f92672">.[</span>giver<span style="color:#f92672">,</span> All<span style="color:#f92672">]</span> <span style="color:#f92672">==</span> 1<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">}</span>
+</code></pre></div><p>The second set of constraints stipulate that a <code>Receiver</code> may only receiver one gift. We iterate through the <code>receivers</code> values and create a constraint for each.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> receiveOnlyOnce <span style="color:#f92672">=</span>
+    ConstraintBuilder <span style="color:#e6db74">&#34;ReceiveOnlyOnce&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> receiver <span style="color:#66d9ef">in</span> receivers <span style="color:#f92672">-&gt;</span>
+            sum assignDecisions<span style="color:#f92672">.[</span>All<span style="color:#f92672">,</span> receiver<span style="color:#f92672">]</span> <span style="color:#f92672">==</span> 1<span style="color:#f92672">.</span>0
+    <span style="color:#f92672">}</span>
+</code></pre></div><h2 id="how-we-quantify-the-assignments">How We Quantify the Assignments</h2>
+<p>We now want to create our penalty expression which is the function the solver engine will try to minimize. Because we stored our data in SliceMaps, we can use the <code>sum</code> function and the <a href="https://en.wikipedia.org/wiki/Hadamard_product_(matrices)">Hadamard Product</a>, <code>.*</code>, to express this in a single line.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> penaltyExpression <span style="color:#f92672">=</span> sum <span style="color:#f92672">(</span>penalty <span style="color:#f92672">.*</span> assignDecisions<span style="color:#f92672">)</span>
+</code></pre></div><p>We now create an <code>Objective</code> which states we want to <code>Minimize</code> this expression.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> objective <span style="color:#f92672">=</span> 
+    Objective.create <span style="color:#e6db74">&#34;MinimizePreviousPairings&#34;</span> Minimize penaltyExpression
+</code></pre></div><p>Now let&rsquo;s build the model by composing these elements.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> model <span style="color:#f92672">=</span>
+    Model.create objective
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints giveOnlyOnce
+    <span style="color:#f92672">|&gt;</span> Model.addConstraints receiveOnlyOnce
+</code></pre></div><p>We now attempt to solve the model and get the result.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve Settings.basic model
+</code></pre></div><p>We match on the case of the <code>result</code> to decide what to call next. In our case, we just want to print the assignments. If this were a production model, we would do something more sophisticated. If the model is solved successfully, we select the decisions where the value is equal to <code>1.0</code> which indicates that the solver thinks we should use that assignment. We return a list of parings if successful, we return an string saying we couldn&rsquo;t find a solution if the solve was unsuccessful.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> result <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Optimal solution <span style="color:#f92672">-&gt;</span>
+    <span style="color:#66d9ef">let</span> selectedPairings <span style="color:#f92672">=</span>
+        Solution.getValues solution assignDecisions
+        <span style="color:#f92672">|&gt;</span> Map.filter <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> pair value <span style="color:#f92672">-&gt;</span> value <span style="color:#f92672">=</span> 1<span style="color:#f92672">.</span>0<span style="color:#f92672">)</span>
+        <span style="color:#f92672">|&gt;</span> Map.toSeq
+        <span style="color:#f92672">|&gt;</span> Seq.map fst
+    Result.Ok selectedPairings
+<span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> Result.Error <span style="color:#e6db74">&#34;Unable to find pairings&#34;</span>
+</code></pre></div><p>We will create some data to test it out and use the amazing <code>Specture.Console</code> library to print it out as a nice table. Here is the function for printing out the results of solving our model.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> prettyPrintResults <span style="color:#f92672">(</span>pairings<span style="color:#f92672">:</span> seq<span style="color:#f92672">&lt;</span>Giver <span style="color:#f92672">*</span> Receiver<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> table <span style="color:#f92672">=</span> Table()
+    table<span style="color:#f92672">.</span>AddColumn<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Giver&#34;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|&gt;</span> ignore
+    table<span style="color:#f92672">.</span>AddColumn<span style="color:#f92672">(</span><span style="color:#e6db74">&#34;Receiver&#34;</span><span style="color:#f92672">)</span> <span style="color:#f92672">|&gt;</span> ignore
+
+    <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>Giver <span style="color:#f92672">(</span>Reindeer g<span style="color:#f92672">),</span> Receiver <span style="color:#f92672">(</span>Reindeer r<span style="color:#f92672">))</span> <span style="color:#66d9ef">in</span> pairings <span style="color:#66d9ef">do</span>
+        table<span style="color:#f92672">.</span>AddRow<span style="color:#f92672">(</span>g<span style="color:#f92672">,</span> r<span style="color:#f92672">)</span> <span style="color:#f92672">|&gt;</span> ignore
+
+    AnsiConsole.Render<span style="color:#f92672">(</span>table<span style="color:#f92672">)</span>
+</code></pre></div><h2 id="finding-the-santa-plan">Finding the Santa Plan</h2>
+<p>Now let&rsquo;s throw some data together and see what we get.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> santas <span style="color:#f92672">=</span>
+    <span style="color:#f92672">[</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Rudolph&#34;</span><span style="color:#f92672">;</span> PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Blitzen&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Dasher&#34;</span><span style="color:#f92672">;</span>  PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Vixen&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Dancer&#34;</span><span style="color:#f92672">;</span>  PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Rudolph&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Prancer&#34;</span><span style="color:#f92672">;</span> PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Cupid&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Vixen&#34;</span><span style="color:#f92672">;</span>   PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Dancer&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Comet&#34;</span><span style="color:#f92672">;</span>   PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Dasher&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Cupid&#34;</span><span style="color:#f92672">;</span>   PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Donner&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Donner&#34;</span><span style="color:#f92672">;</span>  PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Comet&#34;</span><span style="color:#f92672">)]}</span>
+        <span style="color:#f92672">{</span> Reindeer <span style="color:#f92672">=</span> Reindeer <span style="color:#e6db74">&#34;Blitzen&#34;</span><span style="color:#f92672">;</span> PreviousReceivers <span style="color:#f92672">=</span> <span style="color:#f92672">[</span> Receiver <span style="color:#f92672">(</span>Reindeer <span style="color:#e6db74">&#34;Prancer&#34;</span><span style="color:#f92672">)]}</span>
+    <span style="color:#f92672">]</span>
+
+<span style="color:#66d9ef">let</span> findResult <span style="color:#f92672">=</span> findAssignments santas
+
+<span style="color:#66d9ef">match</span> findResult <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> Ok pairings <span style="color:#f92672">-&gt;</span> prettyPrintResults pairings
+<span style="color:#f92672">|</span> Error <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> printfn <span style="color:#e6db74">&#34;No Christmas this year :(&#34;</span>
+</code></pre></div><p>When we run this, the console reports&hellip;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">┌─────────┬──────────┐
+│ Giver   │ Receiver │
+├─────────┼──────────┤
+│ Blitzen │ Dasher   │
+│ Comet   │ Rudolph  │
+│ Cupid   │ Blitzen  │
+│ Dancer  │ Prancer  │
+│ Dasher  │ Dancer   │
+│ Donner  │ Cupid    │
+│ Prancer │ Vixen    │
+│ Rudolph │ Donner   │
+│ Vixen   │ Comet    │
+└─────────┴──────────┘
+</code></pre></div><p>Excellent work! Another Secret Santa successfully planned!</p>
+<h2 id="real-world-applications">Real World Applications</h2>
+<p>Though the domain for this problem was silly, the type of model this represents is common. Instead of reindeer and Secret Santa, this could have been operators and machines that they run. You would want operators to rotate through machines so that they are getting experience with all of them. This model would ensure that operators are regularly getting exposed to different machines.</p>
+<p>It could also be software developers and projects. Each project could have a set of technologies they require, and the developers have the type of project they were just on. To ensure that the developers are getting exposed to different tools, a model like the one we just built ensures they are being moved around.</p>
+<p>Assignment problems are incredibly common and normally there is some quantification of &ldquo;goodness&rdquo;. Assigning people to projects, assigning tools to work sites, assigning jobs to groups. Assignment problems come up in every industry.</p>
+<p>Let me know if there are specific problems you would like me to work on. Feel free to use this model and modify it for your own purposes.</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

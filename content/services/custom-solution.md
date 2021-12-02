@@ -12,6 +12,6 @@ To start, you and I will spend 1-hour discussing where your inventory management
 
 Within 2 days I will deliver a proposal made up of three tiers. They will range in price and my level of involvement. 
 
-{{< calendly calendar="matthewcrews/custom-build" >}}
+{{< calendly calendar="matthewcrews/custom-build" type="popupLink" >}}
 Book Initial Discussion
 {{< /calendly >}}

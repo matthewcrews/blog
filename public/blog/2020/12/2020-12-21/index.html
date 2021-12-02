@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 2 - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 2"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2020/12/2020-12-21/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 2</h1>
+      <div class="content"><p>In a <a href="/blog/2020/12/2020-12-14/">previous post</a> we discussed the problem of stocking our food cart to maximize our profitability. We created a simple heuristic and then performed simulations to evaluate the expected profitability. We discussed that knowing the expected profitability was not enough, we calculated Confidence Intervals to understand the where the true expected profitability lies. This week we want to find a better plan for packing the food cart. We will use Mathematical Planning to find an answer which maximize the expected profitability which outperforms the heuristic used in the first post.</p>
+<blockquote>
+<p><strong>Note:</strong> To see all the code for this post, go <a href="https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-14-FoodCartSeries/2020-12-17-Part2.fs">here</a></p>
+</blockquote>
+<h2 id="the-probability-of-selling">The Probability of Selling</h2>
+<blockquote>
+<p><strong>Math Warning:</strong> I like to explain the math behind how we calculate the probablility of us selling items. If you would like to skip the math, feel free to jump to the next <a href="/blog/2020/12/2020-12-21/#applying-to-food-cart-problem">section</a></p>
+</blockquote>
+<p>There&rsquo;s a nuance to this problem that the heuristic from the previous post did not take into consideration. We know that the number of sales of a food can be modeled by a <a href="https://en.wikipedia.org/wiki/Poisson_distribution">Poisson Distribution</a>. The Poisson Distribution takes a single parameter, $\lambda$, which is the average arrival rate of a process. In our case, the &ldquo;process&rdquo; is people placing orders for a given food. Our historical data shows that the average daily demand for food is 600 burgers, 900 pizzas, and 700 tacos.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Burger</th>
+<th>Pizza</th>
+<th>Taco</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Average Demand</td>
+<td>$600.0 \frac{\text{item}}{\text{day}}$</td>
+<td>$900.0 \frac{\text{item}}{\text{day}}$</td>
+<td>$700.0 \frac{\text{item}}{\text{day}}$</td>
+</tr>
+</tbody>
+</table>
+<p>Why do we care about this? Why do we care that the demand is actually a Poisson Distribution? Let&rsquo;s perform a thought experiment. What are the odds that we sell at least 1 pizza in a day? Essentially 100%, right? What about 2 pizzas? Still 100% but maybe infinitesimally smaller. What are the odds of us selling 900 pizzas? Well, ~50% because historically we have seen that is the average demand. On rare days we will only sell 800 pizzas and on some we may sell over 1,000 if we do not run out of inventory. We can use the Poisson Distribution to calculate the odds of us selling a particular number of pizzas on any given day. Before we go any farther, lets plot the distribution of pizza demand between 800 and 1,000.</p>
+<p><img src="/img/2020-12-21-demand-distribution.png" alt="Pizza Demand Distribution"></p>
+<p>You notice that the peak is at 900 which is what we expect since that is the average. Visually we can tell that the probability of demand being between 850 and 950 is high but drops off rapidly at the tails.</p>
+<p>We need to figure out how to use this information to help us find the ideal number of each food we should pack. What would be really useful is being able to calculate what the probability is of us completely selling our inventory. If we pack 950 pizzas, how likely are we to sell through all of them? We would rather not waste space on foods that are not going to sell. We need a function which allows us to calculate the probability of demand exceeding some value of $x$. In math terms we would write:</p>
+<p>$$
+P(demand &gt; x)
+$$</p>
+<p>One the ingredients for this calculation is called the Cumulative Distribution Function (CDF). The CDF for the Poisson Distribution is:</p>
+<p>$$
+\text{CDF}(x) = P(X \le x) = \frac{\Gamma(x + 1,\  \lambda)}{\lfloor x \rfloor !} \qquad \qquad x = 0,1,2 , \ldots
+$$</p>
+<p>That&rsquo;s some scary looking math so let&rsquo;s unpack what this means. The function $F(x)$ calculates the probability of a random observation from our Poisson Distribution being less than or equal to the value of $x$. In our case, $x$ is the number of servings we pack of a food.</p>
+<p>The CDF isn&rsquo;t quite what we need. What we want is to know the probability of demand <strong>exceeding</strong> $x$, not being less or equal to $x$. It is pretty simple to adjust the formula though. The probability of demand being greater than $x$ is equal to 1.0 minus the probability of demand being less than $x$</p>
+<p>$$
+P(demand &gt; x) = 1 - P(demand \leq x)
+$$</p>
+<p>We can swap in our CDF for the Poisson distribution to get a new formula which allows us to calculate the demand exceeding $x$.</p>
+<p>$$
+P(demand &gt; x) = 1 - \frac{\Gamma(x + 1,\  \lambda)}{\lfloor x \rfloor !}
+$$</p>
+<p>Fortunately, the <code>MathNET</code> library includes a function for calculating these values so we will not need to worry about implementing them.</p>
+<h2 id="applying-to-food-cart-problem">Applying to Food Cart Problem</h2>
+<p>How do we apply this to the food cart problem? Let&rsquo;s say we want to know the odds of us being able to sell at least 800 pizzas. We can plug the value into the function, and we get a probability of 99.963% chance of demand exceeding 800. We can also put 1,000 in and find that there is only a 0.049% chance of demand for pizza being that high.</p>
+<p>We will use this in our objective function. We want to maximize the expected revenue so we will weight the revenue we receive for an item by the probability that we actually sell it. This means that the revenue we receive for the $n^\text{th}$ item of a given food will be multiplied by the probability that demand meets are exceeds that amount. This gives us the following formula for expected revenue.</p>
+<p>$$
+\text{Expected Revenue} = \sum_{f \in food}\sum_{n} P(\text{demand} \ge n) * \text{Revenue}_{f}
+$$</p>
+<p>We are using the same domain as in the previous post and we will be extending it. Let&rsquo;s write a function which will gives us the probabilities of selling the $n^\text{th}$ number of a food. To keep track of the $n^\text{th}$ item we are going to add a new type to our domain.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">NthItem</span> <span style="color:#f92672">=</span> NthItem <span style="color:#66d9ef">of</span> int
+</code></pre></div><p>Now we create the function which calculates the probabilites for a given food for 1 item up to some max number of items.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> createIncrementProbability
+    <span style="color:#f92672">(</span>foodDemands<span style="color:#f92672">:</span> seq<span style="color:#f92672">&lt;</span>Food <span style="color:#f92672">*</span> DemandRate<span style="color:#f92672">&gt;)</span>
+    <span style="color:#f92672">(</span>maxItems<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+
+    seq <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> <span style="color:#f92672">(</span>food<span style="color:#f92672">,</span> DemandRate demandRate<span style="color:#f92672">)</span> <span style="color:#66d9ef">in</span> foodDemands <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> 1<span style="color:#f92672">..</span>maxItems <span style="color:#f92672">-&gt;</span>
+                <span style="color:#66d9ef">let</span> probability <span style="color:#f92672">=</span>  1<span style="color:#f92672">.</span>0 <span style="color:#f92672">-</span> <span style="color:#f92672">(</span>Poisson.CDF <span style="color:#f92672">(</span>demandRate <span style="color:#f92672">-</span> 1<span style="color:#f92672">.</span>0<span style="color:#f92672">,</span> <span style="color:#f92672">(</span><span style="color:#66d9ef">float</span> i<span style="color:#f92672">)))</span>
+                <span style="color:#f92672">(</span>food<span style="color:#f92672">,</span> NthItem i<span style="color:#f92672">),</span> probability
+    <span style="color:#f92672">}</span> <span style="color:#f92672">|&gt;</span> SMap2
+</code></pre></div><p>The <code>createIncrementProbability</code> function takes in a sequence of <code>Food * DemandRate</code> tuples for which we will generate probabilities. <code>Food</code> is a type we are using to represent burger, pizza, or taco. The <code>DemandRate</code> type represents the average daily demand for a food.</p>
+<p>For each food, we calculate the probability of demand meeting or exceeding the values from 1 to <code>maxItems</code>. <code>maxItems</code> is the maximum quantity of a given food we would consider packing into our food cart. We store this data in a <code>SMap2</code> for ease use in our model formulation.</p>
+<p>We now create a function for building a model for our problem. Let&rsquo;s call it <code>create</code> and have it take all the arguments we will need for our model.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> create 
+    <span style="color:#f92672">(</span>revenue<span style="color:#f92672">:</span> SMap<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>USD<span style="color:#f92672">/</span>serving<span style="color:#f92672">&gt;&gt;)</span>
+    <span style="color:#f92672">(</span>storage<span style="color:#f92672">:</span> SMap<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>cm<span style="color:#f92672">^</span>3<span style="color:#f92672">/</span>serving<span style="color:#f92672">&gt;&gt;)</span>
+    <span style="color:#f92672">(</span>fridgeSpace<span style="color:#f92672">:</span> SMap<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>cm<span style="color:#f92672">^</span>3<span style="color:#f92672">/</span>serving<span style="color:#f92672">&gt;&gt;)</span>
+    <span style="color:#f92672">(</span>weight<span style="color:#f92672">:</span> SMap<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>gm<span style="color:#f92672">/</span>serving<span style="color:#f92672">&gt;&gt;)</span>
+    <span style="color:#f92672">(</span>incrementProbability<span style="color:#f92672">:</span> SMap2<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> NthItem<span style="color:#f92672">,</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&gt;)</span>
+    <span style="color:#f92672">(</span>packDecision<span style="color:#f92672">:</span> SMap2<span style="color:#f92672">&lt;</span>Food<span style="color:#f92672">,</span> NthItem<span style="color:#f92672">,</span> Decision<span style="color:#f92672">&lt;</span>serving<span style="color:#f92672">&gt;&gt;)</span>
+    <span style="color:#f92672">(</span>maxStorage<span style="color:#f92672">:</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>cm<span style="color:#f92672">^</span>3<span style="color:#f92672">&gt;)</span>
+    <span style="color:#f92672">(</span>maxWeight<span style="color:#f92672">:</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>gm<span style="color:#f92672">&gt;)</span>
+    <span style="color:#f92672">(</span>maxFridgeSpace<span style="color:#f92672">:</span> <span style="color:#66d9ef">float</span><span style="color:#f92672">&lt;</span>cm<span style="color:#f92672">^</span>3<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+</code></pre></div><p>Parameter Definitions:</p>
+<ul>
+<li><code>revenue</code> is the amount of money we make when selling a particular <code>Food</code></li>
+<li><code>storage</code> is the amount of pantry space required to pack a single serving</li>
+<li><code>fridgeSpace</code> is the amount of fridge space required to for a single serving</li>
+<li><code>weight</code> is the weight for a single serving of a food</li>
+<li><code>incrementProbability</code> is the probability of selling a particular quantity of a <code>Food</code></li>
+<li><code>packDecision</code> is a 2-dimensional SliceMap indexed by <code>Food</code> and <code>NthItem</code>. <code>Food</code> will correspond to burger, pizza, or taco. <code>NthItem</code> is the index of particular food within the group. The $1^\text{st}$ pizza, the $2^\text{nd}$ pizza, the $3^\text{rd}$ pizza etc. The value stored in the SliceMap is a <code>Boolean</code> decision variable where 1 indicates that you should pack the food and 0 indicates that you should not.</li>
+<li><code>maxStorage</code> is the maximum amount of storage space</li>
+<li><code>maxweight</code> is the maxumum amount of weight that can be packed</li>
+<li><code>maxFridgeSpace</code> is the maximum amount of refrigerated storage</li>
+</ul>
+<p>From here creating our model is straightforward. We need to create a constraints for the available storage, weight, and fridge space. We take advantage of the <code>sum</code> function and <a href="https://en.wikipedia.org/wiki/Hadamard_product_(matrices)">Hadamard Product</a> operator, <code>.*</code>, included in the <code>SliceMap</code> library to make the notation simple. The Hadamard Product is taking care of the joining of the data before multiplying the values.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> weightConstraint <span style="color:#f92672">=</span>
+    Constraint.create <span style="color:#e6db74">&#34;MaxWeight&#34;</span> <span style="color:#f92672">(</span>sum <span style="color:#f92672">(</span>weight <span style="color:#f92672">.*</span> packDecision<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;==</span> maxWeight<span style="color:#f92672">)</span>
+
+<span style="color:#66d9ef">let</span> storageConstraint <span style="color:#f92672">=</span>
+    Constraint.create <span style="color:#e6db74">&#34;MaxStorage&#34;</span> <span style="color:#f92672">(</span>sum <span style="color:#f92672">(</span>storage <span style="color:#f92672">.*</span> packDecision<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;==</span> maxStorage<span style="color:#f92672">)</span>
+
+<span style="color:#66d9ef">let</span> fridgeSpaceConstraint <span style="color:#f92672">=</span>
+    Constraint.create <span style="color:#e6db74">&#34;MaxFridgeSpace&#34;</span> <span style="color:#f92672">(</span>sum <span style="color:#f92672">(</span>fridgeSpace <span style="color:#f92672">.*</span> packDecision<span style="color:#f92672">)</span> <span style="color:#f92672">&lt;==</span> maxFridgeSpace<span style="color:#f92672">)</span>
+</code></pre></div><p>Our objective function is the revenue adjusted for the probability of selling the number of items. We then use this expression to create an objective.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> revenueExpectation <span style="color:#f92672">=</span>
+    sum <span style="color:#f92672">(</span>revenue <span style="color:#f92672">.*</span> incrementProbability <span style="color:#f92672">.*</span> packDecision<span style="color:#f92672">)</span>
+
+<span style="color:#66d9ef">let</span> objective <span style="color:#f92672">=</span>
+    Objective.create <span style="color:#e6db74">&#34;MaxRevenueExpectation&#34;</span> Maximize revenueExpectation
+</code></pre></div><p>We bring all this together and create a model which is what the <code>create</code> function returns.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp">Model.create objective
+<span style="color:#f92672">|&gt;</span> Model.addConstraint weightConstraint
+<span style="color:#f92672">|&gt;</span> Model.addConstraint storageConstraint
+<span style="color:#f92672">|&gt;</span> Model.addConstraint fridgeSpaceConstraint
+</code></pre></div><p>Now we can calculate our probabilities, create decision variables, and use these functions to build the model and solve it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> incrementProbabilities <span style="color:#f92672">=</span> PlanningModel.createIncrementProbability demandRates maxItems
+
+<span style="color:#66d9ef">let</span> packDecisions <span style="color:#f92672">=</span>
+    DecisionBuilder<span style="color:#f92672">&lt;</span>serving<span style="color:#f92672">&gt;</span> <span style="color:#e6db74">&#34;Pack&#34;</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">for</span> food <span style="color:#66d9ef">in</span> foods <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">for</span> increment <span style="color:#66d9ef">in</span> <span style="color:#f92672">([</span>1 <span style="color:#f92672">..</span> maxItems<span style="color:#f92672">]</span> <span style="color:#f92672">|&gt;</span> List.map DemandLevel<span style="color:#f92672">)</span> <span style="color:#f92672">-&gt;</span>
+                Boolean
+    <span style="color:#f92672">}</span> <span style="color:#f92672">|&gt;</span> SMap2
+
+<span style="color:#66d9ef">let</span> planModel <span style="color:#f92672">=</span> PlanningModel.create revenue storage fridgeSpace weight incrementProbabilities packDecisions maxStorage maxWeight maxFridge
+
+<span style="color:#66d9ef">let</span> result <span style="color:#f92672">=</span> Solver.solve Settings.basic planModel
+</code></pre></div><p>Let&rsquo;s compare the plan from the Heuristic in the last post to what the Optimization is recommending.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Burgers</th>
+<th>Pizza</th>
+<th>Taco</th>
+<th>Storage Usage</th>
+<th>Fridge Usage</th>
+<th>Weight Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Heuristic</td>
+<td>0</td>
+<td>900</td>
+<td>466</td>
+<td>40.93%</td>
+<td>62.10%</td>
+<td>99.96%</td>
+</tr>
+<tr>
+<td>Optimization</td>
+<td>572</td>
+<td>355</td>
+<td>669</td>
+<td>42.43%</td>
+<td>70.86%</td>
+<td>100.00%</td>
+</tr>
+</tbody>
+</table>
+<p>This is quite a different plan than what we saw before. The real test will come from performing the simulations with both plans and seeing which one ends up with a better expected revenue and tighter standard deviation. We perform 1M simulations of both plans and see the following.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Heuristic</th>
+<th>Optimization</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Revenue Mean ± (99% CI)</td>
+<td>2073.25 ± 0.07</td>
+<td>2244.10 ± 0.03</td>
+</tr>
+<tr>
+<td>Revenue Variance</td>
+<td>776.27</td>
+<td>110.34</td>
+</tr>
+<tr>
+<td>Revenue StdDev</td>
+<td>27.86</td>
+<td>10.50</td>
+</tr>
+</tbody>
+</table>
+<p>The plan found by the optimization is providing an additional $171 in revenue but also has a lower Standard Deviation which means the revenue is more reliable. This is a fantastic result and shows how taking the randomness into account can yield superior results.</p>
+<h2 id="next-steps">Next Steps</h2>
+<p>This post showed that even a simple mathematical planning model can yield significant improvements over simple heuristics for decision making. By taking the variability of demand into account we were able to realize a higher average revenue but also a more reliable amount of revenue.</p>
+<p>In the next post we will introduce a simple Machine Learning model to make predictions about demand in the future. So far, we have only used the historical average of demand to create our plan. What if we took that data and instead created a model for predicting demand and then fed that into our Mathematical Planning model?</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

@@ -20,6 +20,6 @@ Deliverables will be a technical document, process flows, and schematics for an 
 
 **Cost: $5,950**
 
-{{< calendly calendar="matthewcrews/blueprint" >}}
+{{< calendly calendar="matthewcrews/blueprint" type="popupLink" >}}
 Book Meeting
 {{< /calendly >}}

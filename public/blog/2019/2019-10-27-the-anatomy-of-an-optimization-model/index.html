@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>The Anatomy of an Optimization Model - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="The Anatomy of an Optimization Model"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2019/2019-10-27-the-anatomy-of-an-optimization-model/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-services">
+      <a href="/services/">
+        <span>Services</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-services ">
+      <a href="/services/">
+        
+        <span>Services</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">The Anatomy of an Optimization Model</h1>
+      <div class="content"><p>I am on a bit of a quest to bring Mathematical Optimization to the masses, or at least to Software Developers. I often come across problems where people are wanting to find the best plan for their problem but they lack to tools to express the problem. Typically the way this is &ldquo;solved&rdquo; is by some domain expert coming up with a laborious heuristic in Excel which involves outrageous amount of copying and pasting. I have seen this is take place in tiny companies all the way up to multi-billion dollar enterprises. What really breaks my heart when I see this is that I know there is a better way, but people are just are not aware of it. This is why I am pushing for more training on Mathematical Optimization at my company and why I am starting a blog series on Mathematical Modeling.</p>
+<h2 id="the-goal">The Goal</h2>
+<p>My hope with these blog posts is to start from a barebones introduction to the concepts which undergird mathematical modeling and slowly introduce newer and more advanced modeling techniques. I don&rsquo;t think I will ever finish because I am always across new and interesting problems. What I will emphasize is the beautiful interplay between Machine Learning and Mathematical Optimization. I have been blessed to work on several projects where we were able to marry these tools to great effect. If you have any problems that you would like me to look at and write a blog post on, I would be happy to. My hope is to give examples which help people with their own work.</p>
+<h2 id="ingredients-for-an-optimization-problem">Ingredients for an Optimization Problem</h2>
+<p>There are three things you need to have before you are reading to apply Mathematical Optimization. You need 1) A Quantifiable Objective 2) Decisions you control and 3) Rules to follow. When you have these three things, you have a problem ripe for Mathematical Optimization. Let me unpack them a little to make sure you understand what I am talking about as we move forward.</p>
+<h3 id="a-quantifiable-objective">A Quantifiable Objective</h3>
+<p>For you to apply Mathematical Optimization to a problem you need a way to measure how successful you are. Without this, a Solver will not have a way to check if the solutions that it is finding are actually an improvement or not. You are typically trying to maximize some value or minimize it. Common Objectives are Maximize Revenue, Minimize Waste, Maximize User Engagement, Minimize Energy Use, or Minimize Cost. What you are trying to achieve could really be anything, the key is that you have the ability to quantify it.</p>
+<h3 id="decisions-you-control">Decisions You Control</h3>
+<p>When you create a Mathematical Model of your problem you are going to define the Decisions which need to be made. This is often something like how many people you assign to a task, how much water to put where, where to place a warehouse, which ad to show where. These are all examples of decisions you will be making in your business. The important thing is that you actually have control over them. When you solve the Optimization Model, you will get answers for what values you should use for your Decisions. It will tell you how many people to assign to a task or where to put the water or which ad to show where.</p>
+<h3 id="rules-to-follow">Rules to Follow</h3>
+<p>Strictly speaking, it is possible to have an Optimization Problem without a set of rules to follow but it is rare. Most real world problems will have some kind of constraint on what you are allowed to do. Typically there are a limited number of people or only so many locations where you can place a warehouse or only so much power available. It is often the rules to follow which make a Optimization Problem interesting. Most often someone is trying to find the best plan given a set of restrictions that they need to follow. These restrictions are what make finding the best answer difficult.</p>
+<h3 id="where-we-go-from-here">Where we go from here</h3>
+<p>Let&rsquo;s say that we have checked all the boxes and it looks like you have a problem which is a good candidate for Mathematical Optimization. What do we do now? We formulate a model. How we do that is what I am looking forward to opening up to you in this and future blog posts. Once we have a Model of our problem we are able to hand it to a piece of software called a Solver which knows how to take the model and search for the best possible solution.</p>
+<p>My plan for this series is to follow a simple pattern. First, present a real world problem which will help us ground the concepts. Second, develop the mathematical model and walk through how it works. There will be some math notation but I&rsquo;ll walk through it slowly so you don&rsquo;t get lost. Thirdly, translate the model into code. I will be using Python and the PuLP library for my examples. Python is ubiquitous and the PuLP library is open source and easy to install.</p>
+<p>In the rest of this post I will walk through a toy problem for the purpose of introducing the vocabulary of Mathematical Optimization Modeling. In future posts I will work more complex problems which will have interesting characteristics.</p>
+<h2 id="the-food-truck-problem">The Food Truck Problem</h2>
+<p>One of the example problems I like to use is that of a Food Truck. I am from Portland, OR USA originally and we had food trucks everywhere. In this example we are running a food truck and we have to decide what items to pack for the day. We sell Hamburgers and Burritos. Hamburgers sell for \$5.00 and Burritos sell for \$7.50 (they are big Burritos). Each Hamburger requires us to carry 1.0 Lb. of ingredients on the truck and each Burrito requires 1.5 Lbs. (I told you they are big). We have a small Food Truck so we can only carry up to 650 Lbs. of ingredients. We also forgot to go to stock up the day before so we only have 200 Hamburger buns on hand and only 300 tortillas for Burritos. Since we run an awesome Food Truck, we always sell out of everything we bring. The question now becomes, how much Hamburgers do we pack for and how many Burritos so that we maximize our profit?</p>
+<blockquote>
+<p><strong>Note:</strong> This example problem is meant to be simple. I am mostly concerned with introducing the vocabulary of Optimization Modeling. Future problems will be more complex.</p>
+</blockquote>
+<p>This problem is a clear example of a Mathematical Optimization Problem. It has a Quantifiable Objective, Maximize Revenue. It has Decisions which we can control: the number of Hamburgers and Burritos we will pack for. Finally it has rules we must follow, the Food Truck can only carry 650 Lbs, we only have 200 Hamburger Buns and we only have 300 tortillas for Burritos. Now, I am going to show you how we formulate this as an Optimization Model and then I will walk through each piece so that it makes sense. For this model I am going to use the variable $x_{1}$ to represent the number of Hamburgers we are going to pack for and $x_{2}$ to represent the number of Burritos.</p>
+<p>$$
+\begin{align}
+&amp;\text{Maximize: }5.00 x_{1} + 7.50 x_{2} \\ 
+&amp;\text{Subject to:} \\
+\end{align}
+$$
+$$
+\begin{align}
+x_{1} \leq&amp; 200 \\
+x_{2} \leq&amp; 300 \\
+1.0x_{1} + 1.5x_{2}\leq&amp; 650 \\
+x_{1}, x_{2} \geq&amp; 0
+\end{align}
+$$</p>
+<p>Let&rsquo;s unpack this. The first line of any Mathematical Optimization Model is going to be the Objective Function. This is the function which is used to quantify success. It will start with whether we are trying to Maximize the value of the Objective Function or Minimize it. In this case we are trying to Maximize. The formula that you see is the calculation for Revenue. Remember, $x_{1}$ is the number of Hamburgers and $x_{2}$ is the number of Burritos. For every Hamburger we will earn \$5.00 and for each Burrito we will earn \$7.50. This means to calculate the total revenue we multiply the number of Hamburgers by the revenue per Hamburger and the number of Burritos by the revenue per Burrito: $5.00x_{1} + 7.50x_{2}$.</p>
+<p>After the Objective Function we get to a section referred to as the Constraints. This section typically begins with either a &ldquo;Subject to&rdquo; or just &ldquo;S.t.&rdquo; as a shorthand. This section is describing the rules that we need to follow. The first constraint is our limitation on the number of Hamburgers due to the number of buns that we have. We only have 200 buns available which means that $x_{1}$ must be less than or equal to 200. We write that as a constraint in this way: $x_{2} \leq 200$. The next constraint is describing our limit on the number of Burritos we could pack since we only have 300 tortillas. $x_{2}$ represents the number of Burritos we plan to pack and it must be less than 300 therefore we add this constraint: $x_{2} \leq 300$.</p>
+<p>The third constraint represents the weight limit of our Food Truck. We can only carry 650 Lbs. so the combination of the number of Hamburgers and the number of Burritos must be less than this. We multiply the number of Hamburgers by the lbs per Hamburger and the number of Burritos by the lbs per Burrito and add them together to get the total weight. That total must be less than the capacity of the Food Truck. This gives us this constraint: $1.0x_{1} + 1.5x_{2} \leq 650$.</p>
+<p>The final line of the model states the number of Hamburgers and Burritos cannot be less than zero. This is implicitly obvious to us as people but a Solver won&rsquo;t have our context so we have to tell it that those numbers cannot be negative. This is where we are brining our added context to the problem.</p>
+<h2 id="to-the-code">To the Code</h2>
+<p>Now that we have walked through this small problem, let&rsquo;s see how it translates to code. I am using Python 3.8 and PuLP 1.6.8. The first thing we do is import <code>PuLP</code> and create a new instance of a <code>problem</code> object.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Import the PuLP Library</span>
+<span style="color:#f92672">from</span> pulp <span style="color:#f92672">import</span> <span style="color:#f92672">*</span>
+
+<span style="color:#75715e"># Create an instance of a Problem object to populate</span>
+problem <span style="color:#f92672">=</span> LpProblem(<span style="color:#e6db74">&#34;Food Truck&#34;</span>, LpMaximize)
+</code></pre></div><p><code>PuLP</code> provides us the tools we will need to create the Optimization Model and then solve it. Out of the box the <code>PuLP</code> library comes with some open source solvers so you can build and solve models without having to purchase a solver license.</p>
+<p>The first argument of the <code>LpProblem</code> function is the name of our problem. The second is the type of optimization we want to perform, Maximization or Minimization. In this case we are wanting to maximize revenue so we use the argument value of <code>LpMaximize</code>. If we wanted to minimize we could have used the <code>LpMinimize</code> value.</p>
+<p>Now let&rsquo;s create some decision variables to represent how many burgers and tacos we are going to bring on our food truck. We do this by using the <code>LpVariable</code> function.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python">x1 <span style="color:#f92672">=</span> LpVariable(<span style="color:#e6db74">&#34;burgers&#34;</span>, <span style="color:#ae81ff">0</span>)
+x2 <span style="color:#f92672">=</span> LpVariable(<span style="color:#e6db74">&#34;tacos&#34;</span>, <span style="color:#ae81ff">0</span>)
+</code></pre></div><p>The arguments for <code>LpVariable</code> are the name of the variable and the lower bound on the possible value. In some problems, the decision variables can take on negative numbers. In this case, having negative tacos or negative hamburgers does not make any sense so we specifiy that the lower bound is 0.</p>
+<p>We now have the Decision Variables for the problems so we can now add the Objective Function and the Constraints. Let&rsquo;s start with adding the Objective Function. Whenever we want to add something to a <code>problem</code> we use the <code>+=</code> operator. The <code>PuLP</code> library will infer whether we are adding an Objective Function or a Constraint based on the right hand side argument. All we need to do for the Objective Function is to provide the equation.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Add the Objective Function</span>
+problem <span style="color:#f92672">+=</span> <span style="color:#ae81ff">5.00</span><span style="color:#f92672">*</span>x1 <span style="color:#f92672">+</span> <span style="color:#ae81ff">7.50</span><span style="color:#f92672">*</span>x2
+</code></pre></div><p>The <code>problem</code> object now has an Objective Function. Now let&rsquo;s go about adding the constraints. The first constraint is the <strong>Max Burgers</strong> constraint. To do this we use the <code>+=</code> operator to add constraints to our <code>problem</code> object. We then give the equation for the constraint and the name of the constraint.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Add Max Burgers constraint</span>
+problem <span style="color:#f92672">+=</span> x1 <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">200</span>, <span style="color:#e6db74">&#34;Max Burgers&#34;</span>
+</code></pre></div><p>We then need to add the <strong>Max Burritos</strong> constraint.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Add Max Burritos Constraint</span>
+problem <span style="color:#f92672">+=</span> x2 <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">300</span>, <span style="color:#e6db74">&#34;Max Burritos&#34;</span>
+</code></pre></div><p>Finally we need the <strong>Max Weight</strong> constraint.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Add Max Weight Constraint</span>
+problem <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1.0</span><span style="color:#f92672">*</span>x1 <span style="color:#f92672">+</span> <span style="color:#ae81ff">1.5</span><span style="color:#f92672">*</span>x2 <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">650</span>, <span style="color:#e6db74">&#34;Max Weight&#34;</span>
+</code></pre></div><p>We now have a fully populated problem. To solve it, all we need to do is call the <code>solve()</code> method.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Solve the problem</span>
+problem<span style="color:#f92672">.</span>solve()
+<span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1</span>
+</code></pre></div><p>We get a numeric response back but it will not mean much until we translate it to something we can understand. Fortunately, the <code>PuLP</code> library has a dictionary which stores the mapping from the numeric status of the problem to a human readable string. This dictionary is the <code>LpStatus</code> dictionary. Let&rsquo;s use this to print out the string representation of the problem status.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Print the problem status</span>
+print(LpStatus[problem<span style="color:#f92672">.</span>status])
+<span style="color:#f92672">&gt;</span> Optimal
+</code></pre></div><p>We should see the string <code>optimal</code>. This means that the solver was able to find the optimal answer. In the future we will go over the other possible statuses and what they mean.</p>
+<p>Now, let&rsquo;s look at what values for the Decision Variables the Solver chose.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Loop through each of the Decision Variables in the problem</span>
+<span style="color:#66d9ef">for</span> v <span style="color:#f92672">in</span> problem<span style="color:#f92672">.</span>variables():
+    <span style="color:#75715e"># Print the name of the Variable and the Value the Solver chose</span>
+    print(v<span style="color:#f92672">.</span>name,<span style="color:#e6db74">&#39;=&#39;</span>,v<span style="color:#f92672">.</span>varValue)
+
+<span style="color:#f92672">&gt;</span> burgers <span style="color:#f92672">=</span> <span style="color:#ae81ff">200.0</span>
+<span style="color:#f92672">&gt;</span> tacos <span style="color:#f92672">=</span> <span style="color:#ae81ff">300.0</span>
+</code></pre></div><p>Let&rsquo;s see what kind of Revenue we should expect if we follow this plan.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-python" data-lang="python"><span style="color:#75715e"># Get the expected Revenue</span>
+revenue <span style="color:#f92672">=</span> value(problem<span style="color:#f92672">.</span>objective)
+
+<span style="color:#75715e"># Print the expected result</span>
+print(<span style="color:#e6db74">f</span><span style="color:#e6db74">&#34;$</span><span style="color:#e6db74">{</span>revenue<span style="color:#e6db74">:</span><span style="color:#e6db74">,.2f</span><span style="color:#e6db74">}</span><span style="color:#e6db74">&#34;</span>)
+<span style="color:#f92672">&gt;</span> <span style="color:#960050;background-color:#1e0010">$</span><span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">250.00</span>
+</code></pre></div><p>There you have it. A tiny Mathematical Optimization problem. Granted, this was completely overkill for such a simple problem. My goal was to introduce these concepts and start growing our vocabulary around Optimization. From here we will adjust how we are managing the data and Decision Variables for our problem. This approach will not scale. In the next post we will look at adding the concept of Sets and Parameters. This will make it easy for us to create large optimization problems involving hundreds of thousands, if not millions of Decision Variables and Constraints.</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>
