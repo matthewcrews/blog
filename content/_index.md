@@ -1,12 +1,12 @@
 ---
 title: 'Homepage'
 meta_title: 'Matthew Crews'
-description: "Inventoyr Planning for growing e-commerce retailers"
+description: "Mathematical Programming  for .NET"
 intro_image: "images/warehouse-loading.jpeg"
 intro_image_absolute: true
 intro_image_hide_on_mobile: true
 ---
 
-# Maximize Profit, Minimize Carrying Costs
+# Mathematical Programming for .NET Developers
 
-Bringing inventory sanity to e-commerice retailers
+Algorithms to maximize profit, minimize waste and accelerate decision making. I'm turning developers into superheroes by teaching them the power of Mathematical Programming to transform how their business makes decisions.

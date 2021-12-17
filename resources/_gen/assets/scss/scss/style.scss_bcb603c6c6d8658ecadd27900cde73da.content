@@ -4058,7 +4058,7 @@ p {
   margin-bottom: 20px; }
 
 h1 {
-  font-size: 20px;
+  font-size: 24px;
   font-family: "Playfair Display", serif, -apple-system;
   line-height: 1.2;
   margin-bottom: 20px; }
@@ -4067,7 +4067,7 @@ h1 {
       font-size: 32px;
       line-height: 1.2; } }
 h2 {
-  font-size: 24px;
+  font-size: 20px;
   font-family: "Playfair Display", serif, -apple-system;
   line-height: 1.4;
   margin-bottom: 10px; }

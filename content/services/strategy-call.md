@@ -6,11 +6,11 @@ draft: false
 weight: 4
 ---
 
-You're struggling to get a handle on your inventory, and you need someone with experience to help you figure out where to even start.
+You are ready to transform your planning tools with Mathematical Programming but are unsure where to start. Let's take an hour to figure out precisely what kind of problem you have and the best tools for solving it. Sometimes all you need is someone who's seen the problem before to help you get unstuck.
 
-You book a 1-hour call with me, and we will figure out what your biggest struggles are and what your critical next step is. Sometimes all you need is someone who's seen the problem before to help you get unstuck. I guarantee you will have actionable information to start transforming how you manage inventory or your money back.
+You will come away with a clear picture of what the best approaches are for solving your problem and know the kind of returns you can expect if you use Mathematical Programming to solve your planning problem.
 
-**Price: $495 USD**
+**Price: $295 USD**
 
 {{< calendly calendar="matthewcrews/strategy" type="popupLink" >}}
 Book Meeting

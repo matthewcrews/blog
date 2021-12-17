@@ -6,17 +6,7 @@
     <description>Recent content in Homepage on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 21 Nov 2021 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Custom Solution</title>
-      <link>/services/custom-solution/</link>
-      <pubDate>Sun, 18 Nov 2018 12:33:46 +1000</pubDate>
-      
-      <guid>/services/custom-solution/</guid>
-      <description>You are sick and tired manually calculating purchase order quantities and are ready get your time back while maximizing your profit
-To start, you and I will spend 1-hour discussing where your inventory management is at and see if we are a good fit for one another. If we agree to move forward, I will then meet with your stakeholders and any technical staff that I would need support from. This meeting takes up to 2 hours for me to get input from your team.</description>
-    </item>
-    
+    <lastBuildDate>Sun, 05 Dec 2021 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Project Advisor</title>
       <link>/services/project-advisor/</link>
@@ -28,23 +18,23 @@ Inventory optimization tools regularly increase profits by over 10% while reduce
     </item>
     
     <item>
-      <title>Blueprint</title>
-      <link>/services/blueprint/</link>
-      <pubDate>Wed, 28 Nov 2018 15:15:26 +1000</pubDate>
-      
-      <guid>/services/blueprint/</guid>
-      <description>You want to reduce your carrying costs by 25%, you have developers ready to build the tool, you just don&amp;rsquo;t know what to build.
-How It Works We start with a one-hour call to dig into your pain points around managing your inventory. If we decide that a Blueprint is the right thing for you, we will spend two weeks putting together a detailed architecture and process flow for an inventory optimization tool for your business.</description>
-    </item>
-    
-    <item>
       <title>Strategy Call</title>
       <link>/services/strategy-call/</link>
       <pubDate>Wed, 28 Nov 2018 15:15:34 +1000</pubDate>
       
       <guid>/services/strategy-call/</guid>
-      <description>You&amp;rsquo;re struggling to get a handle on your inventory, and you need someone with experience to help you figure out where to even start.
-You book a 1-hour call with me, and we will figure out what your biggest struggles are and what your critical next step is. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck. I guarantee you will have actionable information to start transforming how you manage inventory or your money back.</description>
+      <description>You are ready to transform your planning tools with Mathematical Programming but are unsure where to start. Let&amp;rsquo;s take an hour to figure out precisely what kind of problem you have and the best tools for solving it. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck.
+You will come away with a clear picture of what the best approaches are for solving your problem and know the kind of returns you can expect if you use Mathematical Programming to solve your planning problem.</description>
+    </item>
+    
+    <item>
+      <title>F# Loves Mutation</title>
+      <link>/blog/2021/12/fsharp-loves-mutation/</link>
+      <pubDate>Sun, 05 Dec 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/12/fsharp-loves-mutation/</guid>
+      <description>Mutation gets a bad wrap, and some believe Mutation is evil and should be avoided at all costs. For a while, I was also in this camp. As time went by, I realized there is nothing wrong with Mutation. The problem is when Mutation is misapplied.
+Some of you may be familiar with a paper by Edgar Dijkstra called &amp;ldquo;Go To Statement Considered Harmful&amp;rdquo;. In it, Dijkstra argues that the goto statement is a serious source of problems in code and should be avoided.</description>
     </item>
     
     <item>
@@ -322,13 +312,13 @@ One of the most difficult parts of putting together algorithms has been making s
     </item>
     
     <item>
-      <title>Eradicate Manual Planning</title>
+      <title>Eradicate Wasteful Planning</title>
       <link>/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>/about/</guid>
-      <description>E-commerce retailers live and die based on how well they plan their inventory and cash flow. I am obsessed with maximizing their profit through optimal planning and scheduling. I have worked at the largest of enterprises (Intel, Quicken Loans) and at e-commerce startups. Every place I worked I was able to dramatically increase revenue and decrease costs by automating and optimizing decision making.
-My obsessions with efficiency and optimization began with board games.</description>
+      <description>My obsession with efficiency and optimization began with board games. I played Risk for hours growing up and created games centered around gathering resources, building cities, and managing trade. I turned that love into a job as I pursued Operations Research and Software Development.
+I am on a mission to eradicate wasteful planning. Operations Research and Mathematical Programming have developed tools and algorithms for solving the most challenging planning problems that exist.</description>
     </item>
     
   </channel>

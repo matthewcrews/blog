@@ -8,16 +8,6 @@
     <language>en-us</language>
     <lastBuildDate>Wed, 28 Nov 2018 15:15:34 +1000</lastBuildDate><atom:link href="/services/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Custom Solution</title>
-      <link>/services/custom-solution/</link>
-      <pubDate>Sun, 18 Nov 2018 12:33:46 +1000</pubDate>
-      
-      <guid>/services/custom-solution/</guid>
-      <description>You are sick and tired manually calculating purchase order quantities and are ready get your time back while maximizing your profit
-To start, you and I will spend 1-hour discussing where your inventory management is at and see if we are a good fit for one another. If we agree to move forward, I will then meet with your stakeholders and any technical staff that I would need support from. This meeting takes up to 2 hours for me to get input from your team.</description>
-    </item>
-    
-    <item>
       <title>Project Advisor</title>
       <link>/services/project-advisor/</link>
       <pubDate>Wed, 28 Nov 2018 15:14:39 +1000</pubDate>
@@ -28,23 +18,13 @@ Inventory optimization tools regularly increase profits by over 10% while reduce
     </item>
     
     <item>
-      <title>Blueprint</title>
-      <link>/services/blueprint/</link>
-      <pubDate>Wed, 28 Nov 2018 15:15:26 +1000</pubDate>
-      
-      <guid>/services/blueprint/</guid>
-      <description>You want to reduce your carrying costs by 25%, you have developers ready to build the tool, you just don&amp;rsquo;t know what to build.
-How It Works We start with a one-hour call to dig into your pain points around managing your inventory. If we decide that a Blueprint is the right thing for you, we will spend two weeks putting together a detailed architecture and process flow for an inventory optimization tool for your business.</description>
-    </item>
-    
-    <item>
       <title>Strategy Call</title>
       <link>/services/strategy-call/</link>
       <pubDate>Wed, 28 Nov 2018 15:15:34 +1000</pubDate>
       
       <guid>/services/strategy-call/</guid>
-      <description>You&amp;rsquo;re struggling to get a handle on your inventory, and you need someone with experience to help you figure out where to even start.
-You book a 1-hour call with me, and we will figure out what your biggest struggles are and what your critical next step is. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck. I guarantee you will have actionable information to start transforming how you manage inventory or your money back.</description>
+      <description>You are ready to transform your planning tools with Mathematical Programming but are unsure where to start. Let&amp;rsquo;s take an hour to figure out precisely what kind of problem you have and the best tools for solving it. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck.
+You will come away with a clear picture of what the best approaches are for solving your problem and know the kind of returns you can expect if you use Mathematical Programming to solve your planning problem.</description>
     </item>
     
   </channel>

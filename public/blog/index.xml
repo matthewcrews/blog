@@ -6,7 +6,17 @@
     <description>Recent content in Blog on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 21 Nov 2021 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 05 Dec 2021 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>F# Loves Mutation</title>
+      <link>/blog/2021/12/fsharp-loves-mutation/</link>
+      <pubDate>Sun, 05 Dec 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2021/12/fsharp-loves-mutation/</guid>
+      <description>Mutation gets a bad wrap, and some believe Mutation is evil and should be avoided at all costs. For a while, I was also in this camp. As time went by, I realized there is nothing wrong with Mutation. The problem is when Mutation is misapplied.
+Some of you may be familiar with a paper by Edgar Dijkstra called &amp;ldquo;Go To Statement Considered Harmful&amp;rdquo;. In it, Dijkstra argues that the goto statement is a serious source of problems in code and should be avoided.</description>
+    </item>
+    
     <item>
       <title>Team Desk Assignments</title>
       <link>/blog/2021/11/team-desk-assignments/</link>

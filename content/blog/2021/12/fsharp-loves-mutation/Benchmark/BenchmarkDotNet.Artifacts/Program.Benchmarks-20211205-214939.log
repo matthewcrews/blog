@@ -1,0 +1,26 @@
+// Validating benchmarks:
+// ***** BenchmarkRunner: Start   *****
+// ***** Found 2 benchmark(s) in total *****
+// ***** Building 1 exe(s) in Parallel: Start   *****
+// start dotnet restore  /p:UseSharedCompilation=false /p:BuildInParallel=false /m:1 /p:Deterministic=true /p:Optimize=true in C:\Users\matth\source\repos\blog2\content\blog\2021\12\fsharp-loves-mutation\Benchmark\bin\Release\net6.0\4181dc3d-1e52-4f9e-9db9-96153a5c2b08
+// command took 0.99s and exited with 0
+// start dotnet build -c Release  --no-restore /p:UseSharedCompilation=false /p:BuildInParallel=false /m:1 /p:Deterministic=true /p:Optimize=true in C:\Users\matth\source\repos\blog2\content\blog\2021\12\fsharp-loves-mutation\Benchmark\bin\Release\net6.0\4181dc3d-1e52-4f9e-9db9-96153a5c2b08
+// command took 1.74s and exited with 0
+// ***** Done, took 00:00:02 (2.79 sec)   *****
+// Found 2 benchmarks:
+//   Benchmarks.MutationFree: DefaultJob
+//   Benchmarks.MutationBased: DefaultJob
+
+// **************************
+// Benchmark: Benchmarks.MutationFree: DefaultJob
+// *** Execute ***
+// Launch: 1 / 1
+// Execute: dotnet "4181dc3d-1e52-4f9e-9db9-96153a5c2b08.dll" --benchmarkName "Program+Benchmarks.MutationFree" --job "Default" --benchmarkId 0 in C:\Users\matth\source\repos\blog2\content\blog\2021\12\fsharp-loves-mutation\Benchmark\bin\Release\net6.0\4181dc3d-1e52-4f9e-9db9-96153a5c2b08\bin\Release\net6.0
+// BeforeAnythingElse
+
+// Benchmark Process Environment Information:
+// Runtime=.NET 6.0.0 (6.0.21.52210), X64 RyuJIT
+// GC=Concurrent Workstation
+// Job: DefaultJob
+
+OverheadJitting  1: 1 op, 249200.00 ns, 249.2000 us/op

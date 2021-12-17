@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>F# Loves Mutation - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="F# Loves Mutation"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2021/12/fsharp-loves-mutation/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">F# Loves Mutation</h1>
+      <div class="content"><p>Mutation gets a bad wrap, and some believe Mutation is evil and should be avoided at all costs. For a while, I was also in this camp. As time went by, I realized there is nothing wrong with Mutation. The problem is when Mutation is misapplied.</p>
+<p>Some of you may be familiar with a paper by Edgar Dijkstra called <a href="https://homepages.cwi.nl/~storm/teaching/reader/Dijkstra68.pdf">&ldquo;Go To Statement Considered Harmful&rdquo;</a>. In it, Dijkstra argues that the <code>goto</code> statement is a serious source of problems in code and should be avoided. His opening paragraph states that it should be abolished from all &ldquo;higher level&rdquo; languages and reserved for machine code.</p>
+<p><img src="https://imgs.xkcd.com/comics/goto.png" alt="XKCD Goto Comic"></p>
+<p>Some would also put Mutation into the same list of things that should be forbidden. Mutation can indeed be a challenging thing to debug. Some would like the <code>pure</code> keyword added to the F# language so that the compiler can ensure that a function does not use Mutation.</p>
+<p>There was a time that I, too, was caught up in the idea that Mutation should be abolished. I thought that to write high-quality software, we needed to work exclusively with immutable data and data structures.</p>
+<p>Over time my understanding has evolved, though. Mutation is a tool, just like the Go To statement, and it can be misapplied and overused, but it isn&rsquo;t bad. Let&rsquo;s look at some code and contrast a mutation-free approach and Mutation based approach. For the first example, let&rsquo;s find the maximum element in an array of integers.</p>
+<h2 id="max-item-in-array">Max Item in Array</h2>
+<p>Our first function will not use any mutation to find the maximum value, and I&rsquo;m assuming that the array passed to the function is non-null and not empty to keep the code simple. The most straightforward approach I could come up with is a recursive function that loops through the values and keeps track of the observed maximum value.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Maximum value in array
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> mutationFreeMax <span style="color:#f92672">(</span>x<span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>int<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+    <span style="color:#75715e">// I am must going to assume x is non-null and not empty
+</span><span style="color:#75715e"></span>
+    <span style="color:#66d9ef">let</span> rec loop <span style="color:#f92672">(</span>acc<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>idx<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">(</span>array<span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>int<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">if</span> idx <span style="color:#f92672">&lt;</span> array<span style="color:#f92672">.</span>Length <span style="color:#66d9ef">then</span>
+            <span style="color:#66d9ef">let</span> curr <span style="color:#f92672">=</span> array<span style="color:#f92672">.[</span>idx<span style="color:#f92672">]</span>
+            <span style="color:#66d9ef">if</span> curr <span style="color:#f92672">&gt;</span> acc <span style="color:#66d9ef">then</span>
+                loop curr <span style="color:#f92672">(</span>idx <span style="color:#f92672">+</span> 1<span style="color:#f92672">)</span> array
+            <span style="color:#66d9ef">else</span>
+                loop acc <span style="color:#f92672">(</span>idx <span style="color:#f92672">+</span> 1<span style="color:#f92672">)</span> array
+        <span style="color:#66d9ef">else</span>
+            acc
+
+    loop x<span style="color:#f92672">.[</span>0<span style="color:#f92672">]</span> 1 x
+</code></pre></div><p>For someone who has worked with recursion, this is not intimidating, but if you haven&rsquo;t written many recursive functions, this may confuse you. Only in the last two years did I become comfortable with recursion, so I know firsthand how disorienting code like this can be. Let&rsquo;s contrast that with an implementation that can use Mutation.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> mutationMax <span style="color:#f92672">(</span>x<span style="color:#f92672">:</span> array<span style="color:#f92672">&lt;</span>int<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+    <span style="color:#75715e">// I am must going to assume x is non-null and not empty
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> mutable acc <span style="color:#f92672">=</span> x<span style="color:#f92672">.[</span>0<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> mutable idx <span style="color:#f92672">=</span> 1
+
+    <span style="color:#66d9ef">while</span> idx <span style="color:#f92672">&lt;</span> x<span style="color:#f92672">.</span>Length <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> curr <span style="color:#f92672">=</span> x<span style="color:#f92672">.[</span>idx<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">if</span> curr <span style="color:#f92672">&gt;</span> acc <span style="color:#66d9ef">then</span>
+            acc <span style="color:#f92672">&lt;-</span> curr
+        idx <span style="color:#f92672">&lt;-</span> idx <span style="color:#f92672">+</span> 1
+
+    acc
+</code></pre></div><p>I believe that most developers would find this easier to follow. We are using two mutable values, <code>acc</code> and <code>idx</code>, but they don&rsquo;t leak outside the function. The Mutation is isolated to the context in which it is used. In fact, this example comes from the F# <a href="https://github.com/dotnet/fsharp/blob/1f1d4bd02b3ea3b3c24e1366bab9a88a9444b145/src/fsharp/FSharp.Core/array.fs#L1127">source code</a>.</p>
+<p>Let&rsquo;s take this a step further and see the performance difference between these two implementations. I&rsquo;m going to create 100,000 arrays with between 10 and 10,000 random, positive integers and call the two different <code>max</code> function implementations to see the difference in performance. You can check the code and run it yourself <a href="./Benchmark/Program.fs">here</a>. I am using <a href="https://github.com/dotnet/BenchmarkDotNet">BenchmarkDotNet</a> for the testing. When I run them I get the following result.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+<th style="text-align:right">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MutationFree</td>
+<td style="text-align:right">292.7 ms</td>
+<td style="text-align:right">6.65 ms</td>
+<td style="text-align:right">18.10 ms</td>
+<td style="text-align:right">285.4 ms</td>
+</tr>
+<tr>
+<td>MutationBased</td>
+<td style="text-align:right">281.8 ms</td>
+<td style="text-align:right">5.04 ms</td>
+<td style="text-align:right">4.71 ms</td>
+<td style="text-align:right">281.5 ms</td>
+</tr>
+</tbody>
+</table>
+<p>Turns out the mutation-free approach is ever so slightly slower, along with being more confusing for a beginner developer. Now, a more extreme case.</p>
+<h2 id="sorting-a-list">Sorting a List</h2>
+<p>Let&rsquo;s look at how Quicksort performs on a list of integers. I am referencing <a href="https://theburningmonk.com/2012/02/f-simple-quicksort-implementation/">Yan Ciu</a> for my implementation.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp">    <span style="color:#66d9ef">let</span> rec sort <span style="color:#f92672">(</span>values<span style="color:#f92672">:</span> <span style="color:#66d9ef">list</span><span style="color:#f92672">&lt;</span>int<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">match</span> values <span style="color:#66d9ef">with</span>
+        <span style="color:#f92672">|</span> [] <span style="color:#f92672">-&gt;</span> values
+        <span style="color:#f92672">|</span> <span style="color:#f92672">[</span>x<span style="color:#f92672">]</span> <span style="color:#f92672">-&gt;</span> values
+        <span style="color:#f92672">|</span> head<span style="color:#f92672">::</span>tail <span style="color:#f92672">-&gt;</span>
+            <span style="color:#66d9ef">let</span> less<span style="color:#f92672">,</span> greater <span style="color:#f92672">=</span> List.partition <span style="color:#f92672">((&gt;=)</span> head<span style="color:#f92672">)</span> tail
+            List.concat <span style="color:#f92672">[</span>sort<span style="color:#f92672">(</span>less<span style="color:#f92672">);</span> <span style="color:#f92672">[</span>head<span style="color:#f92672">];</span> sort<span style="color:#f92672">(</span>greater<span style="color:#f92672">)]</span>
+</code></pre></div><p>Quicksort is easy to express in F# but let&rsquo;s see how the performance stacks up against the built-in <code>List.sort</code> function. We&rsquo;ll have each function sort a list of 1,000 positive integers for our testing. You can see the tests <a href="./Benchmark/Program.fs">here</a>.</p>
+<p>When we run it, we see the following.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ImmutableQuicksort</td>
+<td style="text-align:right">154.46 us</td>
+<td style="text-align:right">2.939 us</td>
+<td style="text-align:right">3.717 us</td>
+</tr>
+<tr>
+<td>BuiltInSort</td>
+<td style="text-align:right">14.73 us</td>
+<td style="text-align:right">0.286 us</td>
+<td style="text-align:right">0.436 us</td>
+</tr>
+</tbody>
+</table>
+<p>The performance is not even close. Granted, this Quicksort is not optimized. It&rsquo;s a naive approach, but I would suggest it will never get as fast as the built-in sort. If you look at the <a href="https://github.com/dotnet/fsharp/blob/1f1d4bd02b3ea3b3c24e1366bab9a88a9444b145/src/fsharp/FSharp.Core/list.fs#L508">source code</a> for <code>List.sort</code> you&rsquo;ll see this.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> sort <span style="color:#66d9ef">list</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">match</span> <span style="color:#66d9ef">list</span> <span style="color:#66d9ef">with</span>
+    <span style="color:#f92672">|</span> [] <span style="color:#f92672">|</span> <span style="color:#f92672">[_]</span> <span style="color:#f92672">-&gt;</span> <span style="color:#66d9ef">list</span>
+    <span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span>
+        <span style="color:#66d9ef">let</span> array <span style="color:#f92672">=</span> Microsoft.FSharp.Primitives.Basics.List.toArray <span style="color:#66d9ef">list</span>
+        Microsoft.FSharp.Primitives.Basics.Array.stableSortInPlace array
+        Microsoft.FSharp.Primitives.Basics.List.ofArray array
+</code></pre></div><p>F# is converting the list to an array, using an optimized sort on the array, and then turning it back into a list for the return value. You will see this kind of behavior all over the F# source.</p>
+<p>We as users are getting an immutable experience when we work with these functions and types, but under the hood, there is Mutation.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Mutation is a powerful tool for when you need to go fast. What I failed to realize early on was that Mutation has a place. The key thing is that the Mutation is isolated and does not leak out into the rest of the program.</p>
+<p>I am actually working on an update to the SliceMap library for Flips. The underlying data structure will re-arrange itself to best serve the query whenever you query the data. There is constant Mutation occurring under the covers, but the user never sees it.</p>
+<p>If you liked this post and want to stay in the loop for the work I am doing with Mathematical Programming, please subscribe to my list!</p>
+<div class="col-8">
+    <form action="https://matthewcrews.podia.com/email_lists/292490/subscriptions" accept-charset="UTF-8" method="post">
+        <div class="call">
+            <div class="call-box-top">
+                <div class="call-email">
+                    <input type="email" name="email" required="required" placeholder="Your email address..." style="width: 100%; height: 40px"/>
+                </div>
+              </div>
+            <div class="call-box-bottom">
+            <input class="button" type="submit" value="Sign me up!" />
+            </div>
+        </div>
+    </form>
+</div>
+    
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>
