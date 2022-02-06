@@ -1,6 +1,6 @@
 ---
 title: Fast Tracking of Item Observations
-date: 2022-02-07
+date: 2022-02-06
 draft: false
 tag: fsharp, high-performance
 ---
@@ -249,6 +249,8 @@ The main difference here is that we need to calculate which `int64` in our `Span
 ```
 
 Not bad. It's not as fast as the `Int64Tracker` but is still faster than the `BoolArrayTracker`. The major upside compared to the `Int64Tracker` is that it is not limited to 64 items, and we can track as many as we would like. I feel like there's more that could be done here, but I wanted to share what I have found so far.
+
+If you have critiques or thoughts on how to improve, I'd love to hear it. All the code can be found [here](https://github.com/matthewcrews/BitFieldTracking). Feel free to make suggestions or pull requests.
 
 If you liked this post and want to hear more about writing high-performance F# and Mathematical Programming, please subscribe to my list!
 
