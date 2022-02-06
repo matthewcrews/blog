@@ -1,0 +1,8 @@
+
+**/BenchmarkDotNet.Artifacts/
+
+**/.ionide/
+
+**/bin/
+
+**/obj/

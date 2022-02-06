@@ -1,0 +1,22 @@
+baseURL: "https://matthewcrews.com"
+title: "Matthew Crews"
+author: Matthew Crews
+theme: "hugo-PaperMod"
+menu:
+  main:
+    - name: About
+      url: about
+    - name: Mathamatical Planning
+      url: mathematical-planning
+    - name: Consulting
+      url: consulting
+
+params:
+
+  homeInfoParams:
+    Title: Maximize Your Profits by Optimizing Inventory and Cash Flow
+    Content: Planning tools for growing e-commerce retailers
+
+  socialIcons: # optional
+    - name: "email"
+      url: "mailto:matthewcrews@gmail.com"
