@@ -197,7 +197,7 @@ And we run our benchmarks to see how fast we are now.
 |     Int64Tracker |   3.979 ms | 0.0097 ms | 0.0081 ms |          - |           4 B |
 ```
 
-Excellent! We've shaved off another 20%. This may not seem like much but let me note something important. The `BoolArrayTracker` takes an entire cache-line to store the information for 64 items. `Int64Tracker` only uses 4 bytes out of the 64 that are available. This means that in the full algorithm, we can use the remaining 60 bytes to tracker other information and ensure all of that information is on the same cache-line. This may seem silly at the moment but can have a significant impact on overall performance if we experience cache eviction in the middle of our tightest loop. More to come!
+Excellent! We've shaved off another 20%. This may not seem like much but let me note something important. The `BoolArrayTracker` takes an entire cache-line to store the information for 64 items. `Int64Tracker` only uses 4 bytes out of the 64 that are available. This means that in the full algorithm, we can use the remaining 60 bytes to track other information and ensure all of that information is on the same cache-line. This may seem silly at the moment but can have a significant impact on overall performance if we experience cache eviction in the middle of our tightest loop. More to come!
 
 If you have critiques or thoughts on how to improve, I'd love to hear it. All the code can be found [here](https://github.com/matthewcrews/BitFieldTracking). Feel free to make suggestions or pull requests.
 

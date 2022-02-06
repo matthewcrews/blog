@@ -133,15 +133,15 @@
             <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
             <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>Contains testIndex <span style="color:#66d9ef">then</span>
                 <span style="color:#75715e">// Real world we would do work here and then flip the case
-</span><span style="color:#75715e"></span>                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Add testIndex
+</span><span style="color:#75715e"></span>                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Remove testIndex
             <span style="color:#66d9ef">else</span>
-                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Remove testIndex
+                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Add testIndex
 
         tracker
 </code></pre></div><p>When I run this benchmark, I get the following result.</p>
-<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
+<pre tabindex="0"><code>|     Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------- |-----------:|----------:|----------:|-----------:|--------------:|
+| SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
 </code></pre><p>We now have a baseline to compare against.</p>
 <h2 id="the-net-hashset">The .NET HashSet</h2>
 <p>The first thing someone will likely point out is, &ldquo;Matthew, you are using an immutable collection that you are constantly updating and rebinding. Why not use a mutable collection?&rdquo; Great question! Let&rsquo;s reach for the next most obvious collection in .NET, the <code>HashSet</code>. <code>HashSet</code> is found in the <code>System.Collections.Generic</code> namespace. Instead of using a tree to keep track of items, it uses a hash table. This should give us constant-time lookup, insertion, and removal.</p>
@@ -154,16 +154,16 @@
         <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
         <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>Contains testIndex <span style="color:#66d9ef">then</span>
             <span style="color:#75715e">// Real world we would do work here and then flip the case
-</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>Add testIndex <span style="color:#f92672">|&gt;</span> ignore
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>Remove testIndex <span style="color:#f92672">|&gt;</span> ignore
         <span style="color:#66d9ef">else</span>
-            tracker<span style="color:#f92672">.</span>Remove testIndex <span style="color:#f92672">|&gt;</span> ignore
+            tracker<span style="color:#f92672">.</span>Add testIndex <span style="color:#f92672">|&gt;</span> ignore
 
     tracker
 </code></pre></div><p>&hellip; and re-run our benchmarks.</p>
-<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
+<pre tabindex="0"><code>|         Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|--------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|     SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+| HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
 </code></pre><p>We see that the <code>HashSet</code> is giving us a performance boost over the F# <code>Set</code>. This is expected since we don&rsquo;t have to re-arrange a tree when we perform insertion and deletion. This is NOT to say that <code>Set</code> is inferior to <code>HashSet</code>; please don&rsquo;t consider that the takeaway. <code>Set</code> can do many things that <code>HashSet</code> cannot. It just happens in this instance, <code>HashSet</code> appears to be a better choice. Oh, but we aren&rsquo;t done yet&hellip;</p>
 <h2 id="plain-old-arrays">Plain Old Arrays</h2>
 <p>One of my favorite talks on the internet is one by <a href="https://youtu.be/WDIkqP4JbkE">Scott Meyers</a>, where he talks about the criticality of understanding memory hierarchies when writing high-performance code. My favorite moment is when he quotes a developer who writes high-frequency trading algorithms. The developer says, &ldquo;I don&rsquo;t care how fancy your data structure is; an array will beat it.&rdquo;</p>
@@ -174,20 +174,20 @@
 
     <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
         <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
-        <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span> <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#66d9ef">then</span>
             <span style="color:#75715e">// Real world we would do work here and then flip the case
-</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">true</span>
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">false</span>
         <span style="color:#66d9ef">else</span>
-            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">false</span>
+            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">true</span>
 
     tracker
 </code></pre></div><p>We can now see how using an <code>array&lt;bool&gt;</code> performs against a <code>Set</code> and <code>HashSet</code>.</p>
-<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
-| BoolArrayTracker | 5,058.9 us |  66.05 us |  61.78 us | 5,065.1 us |         - |         84 B |
-</code></pre><p>Alright, we see another modest speed boost. Using just an array, we&rsquo;ve cut out some cycles that the <code>HashSet</code> has to perform when it performs a lookup. Now we are just taking a pointer to the head of the array and offsetting it to perform the lookup. It&rsquo;s hard to get much faster than this&hellip; or is it?</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|       SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+|   HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
+| BoolArrayTracker |   5.017 ms | 0.0447 ms | 0.0418 ms |          - |          84 B |
+</code></pre><p>Alright, we see another speed boost. Using just an array, we&rsquo;ve cut out some cycles that the <code>HashSet</code> has to perform when it performs a lookup. Now we are just taking a pointer to the head of the array and offsetting it to perform the lookup. It&rsquo;s hard to get much faster than this&hellip; or is it?</p>
 <h3 id="enter-data-oriented-design">Enter Data-Oriented Design</h3>
 <p>I&rsquo;ve been on a quest to become a better developer, and my latest wanderings have brought me to the world of Data-Oriented Design. I love <a href="https://youtu.be/rX0ItVEVjHc">Mike Acton&rsquo;s talk</a> at CPP Con, and I highly recommend it for anyone who hasn&rsquo;t seen it. He mentions that when he sees a <code>bool</code> in a <code>Struct</code> he almost always knows that something has gone wrong. The reason is that a <code>bool</code> only contains 1 bit of information, but it still takes up 8 bits of memory. This means that if you are moving many types back and forth in the cache which contains bools, you are wasting a large amount of memory bandwidth.</p>
 <p>At the time I watched it, I thought, &ldquo;Okay, I see your point about wasting memory bandwidth, but what if you really do need to know whether something is true or not?&rdquo; That sat in the back of my mind for a while, and I didn&rsquo;t see a solution. The other day though, <a href="https://twitter.com/thinkb4coding">Jérémie Chassaing</a> gave an excellent <a href="https://youtu.be/eVJ5b1lwMJ8">talk</a> on writing high-performance F# with no memory allocation. In it, he showed an elegant trick for storing two <code>int32</code> in a single <code>int64</code>. You can watch the bit <a href="https://www.youtube.com/watch?v=eVJ5b1lwMJ8&amp;t=4008s">here</a>. He holds one of the <code>int32</code> in the bottom 32-bits of the <code>int64</code> and the other <code>int32</code> value in the top 32-bits. That may seem silly, but it provides the compiler a unique optimization that it wouldn&rsquo;t have otherwise. It can store both of those <code>int32</code> in a single 64-bit register. This is the fastest form of memory in a CPU.</p>
@@ -218,60 +218,25 @@
 <p>We now have a new type that allows us to track up to 64 different items, which is enough for our use case. Let&rsquo;s add a benchmark.</p>
 <div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
 <span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">Int64Tracker</span> () <span style="color:#f92672">=</span>
-    <span style="color:#66d9ef">let</span> mutable tracker <span style="color:#f92672">=</span> Int64Tracker.Create ()
+    <span style="color:#66d9ef">let</span> mutable tracker <span style="color:#f92672">=</span> Int64Tracker.Init ()
     
     <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
         <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
         <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>IsSet testIndex <span style="color:#66d9ef">then</span>
             <span style="color:#75715e">// Real world we would do work here and then flip the case
-</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>Set testIndex
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>UnSet testIndex
         <span style="color:#66d9ef">else</span>
-            tracker<span style="color:#f92672">.</span>UnSet testIndex
+            tracker<span style="color:#f92672">.</span>Set testIndex
 
     tracker
 </code></pre></div><p>And we run our benchmarks to see how fast we are now.</p>
-<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,863.6 us | 193.62 us | 244.86 us | 9,776.3 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,561.7 us |  75.37 us |  70.50 us | 5,583.8 us |         - |         68 B |
-| BoolArrayTracker | 5,013.9 us |  58.71 us |  54.92 us | 5,006.0 us |         - |         84 B |
-|     Int64Tracker |   745.3 us |  14.87 us |  14.60 us |   748.2 us |         - |          1 B |
-</code></pre><p>That is an excellent speedup. We are now 13X faster than our first benchmark and ~6.5X faster than an <code>array&lt;bool&gt;</code>. We should be feeling good at this point. We&rsquo;ve found a much faster way to track observations for most of our use cases.</p>
-<p>Let&rsquo;s be honest, though; we will need to track more than 64 items at some point. What would we do in that case? We could fall back to the <code>array&lt;bool&gt;</code>. Wouldn&rsquo;t it be nice if we could use those bit tricks with a larger number of items, though?</p>
-<h2 id="span-and-stackalloc">Span and Stackalloc</h2>
-<p>In cases where we need to work with more than 64 items, we can&rsquo;t rely on a single <code>int64</code>. It doesn&rsquo;t have enough memory. In theory, we could use an <code>array&lt;int64&gt;</code> but that means we will allocate something on the heap. Wouldn&rsquo;t it be nice to just get a chunk of memory, use it, and then throw it away? Fortunately, we can! F# 4.5 added support to stackalloc memory.</p>
-<p>The syntax for creating it is not as clean as it is in C#, but <a href="https://twitter.com/Horusiath">Bartosz Sypytkowski</a> provided a great <a href="https://bartoszsypytkowski.com/writing-high-performance-f-code/">blog post</a> where he provides the following function for conveniently stack allocating a <code>Span</code>.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> inline stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a <span style="color:#66d9ef">when</span> <span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">:</span> unmanaged<span style="color:#f92672">&gt;</span> <span style="color:#f92672">(</span>length<span style="color:#f92672">:</span> int<span style="color:#f92672">):</span> Span<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span>
-    <span style="color:#66d9ef">let</span> p <span style="color:#f92672">=</span> NativePtr.stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> length <span style="color:#f92672">|&gt;</span> NativePtr.toVoidPtr
-    Span<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;(</span>p<span style="color:#f92672">,</span> length<span style="color:#f92672">)</span>
-</code></pre></div><p>Now that we can grab small chunks of memory let&rsquo;s write a new benchmark that uses a <code>Span&lt;int64&gt;</code> to track observations.</p>
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
-<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">SpanInt64Tracker</span> () <span style="color:#f92672">=</span>
-    <span style="color:#66d9ef">let</span> bitsPerInt64 <span style="color:#f92672">=</span> 64
-    <span style="color:#66d9ef">let</span> requiredInt64s <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>indexRange <span style="color:#f92672">+</span> bitsPerInt64 <span style="color:#f92672">-</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">/</span> bitsPerInt64
-    <span style="color:#66d9ef">let</span> spanIndex <span style="color:#f92672">=</span> stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int64</span><span style="color:#f92672">&gt;</span> requiredInt64s
-
-    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
-        <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
-        <span style="color:#66d9ef">let</span> int64Index <span style="color:#f92672">=</span> testIndex <span style="color:#f92672">/</span> bitsPerInt64
-        <span style="color:#66d9ef">let</span> bitIndex <span style="color:#f92672">=</span> testIndex <span style="color:#f92672">%</span> bitsPerInt64
-
-        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&amp;&amp;&amp;</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">))</span> <span style="color:#f92672">&lt;&gt;</span> 0 <span style="color:#66d9ef">then</span>
-            <span style="color:#75715e">// Real world we would do work here and then flip the case
-</span><span style="color:#75715e"></span>            spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">)</span> <span style="color:#f92672">|||</span> spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span>
-        <span style="color:#66d9ef">else</span>
-            spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">~~~</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;&amp;</span> spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span>
-
-    spanIndex
-</code></pre></div><p>The main difference here is that we need to calculate which <code>int64</code> in our <code>Span&lt;int64&gt;</code> we need to check and which bit in the <code>int64</code> we want to test. That is why we have to calculate the <code>int64Index</code> and <code>bitIndex</code>. Let&rsquo;s run this benchmark and see what we get.</p>
-<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|----------:|-------------:|
-|       SetTracker | 9,293.6 us | 163.95 us | 264.75 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,398.9 us |  57.63 us |  53.91 us |         - |         68 B |
-| BoolArrayTracker | 5,007.6 us |  67.62 us |  63.25 us |         - |         84 B |
-|     Int64Tracker |   735.5 us |   5.40 us |   4.79 us |         - |            - |
-| SpanInt64Tracker | 2,893.7 us |  57.76 us | 155.18 us |         - |          2 B |
-</code></pre><p>Not bad. It&rsquo;s not as fast as the <code>Int64Tracker</code> but is still faster than the <code>BoolArrayTracker</code>. The major upside compared to the <code>Int64Tracker</code> is that it is not limited to 64 items, and we can track as many as we would like. I feel like there&rsquo;s more that could be done here, but I wanted to share what I have found so far.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|       SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+|   HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
+| BoolArrayTracker |   5.017 ms | 0.0447 ms | 0.0418 ms |          - |          84 B |
+|     Int64Tracker |   3.979 ms | 0.0097 ms | 0.0081 ms |          - |           4 B |
+</code></pre><p>Excellent! We&rsquo;ve shaved off another 20%. This may not seem like much but let me note something important. The <code>BoolArrayTracker</code> takes an entire cache-line to store the information for 64 items. <code>Int64Tracker</code> only uses 4 bytes out of the 64 that are available. This means that in the full algorithm, we can use the remaining 60 bytes to tracker other information and ensure all of that information is on the same cache-line. This may seem silly at the moment but can have a significant impact on overall performance if we experience cache eviction in the middle of our tightest loop. More to come!</p>
 <p>If you have critiques or thoughts on how to improve, I&rsquo;d love to hear it. All the code can be found <a href="https://github.com/matthewcrews/BitFieldTracking">here</a>. Feel free to make suggestions or pull requests.</p>
 <p>If you liked this post and want to hear more about writing high-performance F# and Mathematical Programming, please subscribe to my list!</p>
 <div class="col-8">
