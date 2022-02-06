@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Fast Tracking of Item Observations - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Fast Tracking of Item Observations"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2022/02/high-performance-observation-tracking/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Fast Tracking of Item Observations</h1>
+      <div class="content"><p>I am writing a graph algorithm at the heart of one of the products we are developing at Simulation Dynamics. A part of the algorithm is tracking whether a node or vertex has been observed yet or not. As the algorithm progresses, it will mark whether it has completed processing a node or a vertex to know it does not need to continue through the graph.</p>
+<p>This algorithm is part of the inner loop of the simulation and needs to be as fast as possible. Speed is a critical feature for us, so essentially, anything is allowed if it gives us more speed. The only requirement is it be written in .NET (preferably F#) and runs on a modern x86-64 processor.</p>
+<p>These graphs are almost always small, say 20 nodes and 30 vertices. We are modeling manufacturing processes, and the types of facilities that we simulate can be simplified down to these small graphs. This means we don&rsquo;t necessarily need to handle <code>N</code> nodes and <code>M</code> vertices, and we need an algorithm that is as fast as possible for these small cases.</p>
+<h1 id="the-f-set">The F# Set</h1>
+<p>I love the F# <code>Set&lt;'T&gt;</code> collection. When I just need to process sets of value and perform comparisons between them, nothing beats the tried and true <code>Set&lt;'T&gt;</code>. For those curious, the F# <code>Set</code> and <code>Map</code> collections are backed by a variation on the AVL tree. We actually have <a href="https://twitter.com/buybackoff">Victor Baybekov</a> to thank for some massive performance improvements he provided in <a href="https://github.com/dotnet/fsharp/pull/10188">this pull request</a>.</p>
+<p>Before I test out various approaches, I create a baseline performance test. I will generate 1,000,000 different indexes in a range of <code>0</code> to <code>50</code>. For each of these indices, I will check whether it is in the <code>Set</code> or not. If it is not in the <code>Set</code>, I will add it. If it is in the <code>Set</code>, I will remove it. This will simulate the type of behavior that the graph algorithm uses while traversing the graph. I will also use the <code>BenchmarkDotNet</code> library to measure my performance.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">open</span> System
+<span style="color:#66d9ef">open</span> FSharp.NativeInterop
+<span style="color:#66d9ef">open</span> BenchmarkDotNet.Attributes
+<span style="color:#66d9ef">open</span> BenchmarkDotNet.Running
+<span style="color:#66d9ef">open</span> BenchmarkDotNet.Diagnosers
+
+<span style="color:#f92672">[&lt;</span>MemoryDiagnoser<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Benchmarks</span> () <span style="color:#f92672">=</span>
+
+    <span style="color:#66d9ef">let</span> testIndexCount <span style="color:#f92672">=</span> 1_000_000
+    <span style="color:#66d9ef">let</span> indexRange <span style="color:#f92672">=</span> 50
+    <span style="color:#66d9ef">let</span> rng <span style="color:#f92672">=</span> Random 123
+
+    <span style="color:#75715e">// Generate a set of random indices to check
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> testIndexes <span style="color:#f92672">=</span>
+        <span style="color:#f92672">[|</span> <span style="color:#66d9ef">for</span> <span style="color:#f92672">_</span> <span style="color:#f92672">=</span> 1 <span style="color:#66d9ef">to</span> testIndexCount <span style="color:#66d9ef">do</span>
+            <span style="color:#75715e">// Note: Next is exclusive on the upper bound
+</span><span style="color:#75715e"></span>            rng<span style="color:#f92672">.</span>Next <span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> indexRange<span style="color:#f92672">)</span> 
+        <span style="color:#f92672">|]</span>
+
+    <span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+    <span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">SetTracker</span> () <span style="color:#f92672">=</span>
+        <span style="color:#66d9ef">let</span> mutable tracker <span style="color:#f92672">=</span> Set.empty
+
+        <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+            <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>Contains testIndex <span style="color:#66d9ef">then</span>
+                <span style="color:#75715e">// Real world we would do work here and then flip the case
+</span><span style="color:#75715e"></span>                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Add testIndex
+            <span style="color:#66d9ef">else</span>
+                tracker <span style="color:#f92672">&lt;-</span> tracker<span style="color:#f92672">.</span>Remove testIndex
+
+        tracker
+</code></pre></div><p>When I run this benchmark, I get the following result.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
+|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
+</code></pre><p>We now have a baseline to compare against.</p>
+<h2 id="the-net-hashset">The .NET HashSet</h2>
+<p>The first thing someone will likely point out is, &ldquo;Matthew, you are using an immutable collection that you are constantly updating and rebinding. Why not use a mutable collection?&rdquo; Great question! Let&rsquo;s reach for the next most obvious collection in .NET, the <code>HashSet</code>. <code>HashSet</code> is found in the <code>System.Collections.Generic</code> namespace. Instead of using a tree to keep track of items, it uses a hash table. This should give us constant-time lookup, insertion, and removal.</p>
+<p>We add a new test to our <code>Benchmarks</code> class&hellip;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">HashSetTracker</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable tracker <span style="color:#f92672">=</span> Collections.Generic.HashSet ()
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>Contains testIndex <span style="color:#66d9ef">then</span>
+            <span style="color:#75715e">// Real world we would do work here and then flip the case
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>Add testIndex <span style="color:#f92672">|&gt;</span> ignore
+        <span style="color:#66d9ef">else</span>
+            tracker<span style="color:#f92672">.</span>Remove testIndex <span style="color:#f92672">|&gt;</span> ignore
+
+    tracker
+</code></pre></div><p>&hellip; and re-run our benchmarks.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
+|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
+|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
+</code></pre><p>We see that the <code>HashSet</code> is giving us a performance boost over the F# <code>Set</code>. This is expected since we don&rsquo;t have to re-arrange a tree when we perform insertion and deletion. This is NOT to say that <code>Set</code> is inferior to <code>HashSet</code>; please don&rsquo;t consider that the takeaway. <code>Set</code> can do many things that <code>HashSet</code> cannot. It just happens in this instance, <code>HashSet</code> appears to be a better choice. Oh, but we aren&rsquo;t done yet&hellip;</p>
+<h2 id="plain-old-arrays">Plain Old Arrays</h2>
+<p>One of my favorite talks on the internet is one by <a href="https://youtu.be/WDIkqP4JbkE">Scott Meyers</a>, where he talks about the criticality of understanding memory hierarchies when writing high-performance code. My favorite moment is when he quotes a developer who writes high-frequency trading algorithms. The developer says, &ldquo;I don&rsquo;t care how fancy your data structure is; an array will beat it.&rdquo;</p>
+<p>I can map all nodes and vertices to <code>int</code> values ahead of time for my use case. This means that I could easily track whether I have visited a node or index by looking up a <code>bool</code> in an array using the value for the node or vertex as an index into the array. Let&rsquo;s try that and see what we get. I add a new benchmark to my <code>Benchmarks</code> class to see how this approach performs.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">BoolArrayTracker</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> tracker <span style="color:#f92672">=</span> Array.create indexRange <span style="color:#66d9ef">false</span>
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">false</span> <span style="color:#66d9ef">then</span>
+            <span style="color:#75715e">// Real world we would do work here and then flip the case
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">true</span>
+        <span style="color:#66d9ef">else</span>
+            tracker<span style="color:#f92672">[</span>testIndex<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#66d9ef">false</span>
+
+    tracker
+</code></pre></div><p>We can now see how using an <code>array&lt;bool&gt;</code> performs against a <code>Set</code> and <code>HashSet</code>.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
+|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
+|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
+| BoolArrayTracker | 5,058.9 us |  66.05 us |  61.78 us | 5,065.1 us |         - |         84 B |
+</code></pre><p>Alright, we see another modest speed boost. Using just an array, we&rsquo;ve cut out some cycles that the <code>HashSet</code> has to perform when it performs a lookup. Now we are just taking a pointer to the head of the array and offsetting it to perform the lookup. It&rsquo;s hard to get much faster than this&hellip; or is it?</p>
+<h3 id="enter-data-oriented-design">Enter Data-Oriented Design</h3>
+<p>I&rsquo;ve been on a quest to become a better developer, and my latest wanderings have brought me to the world of Data-Oriented Design. I love <a href="https://youtu.be/rX0ItVEVjHc">Mike Acton&rsquo;s talk</a> at CPP Con, and I highly recommend it for anyone who hasn&rsquo;t seen it. He mentions that when he sees a <code>bool</code> in a <code>Struct</code> he almost always knows that something has gone wrong. The reason is that a <code>bool</code> only contains 1 bit of information, but it still takes up 8 bits of memory. This means that if you are moving many types back and forth in the cache which contains bools, you are wasting a large amount of memory bandwidth.</p>
+<p>At the time I watched it, I thought, &ldquo;Okay, I see your point about wasting memory bandwidth, but what if you really do need to know whether something is true or not?&rdquo; That sat in the back of my mind for a while, and I didn&rsquo;t see a solution. The other day though, <a href="https://twitter.com/thinkb4coding">Jérémie Chassaing</a> gave an excellent <a href="https://youtu.be/eVJ5b1lwMJ8">talk</a> on writing high-performance F# with no memory allocation. In it, he showed an elegant trick for storing two <code>int32</code> in a single <code>int64</code>. You can watch the bit <a href="https://www.youtube.com/watch?v=eVJ5b1lwMJ8&amp;t=4008s">here</a>. He holds one of the <code>int32</code> in the bottom 32-bits of the <code>int64</code> and the other <code>int32</code> value in the top 32-bits. That may seem silly, but it provides the compiler a unique optimization that it wouldn&rsquo;t have otherwise. It can store both of those <code>int32</code> in a single 64-bit register. This is the fastest form of memory in a CPU.</p>
+<p>Now, who don&rsquo;t we take that same trick, and instead of storing 2 <code>int32</code> values in an <code>int64</code>, what about 64 bools in an <code>int64</code>? Each bit of the <code>int64</code> can correspond to a node or vertex in the graph. Instead of passing an <code>array&lt;bool&gt;</code> around, we can pass a single <code>int64</code>. Remember that for this use case, it is incredibly rare to see more than 20 nodes and 30 vertices, so 64-bits is plenty to store whether we have observed them or not.</p>
+<p>Let&rsquo;s create a new type for wrapping our <code>int64</code> and provide some convenience methods for working with it. We will define it as a <code>Struct</code> since that provides the .NET compiler a large number of options for optimizing it.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Int64Tracker</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#f92672">{</span>
+        <span style="color:#66d9ef">mutable</span> Value <span style="color:#f92672">:</span> <span style="color:#66d9ef">int64</span>
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> Create () <span style="color:#f92672">=</span>
+        <span style="color:#f92672">{</span> Value <span style="color:#f92672">=</span> 0L <span style="color:#f92672">}</span>
+
+    <span style="color:#75715e">// Check whether a position has been set to 1 or not
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">member</span> this.<span style="color:#a6e22e">IsSet</span> <span style="color:#f92672">(</span>position<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        <span style="color:#f92672">(</span>this<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> <span style="color:#f92672">(</span>1L <span style="color:#f92672">&lt;&lt;&lt;</span> position<span style="color:#f92672">))</span> <span style="color:#f92672">&lt;&gt;</span> 0L
+
+    <span style="color:#75715e">// Sets a bit at a position to 1
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">member</span> this.<span style="color:#a6e22e">Set</span> <span style="color:#f92672">(</span>position<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        this<span style="color:#f92672">.</span>Value <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">(</span>1L <span style="color:#f92672">&lt;&lt;&lt;</span> position<span style="color:#f92672">)</span> <span style="color:#f92672">|||</span> this<span style="color:#f92672">.</span>Value
+
+    <span style="color:#75715e">// Sets a bit at a position to 0
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">member</span> this.<span style="color:#a6e22e">UnSet</span> <span style="color:#f92672">(</span>position<span style="color:#f92672">:</span> int<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+        this<span style="color:#f92672">.</span>Value <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">~~~</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> position<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;&amp;</span> this<span style="color:#f92672">.</span>Value
+</code></pre></div><p>Let&rsquo;s unpack this. The <code>Value</code> field is used to track whether something has been observed or not. The <code>Create</code> method gives us a new <code>Int64Tracker</code> where all the bits are set to <code>0</code>. The <code>IsSet</code> method takes a position and checks whether that position is 0 or not. It does this by taking a value of <code>1L</code>, which puts a value of 1 in the bottom bit and then left, shifting it to the desired position. It then does a bitwise <code>AND</code> between the <code>Value</code> and the bit-shifted value. This will return 0s for every location except for possibly the position we are interested in. If there is a 1 in the desired position, it will <code>AND</code> with our shifted 1 and return a non-zero number. If there is a <code>0</code> in the position of interest, all the bits will return <code>0</code>, and the resulting value will be equal to <code>0</code>.</p>
+<p>The <code>Set</code> method takes a position and sets the bit in that position to <code>1</code>. It does this by taking a value of <code>1L</code>, which has a <code>1</code> in the bottom bit, left-shifts it to the desired position, and then performs a bitwise <code>OR</code> with <code>Value</code>. If the value in the given position was already <code>1</code>, it will still be a <code>1</code>. If it was <code>0</code>, it will be changed to <code>1</code>. Here&rsquo;s a <a href="https://youtu.be/ZRNO-ewsNcQ?t=64">quick video</a> showing the operation.</p>
+<p>The final method, <code>UnSet</code>, takes <code>1L</code> and left-shifts it to the desired position. It then does a bitwise negation. This means that all the bits will be <code>1</code> except for the position that we want to turn into a <code>0</code>. We then <code>AND</code> that mask with <code>Value</code> to get our updated <code>Value</code>. Here&rsquo;s a <a href="https://youtu.be/ZRNO-ewsNcQ?t=113">video</a> showing how this is done.</p>
+<p>We now have a new type that allows us to track up to 64 different items, which is enough for our use case. Let&rsquo;s add a benchmark.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">Int64Tracker</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable tracker <span style="color:#f92672">=</span> Int64Tracker.Create ()
+    
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">if</span> tracker<span style="color:#f92672">.</span>IsSet testIndex <span style="color:#66d9ef">then</span>
+            <span style="color:#75715e">// Real world we would do work here and then flip the case
+</span><span style="color:#75715e"></span>            tracker<span style="color:#f92672">.</span>Set testIndex
+        <span style="color:#66d9ef">else</span>
+            tracker<span style="color:#f92672">.</span>UnSet testIndex
+
+    tracker
+</code></pre></div><p>And we run our benchmarks to see how fast we are now.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
+|       SetTracker | 9,863.6 us | 193.62 us | 244.86 us | 9,776.3 us | 4781.2500 | 40,000,008 B |
+|   HashSetTracker | 5,561.7 us |  75.37 us |  70.50 us | 5,583.8 us |         - |         68 B |
+| BoolArrayTracker | 5,013.9 us |  58.71 us |  54.92 us | 5,006.0 us |         - |         84 B |
+|     Int64Tracker |   745.3 us |  14.87 us |  14.60 us |   748.2 us |         - |          1 B |
+</code></pre><p>That is an excellent speedup. We are now 13X faster than our first benchmark and ~6.5X faster than an <code>array&lt;bool&gt;</code>. We should be feeling good at this point. We&rsquo;ve found a much faster way to track observations for most of our use cases.</p>
+<p>Let&rsquo;s be honest, though; we will need to track more than 64 items at some point. What would we do in that case? We could fall back to the <code>array&lt;bool&gt;</code>. Wouldn&rsquo;t it be nice if we could use those bit tricks with a larger number of items, though?</p>
+<h2 id="span-and-stackalloc">Span and Stackalloc</h2>
+<p>In cases where we need to work with more than 64 items, we can&rsquo;t rely on a single <code>int64</code>. It doesn&rsquo;t have enough memory. In theory, we could use an <code>array&lt;int64&gt;</code> but that means we will allocate something on the heap. Wouldn&rsquo;t it be nice to just get a chunk of memory, use it, and then throw it away? Fortunately, we can! F# 4.5 added support to stackalloc memory.</p>
+<p>The syntax for creating it is not as clean as it is in C#, but <a href="https://twitter.com/Horusiath">Bartosz Sypytkowski</a> provided a great <a href="https://bartoszsypytkowski.com/writing-high-performance-f-code/">blog post</a> where he provides the following function for conveniently stack allocating a <code>Span</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> inline stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a <span style="color:#66d9ef">when</span> <span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">:</span> unmanaged<span style="color:#f92672">&gt;</span> <span style="color:#f92672">(</span>length<span style="color:#f92672">:</span> int<span style="color:#f92672">):</span> Span<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> p <span style="color:#f92672">=</span> NativePtr.stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;</span> length <span style="color:#f92672">|&gt;</span> NativePtr.toVoidPtr
+    Span<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>a<span style="color:#f92672">&gt;(</span>p<span style="color:#f92672">,</span> length<span style="color:#f92672">)</span>
+</code></pre></div><p>Now that we can grab small chunks of memory let&rsquo;s write a new benchmark that uses a <code>Span&lt;int64&gt;</code> to track observations.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">SpanInt64Tracker</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> bitsPerInt64 <span style="color:#f92672">=</span> 64
+    <span style="color:#66d9ef">let</span> requiredInt64s <span style="color:#f92672">=</span> <span style="color:#f92672">(</span>indexRange <span style="color:#f92672">+</span> bitsPerInt64 <span style="color:#f92672">-</span> 1<span style="color:#f92672">)</span> <span style="color:#f92672">/</span> bitsPerInt64
+    <span style="color:#66d9ef">let</span> spanIndex <span style="color:#f92672">=</span> stackalloc<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">int64</span><span style="color:#f92672">&gt;</span> requiredInt64s
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> testIndexes<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> testIndex <span style="color:#f92672">=</span> testIndexes<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">let</span> int64Index <span style="color:#f92672">=</span> testIndex <span style="color:#f92672">/</span> bitsPerInt64
+        <span style="color:#66d9ef">let</span> bitIndex <span style="color:#f92672">=</span> testIndex <span style="color:#f92672">%</span> bitsPerInt64
+
+        <span style="color:#66d9ef">if</span> <span style="color:#f92672">(</span>spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&amp;&amp;&amp;</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">))</span> <span style="color:#f92672">&lt;&gt;</span> 0 <span style="color:#66d9ef">then</span>
+            <span style="color:#75715e">// Real world we would do work here and then flip the case
+</span><span style="color:#75715e"></span>            spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">)</span> <span style="color:#f92672">|||</span> spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">else</span>
+            spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> <span style="color:#f92672">~~~</span> <span style="color:#f92672">(</span>1 <span style="color:#f92672">&lt;&lt;&lt;</span> bitIndex<span style="color:#f92672">)</span> <span style="color:#f92672">&amp;&amp;&amp;</span> spanIndex<span style="color:#f92672">[</span>int64Index<span style="color:#f92672">]</span>
+
+    spanIndex
+</code></pre></div><p>The main difference here is that we need to calculate which <code>int64</code> in our <code>Span&lt;int64&gt;</code> we need to check and which bit in the <code>int64</code> we want to test. That is why we have to calculate the <code>int64Index</code> and <code>bitIndex</code>. Let&rsquo;s run this benchmark and see what we get.</p>
+<pre tabindex="0"><code>|           Method |       Mean |     Error |    StdDev |     Gen 0 |    Allocated |
+|----------------- |-----------:|----------:|----------:|----------:|-------------:|
+|       SetTracker | 9,293.6 us | 163.95 us | 264.75 us | 4781.2500 | 40,000,008 B |
+|   HashSetTracker | 5,398.9 us |  57.63 us |  53.91 us |         - |         68 B |
+| BoolArrayTracker | 5,007.6 us |  67.62 us |  63.25 us |         - |         84 B |
+|     Int64Tracker |   735.5 us |   5.40 us |   4.79 us |         - |            - |
+| SpanInt64Tracker | 2,893.7 us |  57.76 us | 155.18 us |         - |          2 B |
+</code></pre><p>Not bad. It&rsquo;s not as fast as the <code>Int64Tracker</code> but is still faster than the <code>BoolArrayTracker</code>. The major upside compared to the <code>Int64Tracker</code> is that it is not limited to 64 items, and we can track as many as we would like. I feel like there&rsquo;s more that could be done here, but I wanted to share what I have found so far.</p>
+<p>If you have critiques or thoughts on how to improve, I&rsquo;d love to hear it. All the code can be found <a href="https://github.com/matthewcrews/BitFieldTracking">here</a>. Feel free to make suggestions or pull requests.</p>
+<p>If you liked this post and want to hear more about writing high-performance F# and Mathematical Programming, please subscribe to my list!</p>
+<div class="col-8">
+    <form action="https://matthewcrews.podia.com/email_lists/292490/subscriptions" accept-charset="UTF-8" method="post">
+        <div class="call">
+            <div class="call-box-top">
+                <div class="call-email">
+                    <input type="email" name="email" required="required" placeholder="Your email address..." style="width: 100%; height: 40px"/>
+                </div>
+              </div>
+            <div class="call-box-bottom">
+            <input class="button" type="submit" value="Sign me up!" />
+            </div>
+        </div>
+    </form>
+</div>
+    
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

@@ -6,7 +6,17 @@
     <description>Recent content in Blog on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 05 Dec 2021 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 06 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Fast Tracking of Item Observations</title>
+      <link>/blog/2022/02/high-performance-observation-tracking/</link>
+      <pubDate>Sun, 06 Feb 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2022/02/high-performance-observation-tracking/</guid>
+      <description>I am writing a graph algorithm at the heart of one of the products we are developing at Simulation Dynamics. A part of the algorithm is tracking whether a node or vertex has been observed yet or not. As the algorithm progresses, it will mark whether it has completed processing a node or a vertex to know it does not need to continue through the graph.
+This algorithm is part of the inner loop of the simulation and needs to be as fast as possible.</description>
+    </item>
+    
     <item>
       <title>F# Loves Mutation</title>
       <link>/blog/2021/12/fsharp-loves-mutation/</link>

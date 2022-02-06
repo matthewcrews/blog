@@ -46,9 +46,9 @@ type Benchmarks () =
             let testIndex = testIndexes[i]
             if tracker.Contains testIndex then
                 // Real world we would do work here and then flip the case
-                tracker <- tracker.Add testIndex
-            else
                 tracker <- tracker.Remove testIndex
+            else
+                tracker <- tracker.Add testIndex
 
         tracker
 ```
@@ -56,9 +56,9 @@ type Benchmarks () =
 When I run this benchmark, I get the following result.
 
 ```
-|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
+|     Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------- |-----------:|----------:|----------:|-----------:|--------------:|
+| SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
 ```
 
 We now have a baseline to compare against.
@@ -78,9 +78,9 @@ member _.HashSetTracker () =
         let testIndex = testIndexes[i]
         if tracker.Contains testIndex then
             // Real world we would do work here and then flip the case
-            tracker.Add testIndex |> ignore
-        else
             tracker.Remove testIndex |> ignore
+        else
+            tracker.Add testIndex |> ignore
 
     tracker
 ```
@@ -88,10 +88,10 @@ member _.HashSetTracker () =
 ... and re-run our benchmarks.
 
 ```
-|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
+|         Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|--------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|     SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+| HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
 ```
 
 We see that the `HashSet` is giving us a performance boost over the F# `Set`. This is expected since we don't have to re-arrange a tree when we perform insertion and deletion. This is NOT to say that `Set` is inferior to `HashSet`; please don't consider that the takeaway. `Set` can do many things that `HashSet` cannot. It just happens in this instance, `HashSet` appears to be a better choice. Oh, but we aren't done yet...
@@ -109,11 +109,11 @@ member _.BoolArrayTracker () =
 
     for i = 0 to testIndexes.Length - 1 do
         let testIndex = testIndexes[i]
-        if tracker[testIndex] = false then
+        if tracker[testIndex] then
             // Real world we would do work here and then flip the case
-            tracker[testIndex] <- true
-        else
             tracker[testIndex] <- false
+        else
+            tracker[testIndex] <- true
 
     tracker
 ```
@@ -121,14 +121,14 @@ member _.BoolArrayTracker () =
 We can now see how using an `array<bool>` performs against a `Set` and `HashSet`.
 
 ```
-|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,511.0 us | 163.52 us | 152.96 us | 9,568.6 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,476.4 us |  58.96 us |  52.26 us | 5,478.8 us |         - |         68 B |
-| BoolArrayTracker | 5,058.9 us |  66.05 us |  61.78 us | 5,065.1 us |         - |         84 B |
+|           Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|       SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+|   HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
+| BoolArrayTracker |   5.017 ms | 0.0447 ms | 0.0418 ms |          - |          84 B |
 ```
 
-Alright, we see another modest speed boost. Using just an array, we've cut out some cycles that the `HashSet` has to perform when it performs a lookup. Now we are just taking a pointer to the head of the array and offsetting it to perform the lookup. It's hard to get much faster than this... or is it?
+Alright, we see another speed boost. Using just an array, we've cut out some cycles that the `HashSet` has to perform when it performs a lookup. Now we are just taking a pointer to the head of the array and offsetting it to perform the lookup. It's hard to get much faster than this... or is it?
 
 ### Enter Data-Oriented Design
 
@@ -173,15 +173,15 @@ We now have a new type that allows us to track up to 64 different items, which i
 ```fsharp
 [<Benchmark>]
 member _.Int64Tracker () =
-    let mutable tracker = Int64Tracker.Create ()
+    let mutable tracker = Int64Tracker.Init ()
     
     for i = 0 to testIndexes.Length - 1 do
         let testIndex = testIndexes[i]
         if tracker.IsSet testIndex then
             // Real world we would do work here and then flip the case
-            tracker.Set testIndex
-        else
             tracker.UnSet testIndex
+        else
+            tracker.Set testIndex
 
     tracker
 ```
@@ -189,66 +189,15 @@ member _.Int64Tracker () =
 And we run our benchmarks to see how fast we are now.
 
 ```
-|           Method |       Mean |     Error |    StdDev |     Median |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|-----------:|----------:|-------------:|
-|       SetTracker | 9,863.6 us | 193.62 us | 244.86 us | 9,776.3 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,561.7 us |  75.37 us |  70.50 us | 5,583.8 us |         - |         68 B |
-| BoolArrayTracker | 5,013.9 us |  58.71 us |  54.92 us | 5,006.0 us |         - |         84 B |
-|     Int64Tracker |   745.3 us |  14.87 us |  14.60 us |   748.2 us |         - |          1 B |
+|           Method |       Mean |     Error |    StdDev |      Gen 0 |     Allocated |
+|----------------- |-----------:|----------:|----------:|-----------:|--------------:|
+|       SetTracker | 130.889 ms | 1.7642 ms | 1.4732 ms | 27000.0000 | 226,813,932 B |
+|   HashSetTracker |  14.368 ms | 0.0613 ms | 0.0544 ms |          - |       2,800 B |
+| BoolArrayTracker |   5.017 ms | 0.0447 ms | 0.0418 ms |          - |          84 B |
+|     Int64Tracker |   3.979 ms | 0.0097 ms | 0.0081 ms |          - |           4 B |
 ```
 
-That is an excellent speedup. We are now 13X faster than our first benchmark and ~6.5X faster than an `array<bool>`. We should be feeling good at this point. We've found a much faster way to track observations for most of our use cases.
-
-Let's be honest, though; we will need to track more than 64 items at some point. What would we do in that case? We could fall back to the `array<bool>`. Wouldn't it be nice if we could use those bit tricks with a larger number of items, though?
-
-## Span and Stackalloc
-
-In cases where we need to work with more than 64 items, we can't rely on a single `int64`. It doesn't have enough memory. In theory, we could use an `array<int64>` but that means we will allocate something on the heap. Wouldn't it be nice to just get a chunk of memory, use it, and then throw it away? Fortunately, we can! F# 4.5 added support to stackalloc memory.
-
-The syntax for creating it is not as clean as it is in C#, but [Bartosz Sypytkowski](https://twitter.com/Horusiath) provided a great [blog post](https://bartoszsypytkowski.com/writing-high-performance-f-code/) where he provides the following function for conveniently stack allocating a `Span`.
-
-```fsharp
-let inline stackalloc<'a when 'a: unmanaged> (length: int): Span<'a> =
-    let p = NativePtr.stackalloc<'a> length |> NativePtr.toVoidPtr
-    Span<'a>(p, length)
-```
-
-Now that we can grab small chunks of memory let's write a new benchmark that uses a `Span<int64>` to track observations.
-
-```fsharp
-[<Benchmark>]
-member _.SpanInt64Tracker () =
-    let bitsPerInt64 = 64
-    let requiredInt64s = (indexRange + bitsPerInt64 - 1) / bitsPerInt64
-    let spanIndex = stackalloc<int64> requiredInt64s
-
-    for i = 0 to testIndexes.Length - 1 do
-        let testIndex = testIndexes[i]
-        let int64Index = testIndex / bitsPerInt64
-        let bitIndex = testIndex % bitsPerInt64
-
-        if (spanIndex[int64Index] &&& (1 <<< bitIndex)) <> 0 then
-            // Real world we would do work here and then flip the case
-            spanIndex[int64Index] <- (1 <<< bitIndex) ||| spanIndex[int64Index]
-        else
-            spanIndex[int64Index] <- ~~~ (1 <<< bitIndex) &&& spanIndex[int64Index]
-
-    spanIndex
-```
-
-The main difference here is that we need to calculate which `int64` in our `Span<int64>` we need to check and which bit in the `int64` we want to test. That is why we have to calculate the `int64Index` and `bitIndex`. Let's run this benchmark and see what we get.
-
-```
-|           Method |       Mean |     Error |    StdDev |     Gen 0 |    Allocated |
-|----------------- |-----------:|----------:|----------:|----------:|-------------:|
-|       SetTracker | 9,293.6 us | 163.95 us | 264.75 us | 4781.2500 | 40,000,008 B |
-|   HashSetTracker | 5,398.9 us |  57.63 us |  53.91 us |         - |         68 B |
-| BoolArrayTracker | 5,007.6 us |  67.62 us |  63.25 us |         - |         84 B |
-|     Int64Tracker |   735.5 us |   5.40 us |   4.79 us |         - |            - |
-| SpanInt64Tracker | 2,893.7 us |  57.76 us | 155.18 us |         - |          2 B |
-```
-
-Not bad. It's not as fast as the `Int64Tracker` but is still faster than the `BoolArrayTracker`. The major upside compared to the `Int64Tracker` is that it is not limited to 64 items, and we can track as many as we would like. I feel like there's more that could be done here, but I wanted to share what I have found so far.
+Excellent! We've shaved off another 20%. This may not seem like much but let me note something important. The `BoolArrayTracker` takes an entire cache-line to store the information for 64 items. `Int64Tracker` only uses 4 bytes out of the 64 that are available. This means that in the full algorithm, we can use the remaining 60 bytes to tracker other information and ensure all of that information is on the same cache-line. This may seem silly at the moment but can have a significant impact on overall performance if we experience cache eviction in the middle of our tightest loop. More to come!
 
 If you have critiques or thoughts on how to improve, I'd love to hear it. All the code can be found [here](https://github.com/matthewcrews/BitFieldTracking). Feel free to make suggestions or pull requests.
 
