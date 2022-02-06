@@ -201,7 +201,7 @@ That is an excellent speedup. We are now 13X faster than our first benchmark and
 
 Let's be honest, though; we will need to track more than 64 items at some point. What would we do in that case? We could fall back to the `array<bool>`. Wouldn't it be nice if we could use those bit tricks with a larger number of items, though?
 
-## Enter the Span
+## Span and Stackalloc
 
 In cases where we need to work with more than 64 items, we can't rely on a single `int64`. It doesn't have enough memory. In theory, we could use an `array<int64>` but that means we will allocate something on the heap. Wouldn't it be nice to just get a chunk of memory, use it, and then throw it away? Fortunately, we can! F# 4.5 added support to stackalloc memory.
 

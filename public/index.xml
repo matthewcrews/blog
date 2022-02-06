@@ -312,6 +312,17 @@ One of the most difficult parts of putting together algorithms has been making s
     </item>
     
     <item>
+      <title></title>
+      <link>/consulting/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/consulting/</guid>
+      <description>You are a rapidly growing online retailer and you need tools to optimize your cash flow and inventory. I am here to help.
+Strategy Call Price: $495 USD
+You are ready to unlock the potential of Mathematical Planning to transform how you manage inventory and cash flow but don&amp;rsquo;t know where to start. We are going to take one hour to dig into what your biggest pain points are and identify what we need to do to start your transformation.</description>
+    </item>
+    
+    <item>
       <title>Eradicate Wasteful Planning</title>
       <link>/about/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -319,6 +330,17 @@ One of the most difficult parts of putting together algorithms has been making s
       <guid>/about/</guid>
       <description>My obsession with efficiency and optimization began with board games. I played Risk for hours growing up and created games centered around gathering resources, building cities, and managing trade. I turned that love into a job as I pursued Operations Research and Software Development.
 I am on a mission to eradicate wasteful planning. Operations Research and Mathematical Programming have developed tools and algorithms for solving the most challenging planning problems that exist.</description>
+    </item>
+    
+    <item>
+      <title>Mathematical Planning</title>
+      <link>/mathematical-planning/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/mathematical-planning/</guid>
+      <description>Mathematical Planning is the field of mathematics that came from the need to find the optimal plan to achieve a desired outcome.
+You have a Mathematical Planning problem when you have…
+ A Quantifiable Goal Rules to be obeyed Decisions to make  Common Quantifiable Goals are Maximize Profit, Minimize Waste, or Minimize Risk. Rules come from legal restrictions, workforce limitations, or cash flow. The Decisions are the choices that you need to make.</description>
     </item>
     
   </channel>
