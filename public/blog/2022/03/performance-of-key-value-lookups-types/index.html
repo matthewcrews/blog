@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Performance of Key/Value Collections for Updating - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Performance of Key/Value Collections for Updating"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2022/03/performance-of-key-value-lookups-types/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Performance of Key/Value Collections for Updating</h1>
+      <div class="content"><p>I have been working on a simulation engine that requires a key/value collection for holding the flow rates through a network as part of a <a href="https://en.wikipedia.org/wiki/Push%E2%80%93relabel_maximum_flow_algorithm">Push-Relabel algorithm</a>. This is the most performance-critical code in the engine, so I needed to find the fastest way to perform a lookup, update, and store for a key/value pair. The prevailing wisdom is to use a .NET <code>Dictionary,</code> but I was curious how the performance would compare to the F# <code>Map</code> type. A <code>Map</code> is backed by an <a href="https://en.wikipedia.org/wiki/AVL_tree">AVL Tree</a> and has a read and write performance of $O(log(n))$ while <code>Dictionary</code> is a <a href="https://en.wikipedia.org/wiki/Hash_table">Hash Table</a> with an algorithmic complexity of $O(1)$ for reads and writes.</p>
+<p>For my use case, I need to read a value from the collection, perform a minor update, and then update the value for the key in the collection.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp">dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0 <span style="color:#75715e">// Trivial work example
+</span></code></pre></div><h2 id="test--setup">Test  Setup</h2>
+<p>To make it easier to set up tests across various collection sizes in <code>benchmarkDotNet,</code> I defined an Enum <code>Size</code> that would indicate the size of the collection I wanted to test against.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// Enum for the different size
+</span><span style="color:#75715e"></span><span style="color:#f92672">[&lt;</span>Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Size</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> ``10`` <span style="color:#f92672">=</span> 0
+    <span style="color:#f92672">|</span> ``100`` <span style="color:#f92672">=</span> 1
+    <span style="color:#f92672">|</span> ``1_000`` <span style="color:#f92672">=</span> 2
+    <span style="color:#f92672">|</span> ``10_000`` <span style="color:#f92672">=</span> 3
+    <span style="color:#f92672">|</span> ``100_000`` <span style="color:#f92672">=</span> 4
+    <span style="color:#f92672">|</span> ``1_000_000`` <span style="color:#f92672">=</span> 5
+</code></pre></div><p>The Enum cases will map to the index of the data set that I want to test against. I now define a <code>Benchmark</code> class to hold my tests and generate the necessary data.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Benchmarks</span> () <span style="color:#f92672">=</span>
+
+    <span style="color:#75715e">// The number of lookups I will perform in each test
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> lookupCount <span style="color:#f92672">=</span> 10
+    <span style="color:#75715e">// A random number generator to create random indices
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// into the collections.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> rng <span style="color:#f92672">=</span> Random 1337
+
+    <span style="color:#75715e">// Lookup array to map Size -&gt; Count
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> sizeToCount <span style="color:#f92672">=</span>
+        <span style="color:#f92672">[|</span>
+            10
+            100
+            1_000
+            10_000
+            100_000
+            1_000_000
+        <span style="color:#f92672">|]</span>
+
+    <span style="color:#75715e">// An array of different Maps for each size in Size
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> maps <span style="color:#f92672">=</span>
+        sizeToCount
+        <span style="color:#f92672">|&gt;</span> Array.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> count <span style="color:#f92672">-&gt;</span>
+            Map <span style="color:#f92672">[</span><span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> 0 <span style="color:#f92672">..</span> count <span style="color:#f92672">-</span> 1 <span style="color:#f92672">-&gt;</span> <span style="color:#66d9ef">string</span> i<span style="color:#f92672">,</span> 0<span style="color:#f92672">.</span>0<span style="color:#f92672">]</span>
+            <span style="color:#f92672">)</span>
+    
+    <span style="color:#75715e">// An array of different Dictionaries for each size in Size
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> dictionaries <span style="color:#f92672">=</span>
+        sizeToCount
+        <span style="color:#f92672">|&gt;</span> Array.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> count <span style="color:#f92672">-&gt;</span>
+            Dictionary <span style="color:#f92672">[</span><span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> 0 <span style="color:#f92672">..</span> count <span style="color:#f92672">-</span> 1 <span style="color:#f92672">-&gt;</span> KeyValuePair <span style="color:#f92672">(</span><span style="color:#66d9ef">string</span> i<span style="color:#f92672">,</span> 0<span style="color:#f92672">.</span>0<span style="color:#f92672">)]</span>
+            <span style="color:#f92672">)</span>
+</code></pre></div><p>I then add a member to the <code>Benchmarks</code> class called <code>Size</code> so that <code>benchmarkDotNet</code> can update the field to automatically test across each of the cases in the <code>Size</code> Enum.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Params<span style="color:#f92672">(</span>Size.``10``<span style="color:#f92672">,</span> Size.``100``<span style="color:#f92672">,</span> Size.``1_000``<span style="color:#f92672">,</span> Size.``10_000``<span style="color:#f92672">,</span>
+            Size.``100_000``<span style="color:#f92672">,</span> Size.``1_000_000``<span style="color:#f92672">)&gt;]</span>
+<span style="color:#66d9ef">member</span> <span style="color:#66d9ef">val</span> Size <span style="color:#f92672">=</span> Size.``10`` <span style="color:#66d9ef">with</span> get<span style="color:#f92672">,</span> set
+</code></pre></div><p>When <code>benchmarkDotNet</code> runs, it will see that the <code>Size</code> property has been decorated with the different values we want it to test. It will run each of our tests with every value we decorate the <code>Size</code> property with.</p>
+<p>I now create the test for the <code>Map</code> collections. I index into the <code>maps</code> array and retrieve the <code>Map</code> associated with the case of <code>Size</code>. I then retrieve the <code>keys</code> associated with the <code>Size</code>. This ensures that all of the keys we will lookup can be found in the collection. You will see that I use <code>mutable</code> on the <code>map</code> value and then return it at the end of the method. This is to ensure that the CLR doesn&rsquo;t compile the work away. This is not how I would typically use a <code>Map</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> b.<span style="color:#a6e22e">Map</span> () <span style="color:#f92672">=</span>
+    <span style="color:#75715e">// We using mutation to ensure the compiler doesn&#39;t eliminate unnecessary work
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> mutable map <span style="color:#f92672">=</span> maps<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> keys <span style="color:#f92672">=</span> keysForSize<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+
+    <span style="color:#75715e">// We are making memory access pattern as predictable as possible
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// to eliminate cache hits from the work of getting the key. We don&#39;t use
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// IEnumerable to reduce the overhead.
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> keys<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> key <span style="color:#f92672">=</span> keys<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">let</span> newValue <span style="color:#f92672">=</span> map<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0
+        map <span style="color:#f92672">&lt;-</span> map<span style="color:#f92672">.</span>Add <span style="color:#f92672">(</span>key<span style="color:#f92672">,</span> newValue<span style="color:#f92672">)</span> <span style="color:#75715e">// Do a minimal amount of work
+</span><span style="color:#75715e"></span>
+    map
+</code></pre></div><p>We iterate through each key in the <code>keys</code> array associated with the size we are testing. I wanted to try more than one lookup, so I wasn&rsquo;t getting unexpected performance benefits from the CPU being lucky for a lookup of a single value.</p>
+<p>I create the same test for the <code>Dictionary</code> type. The work is the same, even though it looks slightly different. This is due to <code>Dictionary</code> having a different API than <code>Map</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> b.<span style="color:#a6e22e">Dictionary</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> dictionary <span style="color:#f92672">=</span> dictionaries<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> keys <span style="color:#f92672">=</span> keysForSize<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> keys<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> key <span style="color:#f92672">=</span> keys<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0 <span style="color:#75715e">// Do a minimal amount of work
+</span><span style="color:#75715e"></span>
+    dictionary
+</code></pre></div><p>I now define my <code>main</code> method and run the benchmarks.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>EntryPoint<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">let</span> main <span style="color:#f92672">_</span> <span style="color:#f92672">=</span>
+
+    <span style="color:#75715e">// I don&#39;t care about what Run returns so I&#39;m ignoring it
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> _ <span style="color:#f92672">=</span> BenchmarkRunner.Run<span style="color:#f92672">&lt;</span>Benchmarks<span style="color:#f92672">&gt;</span>()
+    0
+</code></pre></div><p>Another thing worth mentioning is that I am restricted to the <code>x64</code> platform, so I update the <code>.fsproj</code> of the project to make sure that I only build and test for <code>x64</code>.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-xml" data-lang="xml"><span style="color:#f92672">&lt;Project</span> <span style="color:#a6e22e">Sdk=</span><span style="color:#e6db74">&#34;Microsoft.NET.Sdk&#34;</span><span style="color:#f92672">&gt;</span>
+
+  <span style="color:#f92672">&lt;PropertyGroup&gt;</span>
+    <span style="color:#f92672">&lt;OutputType&gt;</span>Exe<span style="color:#f92672">&lt;/OutputType&gt;</span>
+    <span style="color:#f92672">&lt;TargetFramework&gt;</span>net6.0<span style="color:#f92672">&lt;/TargetFramework&gt;</span>
+<span style="color:#75715e">&lt;!--    Restricts to the x64 platform--&gt;</span>
+    <span style="color:#f92672">&lt;Platform&gt;</span>x64<span style="color:#f92672">&lt;/Platform&gt;</span> 
+  <span style="color:#f92672">&lt;/PropertyGroup&gt;</span>
+
+  <span style="color:#f92672">&lt;ItemGroup&gt;</span>
+    <span style="color:#f92672">&lt;Compile</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;Program.fs&#34;</span> <span style="color:#f92672">/&gt;</span>
+  <span style="color:#f92672">&lt;/ItemGroup&gt;</span>
+
+  <span style="color:#f92672">&lt;ItemGroup&gt;</span>
+    <span style="color:#f92672">&lt;PackageReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;BenchmarkDotNet&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;0.13.1&#34;</span> <span style="color:#f92672">/&gt;</span>
+    <span style="color:#f92672">&lt;PackageReference</span> <span style="color:#a6e22e">Include=</span><span style="color:#e6db74">&#34;BenchmarkDotNet.Diagnostics.Windows&#34;</span> <span style="color:#a6e22e">Version=</span><span style="color:#e6db74">&#34;0.13.1&#34;</span> <span style="color:#f92672">/&gt;</span>
+  <span style="color:#f92672">&lt;/ItemGroup&gt;</span>
+
+<span style="color:#f92672">&lt;/Project&gt;</span>
+</code></pre></div><p>I get the following table when I run these benchmarks with <code>dotnet run -c Release</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Size</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+<th style="text-align:right">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Map</td>
+<td>10</td>
+<td style="text-align:right">986.3 ns</td>
+<td style="text-align:right">19.51 ns</td>
+<td style="text-align:right">38.06 ns</td>
+<td style="text-align:right">972.5 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10</td>
+<td style="text-align:right">253.2 ns</td>
+<td style="text-align:right">3.57 ns</td>
+<td style="text-align:right">3.17 ns</td>
+<td style="text-align:right">252.4 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100</td>
+<td style="text-align:right">2,062.4 ns</td>
+<td style="text-align:right">39.33 ns</td>
+<td style="text-align:right">36.79 ns</td>
+<td style="text-align:right">2,053.8 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100</td>
+<td style="text-align:right">325.2 ns</td>
+<td style="text-align:right">6.18 ns</td>
+<td style="text-align:right">6.34 ns</td>
+<td style="text-align:right">324.7 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000</td>
+<td style="text-align:right">3,468.0 ns</td>
+<td style="text-align:right">68.38 ns</td>
+<td style="text-align:right">130.09 ns</td>
+<td style="text-align:right">3,394.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000</td>
+<td style="text-align:right">299.8 ns</td>
+<td style="text-align:right">5.99 ns</td>
+<td style="text-align:right">10.02 ns</td>
+<td style="text-align:right">298.1 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>10_000</td>
+<td style="text-align:right">4,383.1 ns</td>
+<td style="text-align:right">86.00 ns</td>
+<td style="text-align:right">80.45 ns</td>
+<td style="text-align:right">4,393.2 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10_000</td>
+<td style="text-align:right">322.4 ns</td>
+<td style="text-align:right">2.15 ns</td>
+<td style="text-align:right">1.79 ns</td>
+<td style="text-align:right">322.6 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100_000</td>
+<td style="text-align:right">5,571.8 ns</td>
+<td style="text-align:right">90.32 ns</td>
+<td style="text-align:right">84.48 ns</td>
+<td style="text-align:right">5,569.3 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100_000</td>
+<td style="text-align:right">338.0 ns</td>
+<td style="text-align:right">2.71 ns</td>
+<td style="text-align:right">2.26 ns</td>
+<td style="text-align:right">338.6 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000_000</td>
+<td style="text-align:right">7,695.1 ns</td>
+<td style="text-align:right">150.65 ns</td>
+<td style="text-align:right">263.86 ns</td>
+<td style="text-align:right">7,690.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000_000</td>
+<td style="text-align:right">369.2 ns</td>
+<td style="text-align:right">2.69 ns</td>
+<td style="text-align:right">2.10 ns</td>
+<td style="text-align:right">369.5 ns</td>
+</tr>
+</tbody>
+</table>
+<p>This is in alignment with my expectations. Since <code>Map</code> is an immutable data structure, it needs to copy a significant amount of data when creating the updated <code>Map</code>. This scenario is one of the worst ways you can use a <code>Map</code>. <code>Dictionary,</code> on the other hand, is a mutable data structure, so in this case, all of the work is in computing the hash code to find the correct bucket in the backing array and then the equality check to make sure the key in the bucket is the same as the one you are looking up.</p>
+<p><code>Map</code> is a great data structure, but this is not the best use case for it. I knew this ahead of time, but it&rsquo;s good to validate your assumptions.</p>
+<h2 id="even-faster">Even Faster?</h2>
+<p>Can we go even faster, though? You may notice that we have to look up the key twice for each update. Once to get the value so that we can add <code>1.0</code> to it and a second time to store the updated value. It&rsquo;s all on this single line of code:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// First lookup is here to get the value to add 1.0 to it
+</span><span style="color:#75715e">//                             ↓
+</span><span style="color:#75715e"></span>dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">&lt;-</span> dictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span> <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0
+<span style="color:#75715e">//          ↑
+</span><span style="color:#75715e">// Second lookup happens here to store the value
+</span></code></pre></div><p>Wouldn&rsquo;t it be nice if we didn&rsquo;t have to do that work twice? What if instead of the <code>Dictionary</code> returning by value, it returns by reference? This way, we only need to perform the lookup once?</p>
+<p>Now, some of you may start balking, saying that&rsquo;s dangerous. You can create some hideous bugs if you misuse this. It&rsquo;s difficult enough that you will not find it in the <code>Dictionary</code> class itself. You need to use a method found on the <code>CollectionsMarshal</code> class, in the <code>System.Runtime.InteropServices</code> namespace. The name of the method I want is <code>GetValueRefOrAddDefault</code>. This method has an unusual function signature, so I want to unpack what is happening.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp">CollectionsMarshal.GetValueRefOrAddDefault<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>TKey<span style="color:#f92672">,</span><span style="color:#66d9ef">&#39;</span>TValue<span style="color:#f92672">&gt;(</span>dictionary<span style="color:#f92672">:</span> Dictionary<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>TKey<span style="color:#f92672">,</span><span style="color:#66d9ef">&#39;</span>TValue<span style="color:#f92672">&gt;,</span> key<span style="color:#f92672">:</span> <span style="color:#66d9ef">&#39;</span>TKey<span style="color:#f92672">,</span> exists<span style="color:#f92672">:</span> byref<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">bool</span><span style="color:#f92672">&gt;)</span> <span style="color:#f92672">:</span> byref<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>TValue
+</code></pre></div><p>F# does some interesting things for you implicitly regarding the ref types: <code>byref</code>, <code>inref</code>, and <code>outref</code>. I highly recommend you read the Microsoft <a href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/byrefs">docs</a> on refs. The first time you read it, you may be confused. I was, but the more I work with the ref types, the more it makes sense.</p>
+<blockquote>
+<p><strong>Aside:</strong> F# is designed as a succinct, expressive, and efficient language. It sometimes gets a reputation for being slow. I will concede if you write entirely idiomatic F#, your performance may not be on the level of a C++ program. BUT, that&rsquo;s not to say you can&rsquo;t write fast F# code. F# has defaults and idioms, making it easier to compose correct programs quickly.</p>
+</blockquote>
+<blockquote>
+<p>People don&rsquo;t talk about much, though you can turn all the safeties in F# off if you want to. If you&rsquo;re going to drop down to raw native pointers, you can. F# forces you to be more explicit about wanting to violate the safeties</p>
+</blockquote>
+<p>The usual way of working with a .NET API, which uses a <code>byref</code> as one of the parameters for the method, is to use a <code>match...with</code> statement to unpack the values. The most common method I use with this behavior is the <code>TryGetValue</code> method of <code>Dictionary</code>. <code>TryGetValue</code> has the following signature:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp">Dictionary.TryGetValue<span style="color:#f92672">(</span>key<span style="color:#f92672">:</span> <span style="color:#66d9ef">string</span><span style="color:#f92672">,</span> value<span style="color:#f92672">:</span> byref<span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>T<span style="color:#f92672">&gt;)</span> <span style="color:#f92672">:</span> <span style="color:#66d9ef">bool</span>
+</code></pre></div><p>You will see that the method expects you to pass a <code>byref&lt;'T&gt;</code>. If the dictionary has the value, it will put it in the location <code>byref&lt;'T&gt;</code> points and return a <code>true</code>. If it does not find the value, it will not update the value the <code>byref&lt;'T&gt;</code> points to and returns <code>false</code>. Instead of declaring a <code>byref&lt;'T&gt;,</code> we instead use the <code>match ... with</code> syntax, and F# will implicitly do the work of creating the <code>byref&lt;'T&gt;</code> for us.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">match</span> dictionary<span style="color:#f92672">.</span>TryGetValue key <span style="color:#66d9ef">with</span>
+<span style="color:#f92672">|</span> <span style="color:#66d9ef">true</span><span style="color:#f92672">,</span> value <span style="color:#f92672">-&gt;</span> () <span style="color:#75715e">// Do something with value
+</span><span style="color:#75715e"></span><span style="color:#f92672">|</span> <span style="color:#66d9ef">false</span><span style="color:#f92672">,</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> () <span style="color:#75715e">// Do something without the value
+</span></code></pre></div><p><code>value</code>, in this case, will be the value that was found. It will NOT be a <code>byref&lt;'T&gt;</code> pointing to the value found. F# implicitly dereferences the <code>byref</code> for us. This implicit dereferencing is nice most of the time but, in our case, is the opposite of what we want. Therefore we must define our byrefs and pass them to the method.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#75715e">// dictionary is a Dictionary&lt;int, float&gt;
+</span><span style="color:#75715e">// key is a `int` we are wanting to the look up the float for
+</span><span style="color:#75715e"></span><span style="color:#66d9ef">let</span> mutable wasFound <span style="color:#f92672">=</span> Unchecked.defaultof<span style="color:#f92672">&lt;_&gt;</span>
+<span style="color:#66d9ef">let</span> valueRef <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>CollectionsMarshal.GetValueRefOrAddDefault <span style="color:#f92672">(</span>dictionary<span style="color:#f92672">,</span> key<span style="color:#f92672">,</span> <span style="color:#f92672">&amp;</span>wasFound<span style="color:#f92672">)</span>
+<span style="color:#75715e">//             ↑ Notice this `&amp;`
+</span></code></pre></div><p><code>wasFound</code> is a <code>byref&lt;bool&gt;</code> that we pass to the method. You&rsquo;ll notice that we are not giving in a <code>byref&lt;float&gt;</code> for the method to fill in for us. Instead, we are using the <code>&amp;</code> operator prepended to the method to tell F# that we want it to return the <code>byref</code> for us, not the value. If we did not prepend the <code>&amp;</code> to the method call, F# would implicitly dereference the <code>byref</code> for us. This is another case of the F# defaults leaning toward safety. Fortunately, we can turn the safeties off.</p>
+<p>Now that we know how to work with the <code>GetValueRefOrAddDefault</code> method, we create a test and compare the performance to our other tests.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> b.<span style="color:#a6e22e">DictionaryGetRef</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> dictionary <span style="color:#f92672">=</span> dictionaries<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> keys <span style="color:#f92672">=</span> keysForSize<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> mutable wasFound <span style="color:#f92672">=</span> Unchecked.defaultof<span style="color:#f92672">&lt;_&gt;</span>
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> keys<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> key <span style="color:#f92672">=</span> keys<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">let</span> valueRef <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>CollectionsMarshal.GetValueRefOrAddDefault <span style="color:#f92672">(</span>dictionary<span style="color:#f92672">,</span> key<span style="color:#f92672">,</span> <span style="color:#f92672">&amp;</span>wasFound<span style="color:#f92672">)</span>
+        valueRef <span style="color:#f92672">&lt;-</span> valueRef <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0
+
+    dictionary
+</code></pre></div><p>When we want to add 1.0 to our value, you&rsquo;ll notice that we don&rsquo;t have to dereference the <code>byref&lt;float&gt;</code>. F# is doing that work for us. This contrasts with C++, where you would need to dereference a pointer explicitly.</p>
+<p>We get the following result if we run our benchmarks with this new test.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Size</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+<th style="text-align:right">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Map</td>
+<td>10</td>
+<td style="text-align:right">986.3 ns</td>
+<td style="text-align:right">19.51 ns</td>
+<td style="text-align:right">38.06 ns</td>
+<td style="text-align:right">972.5 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10</td>
+<td style="text-align:right">253.2 ns</td>
+<td style="text-align:right">3.57 ns</td>
+<td style="text-align:right">3.17 ns</td>
+<td style="text-align:right">252.4 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>10</td>
+<td style="text-align:right">119.3 ns</td>
+<td style="text-align:right">1.58 ns</td>
+<td style="text-align:right">1.48 ns</td>
+<td style="text-align:right">119.0 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100</td>
+<td style="text-align:right">2,062.4 ns</td>
+<td style="text-align:right">39.33 ns</td>
+<td style="text-align:right">36.79 ns</td>
+<td style="text-align:right">2,053.8 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100</td>
+<td style="text-align:right">325.2 ns</td>
+<td style="text-align:right">6.18 ns</td>
+<td style="text-align:right">6.34 ns</td>
+<td style="text-align:right">324.7 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>100</td>
+<td style="text-align:right">124.5 ns</td>
+<td style="text-align:right">2.52 ns</td>
+<td style="text-align:right">3.10 ns</td>
+<td style="text-align:right">124.2 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000</td>
+<td style="text-align:right">3,468.0 ns</td>
+<td style="text-align:right">68.38 ns</td>
+<td style="text-align:right">130.09 ns</td>
+<td style="text-align:right">3,394.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000</td>
+<td style="text-align:right">299.8 ns</td>
+<td style="text-align:right">5.99 ns</td>
+<td style="text-align:right">10.02 ns</td>
+<td style="text-align:right">298.1 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>1_000</td>
+<td style="text-align:right">130.9 ns</td>
+<td style="text-align:right">2.52 ns</td>
+<td style="text-align:right">2.69 ns</td>
+<td style="text-align:right">130.1 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>10_000</td>
+<td style="text-align:right">4,383.1 ns</td>
+<td style="text-align:right">86.00 ns</td>
+<td style="text-align:right">80.45 ns</td>
+<td style="text-align:right">4,393.2 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10_000</td>
+<td style="text-align:right">322.4 ns</td>
+<td style="text-align:right">2.15 ns</td>
+<td style="text-align:right">1.79 ns</td>
+<td style="text-align:right">322.6 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>10_000</td>
+<td style="text-align:right">141.4 ns</td>
+<td style="text-align:right">2.12 ns</td>
+<td style="text-align:right">1.77 ns</td>
+<td style="text-align:right">140.9 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100_000</td>
+<td style="text-align:right">5,571.8 ns</td>
+<td style="text-align:right">90.32 ns</td>
+<td style="text-align:right">84.48 ns</td>
+<td style="text-align:right">5,569.3 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100_000</td>
+<td style="text-align:right">338.0 ns</td>
+<td style="text-align:right">2.71 ns</td>
+<td style="text-align:right">2.26 ns</td>
+<td style="text-align:right">338.6 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>100_000</td>
+<td style="text-align:right">130.5 ns</td>
+<td style="text-align:right">1.13 ns</td>
+<td style="text-align:right">1.05 ns</td>
+<td style="text-align:right">130.2 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000_000</td>
+<td style="text-align:right">7,695.1 ns</td>
+<td style="text-align:right">150.65 ns</td>
+<td style="text-align:right">263.86 ns</td>
+<td style="text-align:right">7,690.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000_000</td>
+<td style="text-align:right">369.2 ns</td>
+<td style="text-align:right">2.69 ns</td>
+<td style="text-align:right">2.10 ns</td>
+<td style="text-align:right">369.5 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>1_000_000</td>
+<td style="text-align:right">152.1 ns</td>
+<td style="text-align:right">1.09 ns</td>
+<td style="text-align:right">0.91 ns</td>
+<td style="text-align:right">152.1 ns</td>
+</tr>
+</tbody>
+</table>
+<p>We see that the <code>GetValueRefOrAddDefault</code> method approach is more than twice as fast. A word of warning before you go and rewrite how you use <code>Dictionary</code>. If you hold onto the reference to the value while performing other updates on the <code>Dictionary</code>, you could get into some messy situations where the <code>Dictionary</code> has moved items around due to deletions or inserts. I am doing no other work between getting the reference, calculating an update, and then updating the value.</p>
+<h2 id="a-safer-approach">A Safer Approach</h2>
+<p>Instead of getting a reference to the value, we could wrap our values in a <code>ValueWrapper</code> class and store those in the <code>Dictionary</code>. This was proposed in a GitHub discussion where people were debating the addition of the <code>GetValueRefOrAddDefault</code> method. I decided to code one up and compare the performance out of curiosity.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ValueWrapper</span><span style="color:#f92672">&lt;</span><span style="color:#66d9ef">&#39;</span>T <span style="color:#66d9ef">when</span> <span style="color:#66d9ef">&#39;</span>T <span style="color:#f92672">:</span> <span style="color:#66d9ef">struct</span><span style="color:#f92672">&gt;</span> <span style="color:#f92672">(</span>value<span style="color:#f92672">:</span> <span style="color:#66d9ef">&#39;</span>T<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">member</span> <span style="color:#66d9ef">val</span> Value <span style="color:#f92672">=</span> value <span style="color:#66d9ef">with</span> get<span style="color:#f92672">,</span> set
+</code></pre></div><p>I test this approach; I now have to wrap my values in the ValueWrapper type.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> wrappedValueDictionaries <span style="color:#f92672">=</span>
+    sizeToCount
+    <span style="color:#f92672">|&gt;</span> Array.map <span style="color:#f92672">(</span><span style="color:#66d9ef">fun</span> count <span style="color:#f92672">-&gt;</span>
+        Dictionary <span style="color:#f92672">[</span><span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> 0 <span style="color:#f92672">..</span> count <span style="color:#f92672">-</span> 1 <span style="color:#f92672">-&gt;</span> KeyValuePair <span style="color:#f92672">(</span><span style="color:#66d9ef">string</span> i<span style="color:#f92672">,</span> ValueWrapper 0<span style="color:#f92672">.</span>0<span style="color:#f92672">)]</span>
+        <span style="color:#f92672">)</span>
+</code></pre></div><p>And create a test for it&hellip;</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> b.<span style="color:#a6e22e">ValueWrappedDictionary</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> valueWrappedDictionary <span style="color:#f92672">=</span> wrappedValueDictionaries<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+    <span style="color:#66d9ef">let</span> keys <span style="color:#f92672">=</span> keysForSize<span style="color:#f92672">[</span>int b<span style="color:#f92672">.</span>Size<span style="color:#f92672">]</span>
+
+    <span style="color:#66d9ef">for</span> i <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> keys<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> key <span style="color:#f92672">=</span> keys<span style="color:#f92672">[</span>i<span style="color:#f92672">]</span>
+        <span style="color:#66d9ef">let</span> v <span style="color:#f92672">=</span> valueWrappedDictionary<span style="color:#f92672">[</span>key<span style="color:#f92672">]</span>
+        v<span style="color:#f92672">.</span>Value <span style="color:#f92672">&lt;-</span> v<span style="color:#f92672">.</span>Value <span style="color:#f92672">+</span> 1<span style="color:#f92672">.</span>0 <span style="color:#75715e">// Do a minimal amount of work
+</span><span style="color:#75715e"></span>
+    valueWrappedDictionary
+</code></pre></div><p>We see that this WrappedValue approach is just as fast when we run the benchmarks.</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Size</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+<th style="text-align:right">Median</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Map</td>
+<td>10</td>
+<td style="text-align:right">986.3 ns</td>
+<td style="text-align:right">19.51 ns</td>
+<td style="text-align:right">38.06 ns</td>
+<td style="text-align:right">972.5 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10</td>
+<td style="text-align:right">253.2 ns</td>
+<td style="text-align:right">3.57 ns</td>
+<td style="text-align:right">3.17 ns</td>
+<td style="text-align:right">252.4 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>10</td>
+<td style="text-align:right">104.8 ns</td>
+<td style="text-align:right">1.99 ns</td>
+<td style="text-align:right">1.86 ns</td>
+<td style="text-align:right">104.0 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>10</td>
+<td style="text-align:right">119.3 ns</td>
+<td style="text-align:right">1.58 ns</td>
+<td style="text-align:right">1.48 ns</td>
+<td style="text-align:right">119.0 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100</td>
+<td style="text-align:right">2,062.4 ns</td>
+<td style="text-align:right">39.33 ns</td>
+<td style="text-align:right">36.79 ns</td>
+<td style="text-align:right">2,053.8 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100</td>
+<td style="text-align:right">325.2 ns</td>
+<td style="text-align:right">6.18 ns</td>
+<td style="text-align:right">6.34 ns</td>
+<td style="text-align:right">324.7 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>100</td>
+<td style="text-align:right">132.3 ns</td>
+<td style="text-align:right">2.08 ns</td>
+<td style="text-align:right">1.95 ns</td>
+<td style="text-align:right">131.7 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>100</td>
+<td style="text-align:right">124.5 ns</td>
+<td style="text-align:right">2.52 ns</td>
+<td style="text-align:right">3.10 ns</td>
+<td style="text-align:right">124.2 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000</td>
+<td style="text-align:right">3,468.0 ns</td>
+<td style="text-align:right">68.38 ns</td>
+<td style="text-align:right">130.09 ns</td>
+<td style="text-align:right">3,394.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000</td>
+<td style="text-align:right">299.8 ns</td>
+<td style="text-align:right">5.99 ns</td>
+<td style="text-align:right">10.02 ns</td>
+<td style="text-align:right">298.1 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>1_000</td>
+<td style="text-align:right">132.2 ns</td>
+<td style="text-align:right">1.06 ns</td>
+<td style="text-align:right">0.94 ns</td>
+<td style="text-align:right">132.2 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>1_000</td>
+<td style="text-align:right">130.9 ns</td>
+<td style="text-align:right">2.52 ns</td>
+<td style="text-align:right">2.69 ns</td>
+<td style="text-align:right">130.1 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>10_000</td>
+<td style="text-align:right">4,383.1 ns</td>
+<td style="text-align:right">86.00 ns</td>
+<td style="text-align:right">80.45 ns</td>
+<td style="text-align:right">4,393.2 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>10_000</td>
+<td style="text-align:right">322.4 ns</td>
+<td style="text-align:right">2.15 ns</td>
+<td style="text-align:right">1.79 ns</td>
+<td style="text-align:right">322.6 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>10_000</td>
+<td style="text-align:right">150.8 ns</td>
+<td style="text-align:right">0.90 ns</td>
+<td style="text-align:right">0.80 ns</td>
+<td style="text-align:right">150.6 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>10_000</td>
+<td style="text-align:right">141.4 ns</td>
+<td style="text-align:right">2.12 ns</td>
+<td style="text-align:right">1.77 ns</td>
+<td style="text-align:right">140.9 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>100_000</td>
+<td style="text-align:right">5,571.8 ns</td>
+<td style="text-align:right">90.32 ns</td>
+<td style="text-align:right">84.48 ns</td>
+<td style="text-align:right">5,569.3 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>100_000</td>
+<td style="text-align:right">338.0 ns</td>
+<td style="text-align:right">2.71 ns</td>
+<td style="text-align:right">2.26 ns</td>
+<td style="text-align:right">338.6 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>100_000</td>
+<td style="text-align:right">151.3 ns</td>
+<td style="text-align:right">0.75 ns</td>
+<td style="text-align:right">0.63 ns</td>
+<td style="text-align:right">151.4 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>100_000</td>
+<td style="text-align:right">130.5 ns</td>
+<td style="text-align:right">1.13 ns</td>
+<td style="text-align:right">1.05 ns</td>
+<td style="text-align:right">130.2 ns</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>1_000_000</td>
+<td style="text-align:right">7,695.1 ns</td>
+<td style="text-align:right">150.65 ns</td>
+<td style="text-align:right">263.86 ns</td>
+<td style="text-align:right">7,690.7 ns</td>
+</tr>
+<tr>
+<td>Dictionary</td>
+<td>1_000_000</td>
+<td style="text-align:right">369.2 ns</td>
+<td style="text-align:right">2.69 ns</td>
+<td style="text-align:right">2.10 ns</td>
+<td style="text-align:right">369.5 ns</td>
+</tr>
+<tr>
+<td>ValueWrappedDictionary</td>
+<td>1_000_000</td>
+<td style="text-align:right">153.3 ns</td>
+<td style="text-align:right">1.21 ns</td>
+<td style="text-align:right">1.13 ns</td>
+<td style="text-align:right">153.2 ns</td>
+</tr>
+<tr>
+<td>DictionaryGetRef</td>
+<td>1_000_000</td>
+<td style="text-align:right">152.1 ns</td>
+<td style="text-align:right">1.09 ns</td>
+<td style="text-align:right">0.91 ns</td>
+<td style="text-align:right">152.1 ns</td>
+</tr>
+</tbody>
+</table>
+<p>The nice thing about this approach is that even when the <code>Dictionary</code> gets reorganized, our <code>ValueWrapper</code> will still point to the correct data piece. The downside is that this will allocate more memory since each <code>ValueWrapper</code> is an object that needs to be allocated on the heap. You also lose any cache locality benefits since the <code>ValueWrapper</code> objects could spread all over memory. We aren&rsquo;t observing any downsides in this tiny benchmark, but it&rsquo;s essential to be aware. There could be some performance implications in the context of a larger program.</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>
