@@ -6,7 +6,16 @@
     <description>Recent content in Blog on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 06 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 19 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Performance of Key/Value Collections for Updating</title>
+      <link>/blog/2022/03/performance-of-key-value-lookups-types/</link>
+      <pubDate>Sat, 19 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2022/03/performance-of-key-value-lookups-types/</guid>
+      <description>I have been working on a simulation engine that requires a key/value collection for holding the flow rates through a network as part of a Push-Relabel algorithm. This is the most performance-critical code in the engine, so I needed to find the fastest way to perform a lookup, update, and store for a key/value pair. The prevailing wisdom is to use a .NET Dictionary, but I was curious how the performance would compare to the F# Map type.</description>
+    </item>
+    
     <item>
       <title>Fast Tracking of Item Observations</title>
       <link>/blog/2022/02/high-performance-observation-tracking/</link>

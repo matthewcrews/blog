@@ -5,7 +5,7 @@ draft: false
 tag: fsharp, performance
 ---
 
-I have been working on a simulation engine that requires a key/value collection for holding the flow rates through a network as part of a [Push-Relabel algorithm](https://en.wikipedia.org/wiki/Push%E2%80%93relabel_maximum_flow_algorithm). This is the most performance-critical code in the engine, so I needed to find the fastest way to perform a lookup, update, and store for a key/value pair. The prevailing wisdom is to use a .NET `Dictionary,` but I was curious how the performance would compare to the F# `Map` type. A `Map` is backed by an [AVL Tree](https://en.wikipedia.org/wiki/AVL_tree) and has a read and write performance of $O(log(n))$ while `Dictionary` is a [Hash Table](https://en.wikipedia.org/wiki/Hash_table) with an algorithmic complexity of $O(1)$ for reads and writes.
+I have been working on a simulation engine that requires a key/value collection for holding the flow rates through a network as part of a [Push-Relabel algorithm](https://en.wikipedia.org/wiki/Push%E2%80%93relabel_maximum_flow_algorithm). This is the most performance-critical code in the engine, so I needed to find the fastest way to perform a lookup, update, and store for a key/value pair. The prevailing wisdom is to use a .NET `Dictionary`, but I was curious how the performance would compare to the F# `Map` type. A `Map` is backed by an [AVL Tree](https://en.wikipedia.org/wiki/AVL_tree) and has a read and write performance of $O(log(n))$ while `Dictionary` is a [Hash Table](https://en.wikipedia.org/wiki/Hash_table) with an algorithmic complexity of $O(1)$ for reads and writes.
 
 For my use case, I need to read a value from the collection, perform a minor update, and then update the value for the key in the collection.
 
@@ -193,9 +193,9 @@ F# does some interesting things for you implicitly regarding the ref types: `byr
 
 > **Aside:** F# is designed as a succinct, expressive, and efficient language. It sometimes gets a reputation for being slow. I will concede if you write entirely idiomatic F#, your performance may not be on the level of a C++ program. BUT, that's not to say you can't write fast F# code. F# has defaults and idioms, making it easier to compose correct programs quickly.
 
->  People don't talk about much, though you can turn all the safeties in F# off if you want to. If you're going to drop down to raw native pointers, you can. F# forces you to be more explicit about wanting to violate the safeties
+>  What people don't talk about is that you can turn all the safeties in F# off if you want to. If want to drop down to raw native pointers, you can. F# forces you to be more explicit about wanting to violate the safeties which I think is a feature, not a hinderance.
 
-The usual way of working with a .NET API, which uses a `byref` as one of the parameters for the method, is to use a `match...with` statement to unpack the values. The most common method I use with this behavior is the `TryGetValue` method of `Dictionary`. `TryGetValue` has the following signature:
+The usual way of working with a .NET API which uses a `byref` as one of the parameters for the method in F# is to use a `match...with` statement to unpack the values. The most common method I use with this behavior is the `TryGetValue` method of `Dictionary`. `TryGetValue` has the following signature:
 
 ```fsharp
 Dictionary.TryGetValue(key: string, value: byref<'T>) : bool
@@ -263,7 +263,7 @@ We get the following result if we run our benchmarks with this new test.
 | Dictionary             | 1_000_000 |   369.2 ns |   2.69 ns |   2.10 ns |   369.5 ns |
 | DictionaryGetRef       | 1_000_000 |   152.1 ns |   1.09 ns |   0.91 ns |   152.1 ns |
 
-We see that the `GetValueRefOrAddDefault` method approach is more than twice as fast. A word of warning before you go and rewrite how you use `Dictionary`. If you hold onto the reference to the value while performing other updates on the `Dictionary`, you could get into some messy situations where the `Dictionary` has moved items around due to deletions or inserts. I am doing no other work between getting the reference, calculating an update, and then updating the value.
+We see that the `GetValueRefOrAddDefault` method approach is more than twice as fast. A word of warning before you go and rewrite how you use `Dictionary` though. The ref types in F# are managed pointers. This [article](https://tooslowexception.com/managed-pointers-in-net/) by [Konrad Kokosa](https://twitter.com/konradkokosa) gives you a glimpse into the implications of managed pointers. I strongly encourage you to read the article and check out his book [Professional .NET Memory Management](https://prodotnetmemory.com/) before you make extensive use of them.
 
 ## A Safer Approach
 

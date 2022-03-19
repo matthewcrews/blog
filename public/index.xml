@@ -6,7 +6,7 @@
     <description>Recent content in Homepage on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sun, 06 Feb 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sat, 19 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Project Advisor</title>
       <link>/services/project-advisor/</link>
@@ -25,6 +25,15 @@ Inventory optimization tools regularly increase profits by over 10% while reduce
       <guid>/services/strategy-call/</guid>
       <description>You are ready to transform your planning tools with Mathematical Programming but are unsure where to start. Let&amp;rsquo;s take an hour to figure out precisely what kind of problem you have and the best tools for solving it. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck.
 You will come away with a clear picture of what the best approaches are for solving your problem and know the kind of returns you can expect if you use Mathematical Programming to solve your planning problem.</description>
+    </item>
+    
+    <item>
+      <title>Performance of Key/Value Collections for Updating</title>
+      <link>/blog/2022/03/performance-of-key-value-lookups-types/</link>
+      <pubDate>Sat, 19 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2022/03/performance-of-key-value-lookups-types/</guid>
+      <description>I have been working on a simulation engine that requires a key/value collection for holding the flow rates through a network as part of a Push-Relabel algorithm. This is the most performance-critical code in the engine, so I needed to find the fastest way to perform a lookup, update, and store for a key/value pair. The prevailing wisdom is to use a .NET Dictionary, but I was curious how the performance would compare to the F# Map type.</description>
     </item>
     
     <item>

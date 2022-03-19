@@ -9,12 +9,15 @@
     <lastmod>2018-11-28T15:15:34+10:00</lastmod>
   </url><url>
     <loc>/blog/</loc>
-    <lastmod>2022-02-06T00:00:00+00:00</lastmod>
-  </url><url>
-    <loc>/blog/2022/02/high-performance-observation-tracking/</loc>
-    <lastmod>2022-02-06T00:00:00+00:00</lastmod>
+    <lastmod>2022-03-19T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/</loc>
+    <lastmod>2022-03-19T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>/blog/2022/03/performance-of-key-value-lookups-types/</loc>
+    <lastmod>2022-03-19T00:00:00+00:00</lastmod>
+  </url><url>
+    <loc>/blog/2022/02/high-performance-observation-tracking/</loc>
     <lastmod>2022-02-06T00:00:00+00:00</lastmod>
   </url><url>
     <loc>/blog/2021/12/fsharp-loves-mutation/</loc>

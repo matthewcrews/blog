@@ -753,6 +753,7 @@
 </tbody>
 </table>
 <p>The nice thing about this approach is that even when the <code>Dictionary</code> gets reorganized, our <code>ValueWrapper</code> will still point to the correct data piece. The downside is that this will allocate more memory since each <code>ValueWrapper</code> is an object that needs to be allocated on the heap. You also lose any cache locality benefits since the <code>ValueWrapper</code> objects could spread all over memory. We aren&rsquo;t observing any downsides in this tiny benchmark, but it&rsquo;s essential to be aware. There could be some performance implications in the context of a larger program.</p>
+<p>If you feel like playing with the code yourself, you can find all the tests <a href="https://github.com/matthewcrews/KeyValueLookupPerformance">here</a>. Let me know if you have ideas for going faster or other collections I should test. I can be found on <a href="https://twitter.com/McCrews">Twitter</a> @McCrews, or you can email <code>matthew@crews.email</code>.</p>
 </div>
     </div>
   </div>
