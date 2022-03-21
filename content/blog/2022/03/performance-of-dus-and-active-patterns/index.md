@@ -23,7 +23,7 @@ type Node =
 
 The default encoding for a DU in F# is as a reference type. This means that if you have a `Node array`, each array element will be a pointer to where the `Node` itself is stored in memory. If you need to quickly lookup up Nodes and what type they are, you can run into a phenomenon known as Pointer Chasing. Pointer Chasing is when the CPU is trying to run your code but constantly has to look up new regions of memory because the data is spread out. As .NET developers, we tend not to think about this much, but it can become a severe problem in performance-sensitive code.
 
-Fortunately, F# allows to encode DUs as structs using the `[<Struct>]` attribute. Here is what that looks like:
+Fortunately, F# allows us to encode DUs as structs using the `[<Struct>]` attribute. Here is what that looks like:
 
 ```fsharp
 [<Struct; RequireQualifiedAccess>]
@@ -34,13 +34,13 @@ type Node =
     | SplitId of splitId : int<SplitId>
 ```
 
-Now, if you have a `Node array`, the data for the node will be stored in the array itself so you can eliminate having to perform an additional lookup. There is a serious downside to this, though. The F# compiler will allocate space for each possible case of the DU instead of only the area necessary for the instantiated individual case. This means that instead of just taking up the space of just two `int`, this struct `Node` will take up one `int` to encode the case and four more `int` for each possible case. For a deeper explanation of this, I refer you to [this](https://bartoszsypytkowski.com/writing-high-performance-f-code/) excellent post by [Bartosz Sypytkowski](https://bartoszsypytkowski.com/). If a DU has too many cases, the benefits of the struct layout will quickly be negated by this padding.
+Now, if you have a `Node array`, the data for the node will be stored in the array itself so you can eliminate having to perform an additional lookup. There is a serious downside to this, though. The F# compiler will allocate space for each possible case of the DU instead of only the area necessary for the instantiated individual case. This means that instead of just taking up the space of just two `int` (one to encode the case and one for the value), this struct `Node` will take up one `int` to encode the case and four more `int` for each possible case. For a deeper explanation of this, I refer you to [this](https://bartoszsypytkowski.com/writing-high-performance-f-code/) excellent post by [Bartosz Sypytkowski](https://bartoszsypytkowski.com/). If a DU has too many cases, the benefits of the struct layout will quickly be negated by this padding.
 
 ## Alternative Encoding
 
 I was curious if there was another way to approach my problem. I like the elegance of the `match ... with` syntax in F#, and I am loathed to give it up. Since my `Node` type is just encoding different possible `int` values, why not do some bit hacking? Now, I will be the first to say this is non-traditional F# code, but I'm curious, so why not perform the experiment?
 
-I'll define a new version of `Node` that will use an `int` to hold the data about which case it represents and the value. I will use the last 4 bits of the `Value` field to encode, which case the `Node` represents and the top 28 bits will hold the value. This is cutting off some of the space that `int` can express, but since our networks are never more than 1,000 nodes, there is no practical loss of modeling space.
+I'll define a new version of `Node` that will use an `int` to hold the data about which case it represents and the value. I will use the last 4 bits of the `Value` field to encode which case the `Node` represents and the top 28 bits will hold the id value. This is cutting off some of the space that `int` can express, but since our networks are never more than 1,000 nodes, there is no practical loss of modeling space.
 
 ```fsharp
 [<Struct>]
@@ -54,7 +54,7 @@ type Node =
     static member SplitIdCode = 3
 ```
 
-The static members `BufferIdCode`, `ConstraintIdCode`, `MergeIdCode`, and `SplitIdCode,` will be the values I use to encode the Node cases. To still use the `match...with` syntax, I will need to define an [Active Patterns](https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/active-patterns) for unpacking the case. Active Patterns are an elegant feature of F# for decomposing data into different forms. In this case, I will take the `int` held in my `Node` type, check which case it is, and then return the corresponding id.
+The static members `BufferIdCode`, `ConstraintIdCode`, `MergeIdCode`, and `SplitIdCode,` will be the values I use to encode the Node cases. To still use the `match...with` syntax, I will need to define an [Active Pattern](https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/active-patterns) for unpacking the case. Active Patterns are an elegant feature of F# for decomposing data into different forms. In this case, I will take the `int` held in my `Node` type, check which case it is, and then return the corresponding id.
 
 I use a mask and a bitwise AND operation to get the last 4 bits (also known as a nibble) of the `Value` field, which gives me an `int`. I compare that `int` with the possible code values to figure out which type of node it is. I then bit shift the `Value` field to the right 4 bits to convert it to the id value it stores and multiply the result by the right Unit of Measure to ensure type safety.
 
@@ -132,9 +132,9 @@ let (|SplitId|_|) (node: Node) =
 
 ## Benchmark Setup
 
-We will now set up two types of tests. The first set of tests will randomly jump around a `Node array`, check the Node type, and perform different work based on the case. This is most similar to the workloads I experience when writing algorithms for simulating manufacturing systems. For curiosity, I will also have a test for a linear traversal of a `Node array` and perform the same work as the random access. This should illustrate the difference in performance between a predictable access pattern and a random one. The branch predictor in the CPU will have a more challenging time with the random access, and we expect it to be slower.
+We will now set up two types of tests. The first set of tests will randomly jump around a `Node array`, check the Node type, and perform different work based on the case. This is most similar to the workloads I experience when writing algorithms for simulating manufacturing systems. For curiosity, I will also have a tests for a linear traversal of a `Node array` and perform the same work as the random access. This should illustrate the difference in performance between a predictable access pattern and a random one. The branch predictor in the CPU will have a more challenging time with the random access, and we expect it to be slower.
 
-To see the impact of the Active Pattern on memory allocation and GC, we will include the `[<MemoryDiagnoser>]` attribute on a `Benchmarks` class that holds our tests. This will tell BenchmarkDotNet to monitor how much allocation is occurring. We should see the Active Pattern approach incur more GC activity. We also include the `BranchMispredictions` and `CacheMisses` hardware counters to how well the CPU can optimize our code. The ideal code has `0` Branch Mispredictions. Whenever we mispredict a branch, we can lose 20 - 30 cycles worth of work depending on the CPU. Cache Misses occur when our data is not in the cache, and the CPU has to go out to memory to retrieve the data. The CPU will do its best to predict what data it needs and fetch it ahead of time. When it guesses wrong, we can incur a severe performance penalty.
+To see the impact of the Active Pattern on memory allocation and GC, we will include the `[<MemoryDiagnoser>]` attribute on a `Benchmarks` class that holds our tests. This will tell BenchmarkDotNet to monitor how much allocation is occurring. We should see the Active Pattern approach incur more GC activity. We also include the `BranchMispredictions` and `CacheMisses` hardware counters to see how well the CPU can optimize our code. The ideal code has `0` Branch Mispredictions. Whenever we mispredict a branch, we can lose 20 - 30 cycles worth of work depending on the CPU. Cache Misses occur when our data is not in the cache, and the CPU has to go out to memory to retrieve the data. The CPU will do its best to predict what data it needs and fetch it ahead of time. When it guesses wrong, we can incur a severe performance penalty.
 
 ```fsharp
 [<MemoryDiagnoser; HardwareCounters(HardwareCounter.BranchMispredictions, HardwareCounter.CacheMisses)>]
@@ -249,7 +249,7 @@ I also create four additional tests which perform the same amount of work as the
 
 ## Results
 
-Since I am measuring hardware counters, I have to run the terminal as admin; otherwise, I won't have access to the data. If you want to test this yourself, you need to do the same.
+> **Note:** Since I am measuring hardware counters, I have to run the terminal as admin; otherwise, I won't have access to the data. If you want to test this yourself, you need to do the same.
 
 When I run the tests, I get the following table:
 
