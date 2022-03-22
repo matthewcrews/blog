@@ -45,6 +45,11 @@ theme = "hugo-serif-theme"
   [[menu.main]]
       name = "Blog"
       url = "/blog/"
+      weight = 1
+
+  [[menu.main]]
+      name = "Fast F#"
+      url = "/fast-fsharp/"
       weight = 2
 
   [[menu.main]]

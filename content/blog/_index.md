@@ -7,4 +7,4 @@ intro_image_hide_on_mobile: false
 
 # Blog
 
-Here you can see how I help e-commerce retailers maximize profit and minimize carrying cost with Mathematical Planning.
+Articles on how to write high-performance F# and optimize decision making with Simulation and Mathematical Programming.

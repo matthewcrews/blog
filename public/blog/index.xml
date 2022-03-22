@@ -6,7 +6,16 @@
     <description>Recent content in Blog on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 19 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 20 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Performance of Discriminated Unions and Active Patterns</title>
+      <link>/blog/2022/03/performance-of-dus-and-active-patterns/</link>
+      <pubDate>Sun, 20 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2022/03/performance-of-dus-and-active-patterns/</guid>
+      <description>Part of my work is writing algorithms to analyze networks of nodes representing manufacturing systems. Each node can be one of four different types: Buffer, Constraint, Merge, and Split. A manufacturing system that we would want to simulate is typically made up of no more than 100 of these nodes. A natural way to encode these types would be to use Discriminated Unions (DU). I also use Units of Measure to annotate integers that are the ids for these manufacturing nodes.</description>
+    </item>
+    
     <item>
       <title>Performance of Key/Value Collections for Updating</title>
       <link>/blog/2022/03/performance-of-key-value-lookups-types/</link>

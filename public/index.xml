@@ -6,7 +6,7 @@
     <description>Recent content in Homepage on Matthew Crews</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Sat, 19 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 20 Mar 2022 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Project Advisor</title>
       <link>/services/project-advisor/</link>
@@ -25,6 +25,15 @@ Inventory optimization tools regularly increase profits by over 10% while reduce
       <guid>/services/strategy-call/</guid>
       <description>You are ready to transform your planning tools with Mathematical Programming but are unsure where to start. Let&amp;rsquo;s take an hour to figure out precisely what kind of problem you have and the best tools for solving it. Sometimes all you need is someone who&amp;rsquo;s seen the problem before to help you get unstuck.
 You will come away with a clear picture of what the best approaches are for solving your problem and know the kind of returns you can expect if you use Mathematical Programming to solve your planning problem.</description>
+    </item>
+    
+    <item>
+      <title>Performance of Discriminated Unions and Active Patterns</title>
+      <link>/blog/2022/03/performance-of-dus-and-active-patterns/</link>
+      <pubDate>Sun, 20 Mar 2022 00:00:00 +0000</pubDate>
+      
+      <guid>/blog/2022/03/performance-of-dus-and-active-patterns/</guid>
+      <description>Part of my work is writing algorithms to analyze networks of nodes representing manufacturing systems. Each node can be one of four different types: Buffer, Constraint, Merge, and Split. A manufacturing system that we would want to simulate is typically made up of no more than 100 of these nodes. A natural way to encode these types would be to use Discriminated Unions (DU). I also use Units of Measure to annotate integers that are the ids for these manufacturing nodes.</description>
     </item>
     
     <item>

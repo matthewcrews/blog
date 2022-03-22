@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Performance of Discriminated Unions and Active Patterns - Matthew Crews</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" type="image/png" href="/favicon-32x32.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+
+  
+  
+  
+  <link rel="stylesheet" href="/css/style.min.3940494e396e00ba1cd5c589c5ff2ee8b5b9c03100b6fff6944d59e8f5cc2e56.css">
+  
+
+  
+
+  
+    
+    <meta property="og:title" content="Performance of Discriminated Unions and Active Patterns"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:url" content="/blog/2022/03/performance-of-dus-and-active-patterns/"/>
+    
+    
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:site" content="@zerostaticio"/>
+    <meta name="twitter:creator" content="@zerostaticio"/>
+  
+
+</head>
+
+<body class='page page-default-single'>
+  <div id="main-menu-mobile" class="main-menu-mobile">
+  <ul>
+    
+    
+    <li class="menu-item-blog">
+      <a href="/blog/">
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    <li class="menu-item-about">
+      <a href="/about/">
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+  <div class="wrapper">
+    <div class='header'>
+  <div class="container">
+    <div class="logo">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div class="logo-mobile">
+      <a href="/"><img height=36px alt="Serif - A Hugo Business Theme" src="/images/logo/logo.png" /></a>
+    </div>
+    <div id="main-menu" class="main-menu">
+  <ul>
+    
+    
+    
+    
+    <li class="menu-item-blog ">
+      <a href="/blog/">
+        
+        <span>Blog</span>
+      </a>
+    </li>
+    
+    
+    
+    <li class="menu-item-about ">
+      <a href="/about/">
+        
+        <span>About</span>
+      </a>
+    </li>
+    
+  </ul>
+</div>
+
+    <button id="toggle-main-menu-mobile" class="hamburger hamburger--slider" type="button" aria-label="Mobile Menu">
+  <span class="hamburger-box">
+    <span class="hamburger-inner"></span>
+  </span>
+</button>
+  </div>
+</div>
+
+    
+<div class="container pb-6 pt-6 pt-md-10 pb-md-10">
+  <div class="row justify-content-start">
+    <div class="col-12 col-md-8">
+      <h1 class="title">Performance of Discriminated Unions and Active Patterns</h1>
+      <div class="content"><p>Part of my work is writing algorithms to analyze networks of nodes representing manufacturing systems. Each node can be one of four different types: Buffer, Constraint, Merge, and Split. A manufacturing system that we would want to simulate is typically made up of no more than 100 of these nodes. A natural way to encode these types would be to use Discriminated Unions (DU). I also use Units of Measure to annotate integers that are the ids for these manufacturing nodes.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Measure<span style="color:#f92672">&gt;]</span> <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">BufferId</span>
+<span style="color:#f92672">[&lt;</span>Measure<span style="color:#f92672">&gt;]</span> <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ConstraintId</span>
+<span style="color:#f92672">[&lt;</span>Measure<span style="color:#f92672">&gt;]</span> <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SplitId</span>
+<span style="color:#f92672">[&lt;</span>Measure<span style="color:#f92672">&gt;]</span> <span style="color:#66d9ef">type</span> <span style="color:#a6e22e">MergeId</span>
+
+<span style="color:#f92672">[&lt;</span>RequireQualifiedAccess<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Node</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> BufferId <span style="color:#66d9ef">of</span> bufferId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>BufferId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> ConstraintId <span style="color:#66d9ef">of</span> constraintId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>ConstraintId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> MergeId <span style="color:#66d9ef">of</span> mergeId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>MergeId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> SplitId <span style="color:#66d9ef">of</span> splitId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>SplitId<span style="color:#f92672">&gt;</span>
+</code></pre></div><p>The default encoding for a DU in F# is as a reference type. This means that if you have a <code>Node array</code>, each array element will be a pointer to where the <code>Node</code> itself is stored in memory. If you need to quickly lookup up Nodes and what type they are, you can run into a phenomenon known as Pointer Chasing. Pointer Chasing is when the CPU is trying to run your code but constantly has to look up new regions of memory because the data is spread out. As .NET developers, we tend not to think about this much, but it can become a severe problem in performance-sensitive code.</p>
+<p>Fortunately, F# allows us to encode DUs as structs using the <code>[&lt;Struct&gt;]</code> attribute. Here is what that looks like:</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Struct<span style="color:#f92672">;</span> RequireQualifiedAccess<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Node</span> <span style="color:#f92672">=</span>
+    <span style="color:#f92672">|</span> BufferId <span style="color:#66d9ef">of</span> bufferId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>BufferId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> ConstraintId <span style="color:#66d9ef">of</span> constraintId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>ConstraintId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> MergeId <span style="color:#66d9ef">of</span> mergeId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>MergeId<span style="color:#f92672">&gt;</span>
+    <span style="color:#f92672">|</span> SplitId <span style="color:#66d9ef">of</span> splitId <span style="color:#f92672">:</span> int<span style="color:#f92672">&lt;</span>SplitId<span style="color:#f92672">&gt;</span>
+</code></pre></div><p>Now, if you have a <code>Node array</code>, the data for the node will be stored in the array itself so you can eliminate having to perform an additional lookup. There is a serious downside to this, though. The F# compiler will allocate space for each possible case of the DU instead of only the area necessary for the instantiated individual case. This means that instead of just taking up the space of just two <code>int</code> (one to encode the case and one for the value), this struct <code>Node</code> will take up one <code>int</code> to encode the case and four more <code>int</code> for each possible case. For a deeper explanation of this, I refer you to <a href="https://bartoszsypytkowski.com/writing-high-performance-f-code/">this</a> excellent post by <a href="https://bartoszsypytkowski.com/">Bartosz Sypytkowski</a>. If a DU has too many cases, the benefits of the struct layout will quickly be negated by this padding.</p>
+<h2 id="alternative-encoding">Alternative Encoding</h2>
+<p>I was curious if there was another way to approach my problem. I like the elegance of the <code>match ... with</code> syntax in F#, and I am loathed to give it up. Since my <code>Node</code> type is just encoding different possible <code>int</code> values, why not do some bit hacking? Now, I will be the first to say this is non-traditional F# code, but I&rsquo;m curious, so why not perform the experiment?</p>
+<p>I&rsquo;ll define a new version of <code>Node</code> that will use an <code>int</code> to hold the data about which case it represents and the value. I will use the last 4 bits of the <code>Value</code> field to encode which case the <code>Node</code> represents and the top 28 bits will hold the id value. This is cutting off some of the space that <code>int</code> can express, but since our networks are never more than 1,000 nodes, there is no practical loss of modeling space.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Node</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">private</span> <span style="color:#f92672">{</span>
+    	Value <span style="color:#f92672">:</span> int
+    <span style="color:#f92672">}</span>
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> BufferIdCode <span style="color:#f92672">=</span> 0
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> ConstraintIdCode <span style="color:#f92672">=</span> 1
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> MergeIdCode <span style="color:#f92672">=</span> 2
+    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">member</span> SplitIdCode <span style="color:#f92672">=</span> 3
+</code></pre></div><p>The static members <code>BufferIdCode</code>, <code>ConstraintIdCode</code>, <code>MergeIdCode</code>, and <code>SplitIdCode,</code> will be the values I use to encode the Node cases. To still use the <code>match...with</code> syntax, I will need to define an <a href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/active-patterns">Active Pattern</a> for unpacking the case. Active Patterns are an elegant feature of F# for decomposing data into different forms. In this case, I will take the <code>int</code> held in my <code>Node</code> type, check which case it is, and then return the corresponding id.</p>
+<p>I use a mask and a bitwise AND operation to get the last 4 bits (also known as a nibble) of the <code>Value</code> field, which gives me an <code>int</code>. I compare that <code>int</code> with the possible code values to figure out which type of node it is. I then bit shift the <code>Value</code> field to the right 4 bits to convert it to the id value it stores and multiply the result by the right Unit of Measure to ensure type safety.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#66d9ef">let</span> <span style="color:#f92672">(|</span>BufferId<span style="color:#f92672">|</span>ConstraintId<span style="color:#f92672">|</span>SplitId<span style="color:#f92672">|</span>MergeId<span style="color:#f92672">|)</span> <span style="color:#f92672">(</span>node<span style="color:#f92672">:</span> Node<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#75715e">// Get the nibble which encodes the type of Id
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> nodeType <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> 0x0000000F
+    <span style="color:#75715e">// Get the value of the Id
+</span><span style="color:#75715e"></span>    <span style="color:#66d9ef">let</span> idValue <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&gt;&gt;&gt;</span> 4
+
+    <span style="color:#66d9ef">if</span> nodeType <span style="color:#f92672">=</span> Node.BufferIdCode <span style="color:#66d9ef">then</span>
+        BufferId <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>BufferId<span style="color:#f92672">&gt;)</span>
+
+    <span style="color:#66d9ef">elif</span> nodeType <span style="color:#f92672">=</span> Node.ConstraintIdCode <span style="color:#66d9ef">then</span>
+        ConstraintId <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>ConstraintId<span style="color:#f92672">&gt;)</span>
+
+    <span style="color:#66d9ef">elif</span> nodeType <span style="color:#f92672">=</span> Node.MergeIdCode <span style="color:#66d9ef">then</span>
+        MergeId <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>MergeId<span style="color:#f92672">&gt;)</span>
+
+    <span style="color:#66d9ef">elif</span> nodeType <span style="color:#f92672">=</span> Node.SplitIdCode <span style="color:#66d9ef">then</span>
+        SplitId <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>SplitId<span style="color:#f92672">&gt;)</span>
+
+    <span style="color:#66d9ef">else</span>
+        invalidArg <span style="color:#f92672">(</span>nameof node<span style="color:#f92672">)</span> <span style="color:#e6db74">&#34;Node Id type does not match known Node Types&#34;</span>
+</code></pre></div><p>There is a downside to this technique, though. Active Patterns will cause additional allocations and trigger additional Garbage Collection (GC). Fortunately, F# recognized this and enabled the returning of a struct from a <a href="https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/active-patterns#struct-representations-for-partial-active-patterns">Partial Active Pattern</a>. The syntax is a little odd due to a limitation in the compiler, but it works for our purposes.</p>
+<p>Here is the equivalent approach using the Partial Active Pattern that returns a <code>ValueStruct</code> to reduce GC pressure. Compared to our first Active Pattern, the downside is that we have to define a separate one for each case we want to match against.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span><span style="color:#66d9ef">return</span><span style="color:#f92672">:</span> Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">let</span> <span style="color:#f92672">(|</span>BufferId<span style="color:#f92672">|_|)</span> <span style="color:#f92672">(</span>node<span style="color:#f92672">:</span> Node<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> nodeType <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> 0x0000000F
+
+    <span style="color:#66d9ef">if</span> nodeType <span style="color:#f92672">=</span> Node.BufferIdCode <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">let</span> idValue <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&gt;&gt;&gt;</span> 4
+        ValueSome <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>BufferId<span style="color:#f92672">&gt;)</span>
+    <span style="color:#66d9ef">else</span>
+        ValueNone
+
+
+<span style="color:#f92672">[&lt;</span><span style="color:#66d9ef">return</span><span style="color:#f92672">:</span> Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">let</span> <span style="color:#f92672">(|</span>ConstraintId<span style="color:#f92672">|_|)</span> <span style="color:#f92672">(</span>node<span style="color:#f92672">:</span> Node<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> nodeType <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> 0x0000000F
+
+    <span style="color:#66d9ef">if</span> nodeType <span style="color:#f92672">=</span> Node.ConstraintIdCode <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">let</span> idValue <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&gt;&gt;&gt;</span> 4
+        ValueSome <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>ConstraintId<span style="color:#f92672">&gt;)</span>
+    <span style="color:#66d9ef">else</span>
+        ValueNone
+
+
+<span style="color:#f92672">[&lt;</span><span style="color:#66d9ef">return</span><span style="color:#f92672">:</span> Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">let</span> <span style="color:#f92672">(|</span>MergeId<span style="color:#f92672">|_|)</span> <span style="color:#f92672">(</span>node<span style="color:#f92672">:</span> Node<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> nodeType <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> 0x0000000F
+
+    <span style="color:#66d9ef">if</span> nodeType <span style="color:#f92672">=</span> Node.MergeIdCode <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">let</span> idValue <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&gt;&gt;&gt;</span> 4
+        ValueSome <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>MergeId<span style="color:#f92672">&gt;)</span>
+    <span style="color:#66d9ef">else</span>
+        ValueNone
+
+
+<span style="color:#f92672">[&lt;</span><span style="color:#66d9ef">return</span><span style="color:#f92672">:</span> Struct<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">let</span> <span style="color:#f92672">(|</span>SplitId<span style="color:#f92672">|_|)</span> <span style="color:#f92672">(</span>node<span style="color:#f92672">:</span> Node<span style="color:#f92672">)</span> <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> nodeType <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&amp;&amp;&amp;</span> 0x0000000F
+
+    <span style="color:#66d9ef">if</span> nodeType <span style="color:#f92672">=</span> Node.SplitIdCode <span style="color:#66d9ef">then</span>
+        <span style="color:#66d9ef">let</span> idValue <span style="color:#f92672">=</span> node<span style="color:#f92672">.</span>Value <span style="color:#f92672">&gt;&gt;&gt;</span> 4
+        ValueSome <span style="color:#f92672">(</span>idValue <span style="color:#f92672">*</span> 1<span style="color:#f92672">&lt;</span>SplitId<span style="color:#f92672">&gt;)</span>
+    <span style="color:#66d9ef">else</span>
+        ValueNone
+</code></pre></div><h2 id="benchmark-setup">Benchmark Setup</h2>
+<p>We will now set up two types of tests. The first set of tests will randomly jump around a <code>Node array</code>, check the Node type, and perform different work based on the case. This is most similar to the workloads I experience when writing algorithms for simulating manufacturing systems. For curiosity, I will also have a tests for a linear traversal of a <code>Node array</code> and perform the same work as the random access. This should illustrate the difference in performance between a predictable access pattern and a random one. The branch predictor in the CPU will have a more challenging time with the random access, and we expect it to be slower.</p>
+<p>To see the impact of the Active Pattern on memory allocation and GC, we will include the <code>[&lt;MemoryDiagnoser&gt;]</code> attribute on a <code>Benchmarks</code> class that holds our tests. This will tell BenchmarkDotNet to monitor how much allocation is occurring. We should see the Active Pattern approach incur more GC activity. We also include the <code>BranchMispredictions</code> and <code>CacheMisses</code> hardware counters to see how well the CPU can optimize our code. The ideal code has <code>0</code> Branch Mispredictions. Whenever we mispredict a branch, we can lose 20 - 30 cycles worth of work depending on the CPU. Cache Misses occur when our data is not in the cache, and the CPU has to go out to memory to retrieve the data. The CPU will do its best to predict what data it needs and fetch it ahead of time. When it guesses wrong, we can incur a severe performance penalty.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>MemoryDiagnoser<span style="color:#f92672">;</span> HardwareCounters<span style="color:#f92672">(</span>HardwareCounter.BranchMispredictions<span style="color:#f92672">,</span> HardwareCounter.CacheMisses<span style="color:#f92672">)&gt;]</span>
+<span style="color:#66d9ef">type</span> <span style="color:#a6e22e">Benchmarks</span> () <span style="color:#f92672">=</span>
+
+    <span style="color:#66d9ef">let</span> rng <span style="color:#f92672">=</span> Random 123
+    <span style="color:#66d9ef">let</span> nodeCount <span style="color:#f92672">=</span> 100
+    <span style="color:#66d9ef">let</span> lookupCount <span style="color:#f92672">=</span> 100
+    <span style="color:#66d9ef">let</span> loopCount <span style="color:#f92672">=</span> 100_000
+
+    <span style="color:#66d9ef">let</span> nodes <span style="color:#f92672">=</span>
+        <span style="color:#f92672">[|</span><span style="color:#66d9ef">for</span> i <span style="color:#66d9ef">in</span> 0 <span style="color:#f92672">..</span> nodeCount <span style="color:#f92672">-</span> 1 <span style="color:#f92672">-&gt;</span>
+            <span style="color:#66d9ef">match</span> rng<span style="color:#f92672">.</span>Next <span style="color:#f92672">(</span>0<span style="color:#f92672">,</span> 4<span style="color:#f92672">)</span> <span style="color:#66d9ef">with</span>
+            <span style="color:#f92672">|</span> 0 <span style="color:#f92672">-&gt;</span> DuEncoding.Node.BufferId 1<span style="color:#f92672">&lt;</span>BufferId<span style="color:#f92672">&gt;</span>
+            <span style="color:#f92672">|</span> 1 <span style="color:#f92672">-&gt;</span> DuEncoding.Node.ConstraintId 1<span style="color:#f92672">&lt;</span>ConstraintId<span style="color:#f92672">&gt;</span>
+            <span style="color:#f92672">|</span> 2 <span style="color:#f92672">-&gt;</span> DuEncoding.Node.MergeId 1<span style="color:#f92672">&lt;</span>MergeId<span style="color:#f92672">&gt;</span>
+            <span style="color:#f92672">|</span> 3 <span style="color:#f92672">-&gt;</span> DuEncoding.Node.SplitId 1<span style="color:#f92672">&lt;</span>SplitId<span style="color:#f92672">&gt;</span>
+            <span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> failwith <span style="color:#e6db74">&#34;The RNG generated a number outside the allowed bounds&#34;</span>
+        <span style="color:#f92672">|]</span>
+</code></pre></div><p>At the beginning of the <code>Benchmarks</code> class, we declare a random number generator <code>rng</code> which we will use to produce random nodes and indices to look up. We have a <code>nodeCount</code> of 100, which is the number of nodes we will generate. The <code>lookupCount</code> is the number of node lookups we will perform during each test loop. The <code>loopCount</code> is the number of loops we will perform in each test. <code>nodes</code> is an array of randomly generated nodes for our test.</p>
+<p>Our first test performs random lookups in the <code>nodes</code> array. It matches against the case of the DU and then adds a different amount to an accumulator based on the case. This is to simulate some amount of work being done for each node that was looked up.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">DuEncodingRandomAccess</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable acc <span style="color:#f92672">=</span> 0
+
+    <span style="color:#66d9ef">for</span> lookupsIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> loopCount <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> lookups <span style="color:#f92672">=</span> randomNodeIndices<span style="color:#f92672">[</span>lookupsIndex<span style="color:#f92672">]</span>
+
+        <span style="color:#66d9ef">for</span> lookupIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> lookups<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">let</span> randomNodeIndex <span style="color:#f92672">=</span> lookups<span style="color:#f92672">[</span>lookupIndex<span style="color:#f92672">]</span>
+
+            <span style="color:#66d9ef">match</span> nodes<span style="color:#f92672">[</span>randomNodeIndex<span style="color:#f92672">]</span> <span style="color:#66d9ef">with</span>
+            <span style="color:#f92672">|</span> DuEncoding.Node.BufferId bufferId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 1
+            <span style="color:#f92672">|</span> DuEncoding.Node.ConstraintId constraintId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 2
+            <span style="color:#f92672">|</span> DuEncoding.Node.MergeId mergeId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 3
+            <span style="color:#f92672">|</span> DuEncoding.Node.SplitId splitId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 4
+
+    acc
+</code></pre></div><p>The second test does the same work, but the <code>Node</code> type is the struct representation instead of the reference-based one.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">StructDuEncodingRandomAccess</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable acc <span style="color:#f92672">=</span> 0
+
+    <span style="color:#66d9ef">for</span> lookupsIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> loopCount <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> lookups <span style="color:#f92672">=</span> randomNodeIndices<span style="color:#f92672">[</span>lookupsIndex<span style="color:#f92672">]</span>
+        
+        <span style="color:#66d9ef">for</span> lookupIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> lookups<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">let</span> randomNodeIndex <span style="color:#f92672">=</span> lookups<span style="color:#f92672">[</span>lookupIndex<span style="color:#f92672">]</span>
+
+            <span style="color:#66d9ef">match</span> structNodes<span style="color:#f92672">[</span>randomNodeIndex<span style="color:#f92672">]</span> <span style="color:#66d9ef">with</span>
+            <span style="color:#f92672">|</span> StructDuEncoding.Node.BufferId bufferId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 1
+            <span style="color:#f92672">|</span> StructDuEncoding.Node.ConstraintId constraintId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 2
+            <span style="color:#f92672">|</span> StructDuEncoding.Node.MergeId mergeId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 3
+            <span style="color:#f92672">|</span> StructDuEncoding.Node.SplitId splitId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 4
+
+    acc
+</code></pre></div><p>The third and fourth tests also perform the same work but with the Active Pattern and Partial Active Pattern approaches. Remember, the Active Pattern allocates objects while the Partial Active Pattern is returning a struct and therefore not causing any GC overhead.</p>
+<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-fsharp" data-lang="fsharp"><span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">IntEncodingWithActivePatternRandomAccess</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable acc <span style="color:#f92672">=</span> 0
+
+
+    <span style="color:#66d9ef">for</span> lookupsIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> loopCount <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> lookups <span style="color:#f92672">=</span> randomNodeIndices<span style="color:#f92672">[</span>lookupsIndex<span style="color:#f92672">]</span>
+        
+        <span style="color:#66d9ef">for</span> lookupIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> lookups<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">let</span> randomNodeIndex <span style="color:#f92672">=</span> lookups<span style="color:#f92672">[</span>lookupIndex<span style="color:#f92672">]</span>
+
+            <span style="color:#66d9ef">match</span> intEncodedNodes<span style="color:#f92672">[</span>randomNodeIndex<span style="color:#f92672">]</span> <span style="color:#66d9ef">with</span>
+            <span style="color:#f92672">|</span> IntEncoding.ActivePattern.BufferId bufferId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 1
+            <span style="color:#f92672">|</span> IntEncoding.ActivePattern.ConstraintId constraintId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 2
+            <span style="color:#f92672">|</span> IntEncoding.ActivePattern.MergeId mergeId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 3
+            <span style="color:#f92672">|</span> IntEncoding.ActivePattern.SplitId splitId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 4
+
+    acc
+
+
+<span style="color:#f92672">[&lt;</span>Benchmark<span style="color:#f92672">&gt;]</span>
+<span style="color:#66d9ef">member</span> _.<span style="color:#a6e22e">IntEncodingWithPartialActivePatternRandomAccess</span> () <span style="color:#f92672">=</span>
+    <span style="color:#66d9ef">let</span> mutable acc <span style="color:#f92672">=</span> 0
+
+    <span style="color:#66d9ef">for</span> lookupsIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> loopCount <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+        <span style="color:#66d9ef">let</span> lookups <span style="color:#f92672">=</span> randomNodeIndices<span style="color:#f92672">[</span>lookupsIndex<span style="color:#f92672">]</span>
+        
+        <span style="color:#66d9ef">for</span> lookupIndex <span style="color:#f92672">=</span> 0 <span style="color:#66d9ef">to</span> lookups<span style="color:#f92672">.</span>Length <span style="color:#f92672">-</span> 1 <span style="color:#66d9ef">do</span>
+            <span style="color:#66d9ef">let</span> randomNodeIndex <span style="color:#f92672">=</span> lookups<span style="color:#f92672">[</span>lookupIndex<span style="color:#f92672">]</span>
+
+            <span style="color:#66d9ef">match</span> intEncodedNodes<span style="color:#f92672">[</span>randomNodeIndex<span style="color:#f92672">]</span> <span style="color:#66d9ef">with</span>
+            <span style="color:#f92672">|</span> IntEncoding.PartialActivePattern.BufferId bufferId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 1
+            <span style="color:#f92672">|</span> IntEncoding.PartialActivePattern.ConstraintId constraintId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 2
+            <span style="color:#f92672">|</span> IntEncoding.PartialActivePattern.MergeId mergeId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 3
+            <span style="color:#f92672">|</span> IntEncoding.PartialActivePattern.SplitId splitId <span style="color:#f92672">-&gt;</span> acc <span style="color:#f92672">&lt;-</span> acc <span style="color:#f92672">+</span> 4
+            <span style="color:#f92672">|</span> <span style="color:#f92672">_</span> <span style="color:#f92672">-&gt;</span> failwith <span style="color:#e6db74">&#34;¯</span><span style="color:#960050;background-color:#1e0010">\</span><span style="color:#e6db74">_(ツ)_/¯&#34;</span>
+
+    acc
+</code></pre></div><p>I also create four additional tests which perform the same amount of work as the above four, but iterate through the arrays in order instead of randomly jumping around. This will show us the performance difference between random versus sequential access.</p>
+<h2 id="results">Results</h2>
+<blockquote>
+<p><strong>Note:</strong> Since I am measuring hardware counters, I have to run the terminal as admin; otherwise, I won&rsquo;t have access to the data. If you want to test this yourself, you need to do the same.</p>
+</blockquote>
+<p>When I run the tests, I get the following table:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th style="text-align:right">Mean</th>
+<th style="text-align:right">Error</th>
+<th style="text-align:right">StdDev</th>
+<th style="text-align:right">BranchMispredictions/Op</th>
+<th style="text-align:right">CacheMisses/Op</th>
+<th style="text-align:right">Gen 0</th>
+<th style="text-align:right">Allocated</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DuEncodingRandomAccess</td>
+<td style="text-align:right">83.09 ms</td>
+<td style="text-align:right">1.122 ms</td>
+<td style="text-align:right">0.995 ms</td>
+<td style="text-align:right">7,414,534</td>
+<td style="text-align:right">400,225</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">175 B</td>
+</tr>
+<tr>
+<td>StructDuEncodingRandomAccess</td>
+<td style="text-align:right">83.56 ms</td>
+<td style="text-align:right">0.766 ms</td>
+<td style="text-align:right">0.640 ms</td>
+<td style="text-align:right">7,415,626</td>
+<td style="text-align:right">409,418</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">175 B</td>
+</tr>
+<tr>
+<td>IntEncodingWithActivePatternRandomAccess</td>
+<td style="text-align:right">134.88 ms</td>
+<td style="text-align:right">2.650 ms</td>
+<td style="text-align:right">4.845 ms</td>
+<td style="text-align:right">8,126,171</td>
+<td style="text-align:right">1,070,592</td>
+<td style="text-align:right">28500.0000</td>
+<td style="text-align:right">240,000,358 B</td>
+</tr>
+<tr>
+<td>IntEncodingWithPartialActivePatternRandomAccess</td>
+<td style="text-align:right">86.43 ms</td>
+<td style="text-align:right">0.841 ms</td>
+<td style="text-align:right">0.787 ms</td>
+<td style="text-align:right">7,995,620</td>
+<td style="text-align:right">406,096</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">191 B</td>
+</tr>
+<tr>
+<td>DuEncodingLinearAccess</td>
+<td style="text-align:right">14.86 ms</td>
+<td style="text-align:right">0.090 ms</td>
+<td style="text-align:right">0.084 ms</td>
+<td style="text-align:right">5,073</td>
+<td style="text-align:right">7,701</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">22 B</td>
+</tr>
+<tr>
+<td>StructDuEncodingLinearAccess</td>
+<td style="text-align:right">17.35 ms</td>
+<td style="text-align:right">0.151 ms</td>
+<td style="text-align:right">0.142 ms</td>
+<td style="text-align:right">119,799</td>
+<td style="text-align:right">13,508</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">36 B</td>
+</tr>
+<tr>
+<td>IntEncodingWithActivePatternLinearAccess</td>
+<td style="text-align:right">74.67 ms</td>
+<td style="text-align:right">1.018 ms</td>
+<td style="text-align:right">0.903 ms</td>
+<td style="text-align:right">167,078</td>
+<td style="text-align:right">677,829</td>
+<td style="text-align:right">28571.4286</td>
+<td style="text-align:right">240,000,191 B</td>
+</tr>
+<tr>
+<td>IntEncodingWithPartialActivePatternLinearAccess</td>
+<td style="text-align:right">22.83 ms</td>
+<td style="text-align:right">0.372 ms</td>
+<td style="text-align:right">0.348 ms</td>
+<td style="text-align:right">8,151</td>
+<td style="text-align:right">33,225</td>
+<td style="text-align:right">-</td>
+<td style="text-align:right">45 B</td>
+</tr>
+</tbody>
+</table>
+<p>We see that the normal reference-based DU encoding gives us the best performance for both tests. This honestly surprised me. I would have thought that the Int Encoding would have yielded better results. There is some serious voodoo going on in the F# compiler. I wanted to dig into this more, but my work demands that I cut myself off here. I would like to get this info out for others to look at since I have not been able to find other blog posts which deal with this.</p>
+<p>I welcome feedback and critique. You can find the code <a href="https://github.com/matthewcrews/ActivePatternPerformance">here</a>. Let me know if I missed something obvious. Eventually, I hope to have the time to dig deeper into this. In the meantime, I plan to stick with the default DU until I can figure out if I can make something faster for my use case. Let me know if you have ideas for going faster or other ideas I should test. I can be found on <a href="https://twitter.com/McCrews">Twitter</a> @McCrews, or you can email <code>matthew@crews.email</code>.</p>
+</div>
+    </div>
+  </div>
+</div>
+
+  </div>
+
+  <div class="footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="footer-inner">
+          <h3 class="footer-title">Matthew Crews</h3>
+          <div id="footer-menu" class="footer-menu">
+  
+</div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  MathJax = {
+  tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']]
+  }
+  };
+</script>
+<script id="MathJax-script" async
+src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js">
+</script>
+  <div class="sub-footer">
+  <div class="container">
+    <div class="row">
+      <div class="col-12">
+        <div class="sub-footer-inner">
+          
+            
+<div class="social">
+    
+        <a href="https://github.com/zerostaticthemes/hugo-serif-theme" target="blank"><img src="/images/social/github.svg" title="Github" alt="Github" /></a>
+    
+        <a href="https://twitter.com/zerostaticio" target="blank"><img src="/images/social/twitter.svg" title="Twitter" alt="Twitter" /></a>
+    
+</div>
+
+          
+          
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/scripts.min.98ee06cc35517b5800b382aecb0fc59893e95b9c11dd21842d0d57e4f68043e3.js"></script>
+  
+
+  
+
+
+
+
+
+
+  
+
+
+
+
+
+</body>
+
+</html>

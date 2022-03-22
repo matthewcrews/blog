@@ -6,6 +6,6 @@ intro_image_absolute: true
 intro_image_hide_on_mobile: false
 ---
 
-# Training and Consulting
+# Fast F#
 
-Let's figure out the best way for me to equip you with Mathematical Programming.
+I'm obsessed with making F# run as fast as possible. It is a beautiful language that is succinct, expressive, and efficient.  
