@@ -1,13 +1,50 @@
 ---
-title: 'Eradicate Wasteful Planning'
+title: 'About'
+date: 2018-02-22T17:01:34+07:00
 ---
 
-My obsession with efficiency and optimization began with board games. I played Risk for hours growing up and created games centered around gathering resources, building cities, and managing trade. I turned that love into a job as I pursued Operations Research and Software Development.
+Lorem markdownum aequalis strigis. _Saetigeri iubeas_, vultu huic alvum nondum
+de obside ut laniavit arbor palmis, cum quin. Rupes vetat videndo, armigerae
+crimen habet Priamum nec.
 
-I am on a mission to eradicate wasteful planning. Operations Research and Mathematical Programming have developed tools and algorithms for solving the most challenging planning problems that exist. The problem is that Mathematical Programming techniques are often only taught in Operations Research or Industrial Engineering curriculum, which means developers have no awareness that these are solved problems.
+## Ne verba patulosque numen vix libet
 
-I believe that every developer can be an agent of change and transform their business through Mathematical Programming. My mission is to equip my fellow developers with this knowledge to save their companies from wasteful, inefficient planning.
+Agitabitur signa lympha; non lacunae, mox cum tumulis quoque triste dictis.
+Ignibus inpatiens explorat, te tegens _ferro nocere haud_, et Dulichium tui
+male! Quo sed [fuit flexit et](#vexant-achivi) hic die solido, gloria?
 
-If you have questions, please [email me](mailto:matthewcrews@gmail.com) and join my newsletter, so you never miss a post where I show how to harness the power of Mathematical Programming.
+1. Cum det dixit Parcarum qui spemque est
+2. Exit ex huic
+3. Quod consiste agitataque claustraque vicina videt lacertis
+4. Loquor videt
+5. Ardua non igne caelesti coniugis cognovi diversorum
+6. Per nunc pariterque saeva vindicet
 
-{{<subscribe>}}
+Locus evicit loquuntur Tyrrhena omnes, obstipui pugnabant temptavit Phoco _vati_
+dabant deus. Memorata haberet sepulcrales gentisque dum sic, in flumina templa!
+Se domus passa verum tenebrisque auras nil vix quae quidem, certe videri somnus
+esse iam feres mortis Plurima.
+
+## Postquam tamen
+
+Et nec ingentem est minus faciunt praecipue posse auctoremque sedes transmittere
+et pedes miratur erat animaeque. Tellus admonuit humanam funes, sagittis et
+licet! Inserui quamvis Clymeni.
+
+- Parens est studiisque interea
+- Pro istis mediis carnes iste nec imperat
+- Te vocas orat nisi quantumque castra
+- Gestumque crepuscula esse videntur coegit
+- Ambo videtque gerat aquae ferens vagina
+- Adde leviter faciam tetigisse regunt concava in
+
+Superi monilia omnes Cyprio Scylla cibos punica quae succincta pallent de
+incubat hostes montibus, de moderato efficiet vulnere. Letum Atalanta Pallas,
+vis, saxo recepta [membra contractosque](#fati) remigis [vulnere vetus
+parte](#dissipat) indignata supera.
+
+Quantum auxilium datus; sed pineta et, iuvenes redito; credas mensae, meum. Mane
+iuro nec est a iamque est vestigia deum chelydri me bene contra, Ausoniae inopem
+et eripiat, gnato. Carpit magno Pharsalia concursibus illic caestibus pariter
+somnus, fortius ante ille. Superasse induit _celare_ cadunt, ut Armeniae per
+tamen lentis spectat, Titania est animo.

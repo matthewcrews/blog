@@ -21,7 +21,7 @@ article, aside, figcaption, figure, footer, header, hgroup, main, nav, section {
 
 body {
   margin: 0;
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   font-size: 1rem;
   font-weight: 400;
   line-height: 1.5;
@@ -4054,12 +4054,12 @@ a {
 p {
   line-height: 26px;
   color: #5C5A5A;
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   margin-bottom: 20px; }
 
 h1 {
   font-size: 24px;
-  font-family: "Playfair Display", serif, -apple-system;
+  font-family: Playfair Display, serif, -apple-system;
   line-height: 1.2;
   margin-bottom: 20px; }
   @media (min-width: 768px) {
@@ -4068,7 +4068,7 @@ h1 {
       line-height: 1.2; } }
 h2 {
   font-size: 20px;
-  font-family: "Playfair Display", serif, -apple-system;
+  font-family: Playfair Display, serif, -apple-system;
   line-height: 1.4;
   margin-bottom: 10px; }
   @media (min-width: 768px) {
@@ -4135,7 +4135,7 @@ ol {
   .footer .footer-title {
     color: #ffffff;
     font-size: 1.3rem;
-    font-family: "Playfair Display", serif, -apple-system;
+    font-family: Playfair Display, serif, -apple-system;
     font-weight: bold;
     margin-bottom: 10px; }
     @media (min-width: 576px) {
@@ -4280,9 +4280,12 @@ ol {
         animation-delay: 0.55s; }
       .main-menu-mobile.open li:nth-of-type(6) {
         animation-delay: 0.6s; }
+    @media (min-width: 768px) {
+      .main-menu-mobile.open {
+        display: none; } }
   .main-menu-mobile ul {
     font-size: 30px;
-    font-family: "Playfair Display", serif, -apple-system;
+    font-family: Playfair Display, serif, -apple-system;
     text-align: center;
     list-style: none;
     padding: 0;
@@ -4424,12 +4427,12 @@ ol {
   font-style: italic; }
 
 .content p {
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   line-height: 1.56;
   color: #5C5A5A; }
 
 .content h1 {
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   font-size: 34px;
   line-height: 1.26;
   font-weight: normal;
@@ -4437,14 +4440,14 @@ ol {
   margin-bottom: 20px; }
 
 .content h2 {
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   font-size: 26px;
   font-weight: normal;
   line-height: 1.4;
   margin-top: 30px; }
 
 .content h3 {
-  font-family: Helvetica, Arial, sans-serif, -apple-system;
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system;
   font-size: 20px;
   line-height: 1.4;
   font-weight: normal;
@@ -4495,7 +4498,7 @@ ol {
 .content blockquote {
   padding: 0 1em;
   color: #5C5A5A;
-  border-left: 0.25em solid #f88379; }
+  border-left: 0.25em solid #f24088; }
 
 .intro {
   display: flex;
@@ -4526,7 +4529,7 @@ ol {
     line-height: 1.4;
     margin-bottom: 30px;
     color: #2f2f41;
-    font-family: Helvetica, Arial, sans-serif, -apple-system; }
+    font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system; }
   .intro p {
     font-size: 1.2rem;
     font-weight: light;
@@ -4586,17 +4589,8 @@ ol {
   .strip-diagonal > div {
     transform: skewY(-5deg); }
 
-.strip-primary-gradient {
-  background-image: linear-gradient(to right, #f24088, #f88379); }
-
-.strip-primary-gradient-top-bottom {
-  background-image: linear-gradient(to bottom, #f24088, #f88379); }
-
 .strip-primary {
   background-color: #f24088; }
-
-.strip-secondary {
-  background-color: #f88379; }
 
 .strip-diagonal-right {
   margin-top: -100px;
@@ -4706,7 +4700,7 @@ ol {
 body {
   font-size: 16px;
   line-height: 1.2;
-  font-family: Helvetica, Arial, sans-serif, -apple-system; }
+  font-family: Source Sans Pro, Helvetica, Arial, sans-serif, -apple-system; }
   @media (min-width: 768px) {
     body {
       font-size: 16px;
