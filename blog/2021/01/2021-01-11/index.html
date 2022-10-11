@@ -1,0 +1,345 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>Minimizing Waste for the Cutting Stock Problem - Matthew Crews</title><meta name=Description content="Hugo theme - LoveIt"><meta property="og:title" content="Minimizing Waste for the Cutting Stock Problem"><meta property="og:description" content="I was recently posed the question, &ldquo;Can you use Mathematical Planning to optimize the Cutting Stock problem?&rdquo; For those who are not familiar with this problem, you can find the Wikipedia article here. In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm."><meta property="og:type" content="article"><meta property="og:url" content="https://matthewcrews.com/blog/2021/01/2021-01-11/"><meta property="og:image" content="https://matthewcrews.com/logo.png"><meta property="article:section" content="blog"><meta property="article:published_time" content="2021-01-11T00:00:00+00:00"><meta property="article:modified_time" content="2022-10-11T10:21:38-07:00"><meta property="og:site_name" content="Matthew Crews"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://matthewcrews.com/logo.png"><meta name=twitter:title content="Minimizing Waste for the Cutting Stock Problem"><meta name=twitter:description content="I was recently posed the question, &ldquo;Can you use Mathematical Planning to optimize the Cutting Stock problem?&rdquo; For those who are not familiar with this problem, you can find the Wikipedia article here. In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm."><meta name=application-name content="Mathew Crews"><meta name=apple-mobile-web-app-title content="Mathew Crews"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://matthewcrews.com/blog/2021/01/2021-01-11/><link rel=prev href=https://matthewcrews.com/blog/2021/01/2021-01-09/><link rel=next href=https://matthewcrews.com/blog/2021/01/2021-01-25/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"Minimizing Waste for the Cutting Stock Problem","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/matthewcrews.com\/blog\/2021\/01\/2021-01-11\/"},"image":[{"@type":"ImageObject","url":"https:\/\/matthewcrews.com\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"blog","wordcount":2266,"url":"https:\/\/matthewcrews.com\/blog\/2021\/01\/2021-01-11\/","datePublished":"2021-01-11T00:00:00+00:00","dateModified":"2022-10-11T10:21:38-07:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":"https:\/\/matthewcrews.com\/images\/fast_fsharp_avatar.png"},"author":{"@type":"Person","name":"Matthew Crews"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/blog/>Blog </a><a class=menu-item href=/about/>About </a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder="Search titles or contents..." id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder="Search titles or contents..." id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>Cancel</a></div><a class=menu-item href=/blog/ title>Blog</a><a class=menu-item href=/about/ title>About</a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">Minimizing Waste for the Cutting Stock Problem</h1><div class=content id=content><p>I was recently posed the question, &ldquo;Can you use Mathematical Planning to optimize the Cutting Stock problem?&rdquo; For those who are not familiar with this problem, you can find the Wikipedia article <a href=https://en.wikipedia.org/wiki/Cutting_stock_problem target=_blank rel="noopener noreffer">here</a>. In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm. The ideal plan is one which minimizes the amount of waste. This is a classic planning problem that can actually be reduced to the <a href=https://en.wikipedia.org/wiki/Knapsack_problem target=_blank rel="noopener noreffer">knapsack problem</a>.</p><blockquote><p><strong>Note</strong>: Full code for this post can be found <a href=https://github.com/matthewcrews/modelmondays/blob/main/CuttingStockProblem.fsx target=_blank rel="noopener noreffer">here</a></p></blockquote><p>These are the cut lengths and quantities you need to produce in the example problem.</p><table><thead><tr><th>Width [mm]</th><th>Number of Items</th></tr></thead><tbody><tr><td>1380</td><td>22</td></tr><tr><td>1520</td><td>25</td></tr><tr><td>1560</td><td>12</td></tr><tr><td>1710</td><td>14</td></tr><tr><td>1820</td><td>18</td></tr><tr><td>1880</td><td>18</td></tr><tr><td>1930</td><td>20</td></tr><tr><td>2000</td><td>10</td></tr><tr><td>2050</td><td>12</td></tr><tr><td>2100</td><td>14</td></tr><tr><td>2140</td><td>16</td></tr><tr><td>2150</td><td>18</td></tr><tr><td>2200</td><td>20</td></tr></tbody></table><p>There are a variety of different ways you can cut the stock size into the smaller sizes. For example, you could produce 3 x 1820mm cuts from a 5600mm stock roll. You could also do 2200mm, 1820mm, and 1560mm. In total there are 308 possible combinations of cuts, not including the empty combination which has zero cuts. The most important thing to realize when approaching this problem is that the order you make the cuts does not matter. A more technical term would be that the order of cuts is <a href=https://en.wikipedia.org/wiki/Commutative_property target=_blank rel="noopener noreffer">commutative</a>.</p><h2 id=generating-the-possible-cuts>Generating the Possible Cuts</h2><p>The most difficult part of this problem turned out to be the generating of the possible cuts. Before we dive right into that though, let&rsquo;s create some simple domain types to describe our problem.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Cut</span> <span class=o>=</span> <span class=n>Cut</span> <span class=k>of</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Plan</span> <span class=o>=</span> <span class=n>Plan</span> <span class=k>of</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Cut</span><span class=o>,</span> <span class=n>int</span><span class=o>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>A <code>Cut</code> is a length we want to create from our stock rolls. A <code>Plan</code> is a set of cuts. We want an algorithm which will generate the possible <code>Plan</code>s for a set of <code>Cut</code>s for our stock roll. To make our lives easier, I am going to go ahead and write some functions which allow us to work with these types more easily.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>Cut</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=sd>/// Take a Cut and return the length as a float
+</span></span></span><span class=line><span class=cl><span class=sd></span>    <span class=k>let</span> <span class=nv>length</span> <span class=o>(</span><span class=n>Cut</span> <span class=n>length</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>length</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>module</span> <span class=nn>Plan</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=sd>/// Give me a Plan with no cuts
+</span></span></span><span class=line><span class=cl><span class=sd></span>    <span class=k>let</span> <span class=nv>empty</span> <span class=o>:</span> <span class=n>Plan</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>Plan</span> <span class=nn>Map</span><span class=p>.</span><span class=n>empty</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=sd>/// Give me the total length of cuts in the plan
+</span></span></span><span class=line><span class=cl><span class=sd></span>    <span class=k>let</span> <span class=nv>length</span> <span class=o>(</span><span class=n>Plan</span> <span class=n>plan</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>       <span class=n>plan</span>
+</span></span><span class=line><span class=cl>       <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>KeyValue</span><span class=o>(</span><span class=n>Cut</span> <span class=n>cut</span><span class=o>,</span> <span class=n>count</span><span class=o>))</span> <span class=o>-&gt;</span> <span class=n>cut</span> <span class=o>*</span> <span class=kt>float</span> <span class=n>count</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=sd>/// Add a Cut to a Plan and return a new Plan
+</span></span></span><span class=line><span class=cl><span class=sd></span>    <span class=k>let</span> <span class=nv>addCut</span> <span class=o>(</span><span class=n>cut</span><span class=o>:</span> <span class=n>Cut</span><span class=o>)</span> <span class=o>(</span><span class=n>Plan</span> <span class=n>plan</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>match</span> <span class=nn>Map</span><span class=p>.</span><span class=n>tryFind</span> <span class=n>cut</span> <span class=n>plan</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>Some</span> <span class=n>count</span> <span class=o>-&gt;</span> <span class=n>Plan</span> <span class=o>(</span><span class=nn>Map</span><span class=p>.</span><span class=n>add</span> <span class=n>cut</span> <span class=o>(</span><span class=n>count</span> <span class=o>+</span> <span class=n>1</span><span class=o>)</span> <span class=n>plan</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>None</span> <span class=o>-&gt;</span> <span class=n>Plan</span> <span class=o>(</span><span class=nn>Map</span><span class=p>.</span><span class=n>add</span> <span class=n>cut</span> <span class=n>1</span> <span class=n>plan</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=sd>/// Give me the count of each distinct cut in a given Plan
+</span></span></span><span class=line><span class=cl><span class=sd></span>    <span class=k>let</span> <span class=nv>cutCounts</span> <span class=o>(</span><span class=n>Plan</span> <span class=n>plan</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>plan</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>KeyValue</span><span class=o>(</span><span class=n>cut</span><span class=o>,</span> <span class=n>count</span><span class=o>))</span> <span class=o>-&gt;</span> <span class=n>cut</span><span class=o>,</span> <span class=n>count</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now have our domain for working in this space. Let&rsquo;s talk about the function which will generate the possible <code>Plan</code>s given a set of <code>Cut</code>s and a Stock Length. We want something like this:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>generatePlans</span> <span class=o>(</span><span class=n>stockLength</span><span class=o>:</span> <span class=kt>float</span><span class=o>)</span> <span class=o>(</span><span class=n>cuts</span><span class=o>:</span> <span class=n>Cut</span> <span class=kt>list</span><span class=o>)</span> <span class=o>:</span> <span class=n>Plan</span> <span class=kt>list</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Do some magic here??
+</span></span></span></code></pre></td></tr></table></div></div><p>Now, I&rsquo;m going to show you the answer that I came up with. What you are not seeing though is the couple of hours I spent with my notebook sketching out how this would work. It was not intuitive to me, so I don&rsquo;t want you to think that this stuff just materializes out of thin air. I had to struggle. It was not intuitive but by the time I was done, I felt immense satisfaction.</p><p>The first thing I am going to do is sort <code>cuts</code> from the shortest length to the longest and ensure that I only have distinct cuts.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>sortedCuts</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>    <span class=n>cuts</span> 
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>distinct</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>sortBy</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>Cut</span> <span class=n>length</span><span class=o>)</span> <span class=o>-&gt;</span> <span class=n>length</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>This algorithm is going to take advantage of the fact that the cuts are sorted from shortest to longest so that it can terminate early. Now I want to write a recursive function which is going to take an initially empty <code>Plan</code> and try adding cuts to it. It will keep adding cuts until it exceeds the Stock Length. You can think of this as a sort of <a href=https://en.wikipedia.org/wiki/Constructive_heuristic target=_blank rel="noopener noreffer">Constructive Heuristic</a>. I&rsquo;m going to show you the full function but then we will unpack it.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>rec</span> <span class=n>generate</span> <span class=o>(</span><span class=n>candidates</span><span class=o>:</span> <span class=o>(</span><span class=n>Plan</span> <span class=o>*</span> <span class=n>Cut</span> <span class=kt>list</span><span class=o>)</span> <span class=kt>list</span><span class=o>)</span> <span class=o>(</span><span class=n>approved</span><span class=o>:</span> <span class=n>Plan</span> <span class=kt>list</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>match</span> <span class=n>candidates</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=bp>[]</span> <span class=o>-&gt;</span> <span class=n>approved</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>testCandidate</span><span class=o>::</span><span class=n>remainingCandidates</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>plan</span><span class=o>,</span> <span class=n>cuts</span> <span class=o>=</span> <span class=n>testCandidate</span>
+</span></span><span class=line><span class=cl>        <span class=k>match</span> <span class=n>cuts</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=bp>[]</span> <span class=o>-&gt;</span> 
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>newApproved</span> <span class=o>=</span> <span class=n>plan</span><span class=o>::</span><span class=n>approved</span>
+</span></span><span class=line><span class=cl>            <span class=n>generate</span> <span class=n>remainingCandidates</span> <span class=n>newApproved</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>nextCut</span><span class=o>::</span><span class=n>remainingCuts</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>length</span> <span class=n>plan</span> <span class=o>+</span> <span class=nn>Cut</span><span class=p>.</span><span class=n>length</span> <span class=n>nextCut</span> <span class=o>&lt;=</span> <span class=n>stockLength</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=k>let</span> <span class=nv>newPlan</span> <span class=o>=</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>addCut</span> <span class=n>nextCut</span> <span class=n>plan</span>
+</span></span><span class=line><span class=cl>                <span class=k>let</span> <span class=nv>newCandidates</span> <span class=o>=</span> <span class=o>(</span><span class=n>newPlan</span><span class=o>,</span> <span class=n>cuts</span><span class=o>)::(</span><span class=n>plan</span><span class=o>,</span> <span class=n>remainingCuts</span><span class=o>)::</span><span class=n>remainingCandidates</span>
+</span></span><span class=line><span class=cl>                <span class=n>generate</span> <span class=n>newCandidates</span> <span class=n>approved</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span>
+</span></span><span class=line><span class=cl>                <span class=k>let</span> <span class=nv>newApproved</span> <span class=o>=</span> <span class=n>plan</span><span class=o>::</span><span class=n>approved</span>
+</span></span><span class=line><span class=cl>                <span class=n>generate</span> <span class=n>remainingCandidates</span> <span class=n>newApproved</span>
+</span></span></code></pre></td></tr></table></div></div><p>We have a list of plans and possible cuts which we are exploring called <code>candidates</code>. As candidates are approved, they are added to the <code>approved</code> list of plans. Keep in mind, this function will be initially called with an empty <code>Plan</code> and the full list of <code>Cut</code>s available. Let&rsquo;s go through the cases step by step.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>match</span> <span class=n>candidates</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl><span class=o>|</span> <span class=bp>[]</span> <span class=o>-&gt;</span> <span class=n>approved</span>
+</span></span></code></pre></td></tr></table></div></div><p>This is the terminal case. We have evaluated all the <code>Plan</code>s that were generated, and we return the <code>Plan</code>s in the <code>approved</code> list. Now for the case where we still have remaining candidates.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>|</span> <span class=n>testCandidate</span><span class=o>::</span><span class=n>remainingCandidates</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>plan</span><span class=o>,</span> <span class=n>cuts</span> <span class=o>=</span> <span class=n>testCandidate</span>
+</span></span></code></pre></td></tr></table></div></div><p>In this case, there is at least one remaining candidate to evaluate, <code>testCandidate</code>. We create <code>plan</code> and <code>cuts</code> values using structural unpacking of <code>testCandidate</code>. <code>plan</code> is the <code>Plan</code> we are testing. <code>cuts</code> is the list of possible cuts we can add to <code>plan</code>. You will see that this list will shrink as our algorithm continues.</p><p>Now let&rsquo;s match against the list of <code>Cut</code>s to see what we should do.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>match</span> <span class=n>cuts</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl><span class=o>|</span> <span class=bp>[]</span> <span class=o>-&gt;</span> 
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>newApproved</span> <span class=o>=</span> <span class=n>plan</span><span class=o>::</span><span class=n>approved</span>
+</span></span><span class=line><span class=cl>    <span class=n>generate</span> <span class=n>remainingCandidates</span> <span class=n>newApproved</span>
+</span></span></code></pre></td></tr></table></div></div><p>If the list of cuts is empty, as indicated by the <code>[]</code> case, then we create <code>newApproved</code> by adding <code>plan</code> to <code>approved</code> and calling <code>generate</code> again. Now let&rsquo;s look at the case where there are <code>Cut</code>s remaining.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>|</span> <span class=n>nextCut</span><span class=o>::</span><span class=n>remainingCuts</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>length</span> <span class=n>plan</span> <span class=o>+</span> <span class=nn>Cut</span><span class=p>.</span><span class=n>length</span> <span class=n>nextCut</span> <span class=o>&lt;=</span> <span class=n>stockLength</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>newPlan</span> <span class=o>=</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>addCut</span> <span class=n>nextCut</span> <span class=n>plan</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>newCandidates</span> <span class=o>=</span> <span class=o>(</span><span class=n>newPlan</span><span class=o>,</span> <span class=n>cuts</span><span class=o>)::(</span><span class=n>plan</span><span class=o>,</span> <span class=n>remainingCuts</span><span class=o>)::</span><span class=n>remainingCandidates</span>
+</span></span><span class=line><span class=cl>        <span class=n>generate</span> <span class=n>newCandidates</span> <span class=n>approved</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>newApproved</span> <span class=o>=</span> <span class=n>plan</span><span class=o>::</span><span class=n>approved</span>
+</span></span><span class=line><span class=cl>        <span class=n>generate</span> <span class=n>remainingCandidates</span> <span class=n>newApproved</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now look at <code>nextCut</code> which we know is the shortest of the <code>Cut</code>s in the list due to our sorting. We check that if we add this <code>Cut</code> to <code>plan</code> whether we will exceed the <code>stockLength</code> limit. If we do not exceed the limit, we create a new plan <code>newPlan</code>. We will add <code>newPlan</code> to the list of <code>candidates</code> with <code>cuts</code> as the list of possible <code>Cut</code>s to explore. We also add the current <code>Plan</code> we are testing, <code>plan</code>, to the list of <code>candidates</code> but now with <code>remainingCuts</code> as the possible <code>Cut</code>s to add. Take your time with that. That puzzle took me awhile to figure out.</p><p>In the case that the length of <code>nextCut</code> is too long, we add <code>plan</code> to <code>approved</code> and then continue to search the remaining <code>candidates</code>.</p><p>We call our recursive function with an empty <code>Plan</code> to start and the full list of <code>Cut</code>s to get all the possible <code>Plan</code>s we would want to consider.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>initialCandidate</span> <span class=o>=</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>empty</span><span class=o>,</span> <span class=n>sortedCuts</span>
+</span></span><span class=line><span class=cl><span class=n>generate</span> <span class=o>[</span><span class=n>initialCandidate</span><span class=o>]</span> <span class=bp>[]</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=the-optimization-problem>The Optimization Problem</h2><p>The optimization model for this is rather simple. We will create the list of possible <code>Plan</code>s using the function we just described. We will associate an integer <code>Decision</code> with each <code>Plan</code> which is to indicate how many of each of those plans we will schedule. Let&rsquo;s setup the data for our model so that we can build it. All this data is taken from the Wikipedia example.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>cuts</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>    <span class=o>[</span>
+</span></span><span class=line><span class=cl>        <span class=n>1380</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1520</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1560</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1710</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1820</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1880</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>1930</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2000</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2050</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2100</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2140</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2150</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>2200</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>    <span class=o>]</span> <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=n>Cut</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>cutRequirements</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1380</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>22</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1520</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>25</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1560</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>12</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1710</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>14</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1820</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>18</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1880</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>18</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>1930</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>20</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2000</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>10</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2050</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>12</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2100</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>14</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2140</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>16</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2150</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>18</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=n>Cut</span> <span class=n>2200</span><span class=o>.</span><span class=n>0</span> <span class=o>,</span> <span class=n>20</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>    <span class=o>]</span> <span class=o>|&gt;</span> <span class=n>Map</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>stockLength</span> <span class=o>=</span> <span class=n>5600</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>plans</span> <span class=o>=</span> <span class=n>generatePlans</span> <span class=n>stockLength</span> <span class=n>cuts</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now want to start building our model. We&rsquo;ll open the namespaces we need and create our set of <code>Decision</code>s associated with each <code>Plan</code> in <code>plans</code>. We are using <a href=http://matthewcrews.com/SliceMap/#/ target=_blank rel="noopener noreffer">SliceMaps</a> to simplify formulation.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>open</span> <span class=nn>Flips</span>
+</span></span><span class=line><span class=cl><span class=k>open</span> <span class=nn>Flips.Types</span>
+</span></span><span class=line><span class=cl><span class=k>open</span> <span class=nn>Flips.SliceMap</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>planDecs</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>DecisionBuilder</span> <span class=s>&#34;PlanCount&#34;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>plan</span> <span class=k>in</span> <span class=n>plans</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Integer</span> <span class=o>(</span><span class=n>0</span><span class=o>.</span><span class=n>0</span><span class=o>,</span> <span class=n>infinity</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=n>SMap</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then need to calculate the number of each <code>Cut</code> that is associated with each <code>Plan</code>. This will be important for us to formulate the constraints around meeting the minimum cut requirements. We will store this information in a 2-D <code>SliceMap</code> where the first index is the <code>Plan</code> and the second index is the <code>Cut</code>. The value in the <code>SliceMap</code> is the number of a given <code>Cut</code> in the <code>Plan</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>planCutCounts</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>plans</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>collect</span> <span class=o>(</span><span class=k>fun</span> <span class=n>plan</span> <span class=o>-&gt;</span> <span class=nn>Plan</span><span class=p>.</span><span class=n>cutCounts</span> <span class=n>plan</span>
+</span></span><span class=line><span class=cl>                                <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>cut</span><span class=o>,</span> <span class=n>count</span><span class=o>)</span> <span class=o>-&gt;</span> <span class=o>(</span><span class=n>plan</span><span class=o>,</span> <span class=n>cut</span><span class=o>),</span> <span class=kt>float</span> <span class=n>count</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span> <span class=o>|&gt;</span> <span class=n>SMap2</span>
+</span></span></code></pre></td></tr></table></div></div><p>It&rsquo;s now actually simple to create our constraints. We will create a constraint for each <code>Cut</code> in our data stating that the solution must meet the minimum quantity of each <code>Cut</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>cutRequirementConstraints</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>ConstraintBuilder</span> <span class=s>&#34;CutRequirements&#34;</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>cut</span> <span class=k>in</span> <span class=n>cuts</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>sum</span> <span class=o>(</span><span class=n>planDecs</span> <span class=o>.*</span> <span class=n>planCutCounts</span><span class=o>.[</span><span class=n>All</span><span class=o>,</span> <span class=n>cut</span><span class=o>])</span> <span class=o>&gt;==</span> <span class=n>cutRequirements</span><span class=o>.[</span><span class=n>cut</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Our objective is to minimize the total number of stock rolls required to meet the demand for each <code>Cut</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>objective</span> <span class=o>=</span> <span class=nn>Objective</span><span class=p>.</span><span class=n>create</span> <span class=s>&#34;MinRolls&#34;</span> <span class=n>Minimize</span> <span class=o>(</span><span class=n>sum</span> <span class=n>planDecs</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We combine these into our model and solve.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>model</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=nn>Model</span><span class=p>.</span><span class=n>create</span> <span class=n>objective</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>Model</span><span class=p>.</span><span class=n>addConstraints</span> <span class=n>cutRequirementConstraints</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>result</span> <span class=o>=</span> <span class=nn>Solver</span><span class=p>.</span><span class=n>solve</span> <span class=nn>Settings</span><span class=p>.</span><span class=n>basic</span> <span class=n>model</span>
+</span></span></code></pre></td></tr></table></div></div><p>Let&rsquo;s go ahead and provide some nice printing of the results to the console.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>match</span> <span class=n>result</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl><span class=o>|</span> <span class=n>Optimal</span> <span class=n>solution</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>values</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>        <span class=nn>Solution</span><span class=p>.</span><span class=n>getValues</span> <span class=n>solution</span> <span class=n>planDecs</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Map</span><span class=p>.</span><span class=n>filter</span> <span class=o>(</span><span class=k>fun</span> <span class=o>_</span> <span class=n>quantity</span> <span class=o>-&gt;</span> <span class=n>quantity</span> <span class=o>&gt;</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>totalNumberOfRolls</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>values</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>KeyValue</span><span class=o>(_,</span> <span class=n>count</span><span class=o>))</span> <span class=o>-&gt;</span> <span class=n>count</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;Quantity | Plan&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>KeyValue</span><span class=o>(</span><span class=n>plan</span><span class=o>,</span> <span class=n>quantity</span><span class=o>)</span> <span class=k>in</span> <span class=n>values</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=n>printfn</span> <span class=o>$</span><span class=s>&#34;%8.0f{quantity} | {plan}&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;==========================================&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=o>$</span><span class=s>&#34;Total Number of Rolls: {totalNumberOfRolls}&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;==========================================&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=n>failwith</span> <span class=s>&#34;Unable to solve&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>When you run the full script, you will see the following printed out.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Quantity | Plan
+</span></span><span class=line><span class=cl>8 | Plan (map [(Cut 1380.0, 1); (Cut 2000.0, 1); (Cut 2200.0, 1)])
+</span></span><span class=line><span class=cl>7 | Plan (map [(Cut 1380.0, 1); (Cut 2050.0, 1); (Cut 2150.0, 1)])
+</span></span><span class=line><span class=cl>7 | Plan (map [(Cut 1380.0, 1); (Cut 2100.0, 2)])
+</span></span><span class=line><span class=cl>10 | Plan (map [(Cut 1520.0, 1); (Cut 1880.0, 1); (Cut 2200.0, 1)])
+</span></span><span class=line><span class=cl>10 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2140.0, 1)])
+</span></span><span class=line><span class=cl>3 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2150.0, 1)])
+</span></span><span class=line><span class=cl>2 | Plan (map [(Cut 1520.0, 1); (Cut 2000.0, 1); (Cut 2050.0, 1)])
+</span></span><span class=line><span class=cl>2 | Plan (map [(Cut 1560.0, 1); (Cut 1820.0, 1); (Cut 2200.0, 1)])
+</span></span><span class=line><span class=cl>8 | Plan (map [(Cut 1560.0, 1); (Cut 1880.0, 1); (Cut 2150.0, 1)])
+</span></span><span class=line><span class=cl>1 | Plan (map [(Cut 1560.0, 2); (Cut 2050.0, 1)])
+</span></span><span class=line><span class=cl>2 | Plan (map [(Cut 1710.0, 1); (Cut 1820.0, 1); (Cut 2050.0, 1)])
+</span></span><span class=line><span class=cl>6 | Plan (map [(Cut 1710.0, 2); (Cut 2140.0, 1)])
+</span></span><span class=line><span class=cl>7 | Plan (map [(Cut 1820.0, 2); (Cut 1930.0, 1)])
+</span></span><span class=line><span class=cl>==========================================
+</span></span><span class=line><span class=cl>Total Number of Cuts: 73
+</span></span><span class=line><span class=cl>==========================================
+</span></span></code></pre></td></tr></table></div></div><p>If you check the Wikipedia article, you will see that the best possible answer is 73. There are multiple, equally good solutions. This is called Degeneracy. Problems with high levels of Degeneracy can be difficult to solve but fortunately this one was not. You may run this code on your machine and get a different set of plans, but you&rsquo;ll still have a total of 73 stock rolls required.</p><h2 id=next-steps>Next Steps</h2><p>This was a fun challenge and was a bit of a brain teaser. These types of problems are everywhere in manufacturing planning and scheduling. Minimizing the amount of raw resources required is incredibly important but can be brutally difficult. It&rsquo;s often done by domain experts spending hours with Excel finding a plan that meets all the requirements. These are some of my favorite problems to turn into Mathematical Planning models. Thank you for your time and I look forward to chatting next week!</p><p>Please send me an email at <a href=mailto:matthewcrews@gmail.com rel>matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p><script>window.mootrack||!function(e,t,n,s,o){function i(e){var s,o=~~(Date.now()/3e5),t=document.createElement(n);t.async=!0,t.src=e+"?ts="+o,s=document.getElementsByTagName(n)[0],s.parentNode.insertBefore(t,s)}e.MooTrackerObject=o,e[o]=e[o]||function(){return e[o].q?void e[o].q.push(arguments):void(e[o].q=[arguments])},window.attachEvent?window.attachEvent("onload",i.bind(this,s)):window.addEventListener("load",i.bind(this,s),!1)}(window,document,"script","https://cdn.stat-track.com/statics/moosend-tracking.min.js","mootrack"),mootrack("loadForm","b498d29aaba84b5bb3e0479003dc7264")</script><div data-mooform-id=b498d29a-aba8-4b5b-b3e0-479003dc7264></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></div></div></main><footer class=footer><div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2019 - 2022</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=matthewcrews.com target=_blank>Matthew Crews</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/copy-tex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/mhchem.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"en",pageSize:10,placeholder:"Your comment ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!0,left:"\\begin{equation}",right:"\\end{equation}"},{display:!0,left:"\\begin{equation*}",right:"\\end{equation*}"},{display:!0,left:"\\begin{align}",right:"\\end{align}"},{display:!0,left:"\\begin{align*}",right:"\\end{align*}"},{display:!0,left:"\\begin{alignat}",right:"\\end{alignat}"},{display:!0,left:"\\begin{alignat*}",right:"\\end{alignat*}"},{display:!0,left:"\\begin{gather}",right:"\\end{gather}"},{display:!0,left:"\\begin{CD}",right:"\\end{CD}"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.en",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"No results found",snippetLength:30,type:"algolia"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>

@@ -1,0 +1,393 @@
+# Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3
+
+
+In the previous two posts in this series we introduced the Food Cart Problem. We want a plan for stocking our Food Cart which will maximizes our revenue. In the [first post](/blog/2020/12/2020-12-14/) we discussed the foods that we can stock and the restrictions we are operating under. We introduced a simple heuristic for stocking the food cart and created a simulation in order to validate what our expected revenue is.
+
+In the [second post](/blog/2020/12/2020-12-21/) we formulated a Mathematical Planning model to create a plan to maximize our expected revenue. We validated that the plan found with Mathematical Planning is superior to the simple heuristic in the first post through simulations and statistical tests.
+
+In this final post of the series, we will create a simple Machine Learning model to make predictions of expected demand using the weather conditions as predictors. We will combine the tools of Mathematical Planning and Machine Learning to create an even more profitable algorithm for stocking the food cart.
+
+> **Note:** To see all the code for this post, go [here](https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx)
+
+## Generating Test Data
+
+Since this problem is a hypothetical, we need to generate data to train a Machine Learning model on. The demand for food will be modeled using a [Poisson Distribution](https://en.wikipedia.org/wiki/Poisson_distribution) but the mean of the demand, the $\lambda$, depend on the weather. We are going to generate data that follows a simple model.
+
+$$
+\begin{align}
+\text{Demand Mean} = \ &\text{Baseline Demand} \ + \\\\
+ &\text{Temperature Coefficient} \times \text{temperature} \ + \\\\
+ &\text{Condition Offset}
+\end{align}
+$$
+
+Each food will have a baseline amount of demand, Baseline Demand. The demand for the food will go up or down depending on the temperature. The weather condition (Sunny, Cloudy, Rainy) will also bump the demand up or down in a stepwise manner. We will generate several months’ worth of weather conditions and then use them to generate our historical demand data.
+
+We want to make our code clear and maintainable so we create a domain model. Let's create types to describe a day, temperature, conditions, and weather.
+
+```fsharp
+type Day = Day of int
+
+type Temperature = Temperature of float
+
+type Condition =
+    | Sunny
+    | Cloudy
+    | Rainy
+
+type Weather = {
+    Condition : Condition
+    Temperature : Temperature
+}
+```
+
+Now we can create the type which holds the parameters for our demand model.
+
+```fsharp
+type DemandModelParameters = {
+    BaselineDemand : float
+    TemperatureCoefficient : float
+    ConditionOffsets : Map<Condition, float>
+}
+```
+
+Our model will take the `Weather` as an input and simulate a random `Demand` based on the statistical model we just proposed. Let's create a type which describes this simulation result.
+
+```fsharp
+[<Measure>] type serving
+
+type Demand = Demand of float<serving>
+
+type DemandSimulationResult = {
+    Day : Day
+    Weather : Weather
+    Demand : Demand
+}
+```
+
+Now we can write a function which takes the `DemandModelParameters`, `Weather` and gives us a random `Demand` that follows our model. In statistics this is often called "sampling from the distribution" so we will call our function `sample`.
+
+```fsharp
+module Demand =
+
+    let sample (rng: Random) (parameters: DemandModelParameters) (weather: Weather) =
+        let (Temperature temperature) = weather.Temperature
+        let lambda = parameters.BaselineDemand + 
+                     temperature * parameters.TemperatureCoefficient +
+                     parameters.ConditionOffsets.[weather.Condition]
+        let result = Poisson.Sample (rng, lambda)
+        Demand (float result * 1.0<serving>)
+```
+
+The `Poisson.Sample` function returns an `int` which isn't what we will want for training our Machine Learning model, so we go ahead and turn it into a `float` and attach Units of Measure. Units of Measure are incredibly valuable in tracking what numbers mean but they can add a little bit of boilerplate in some cases. I find it worth the clarity they bring.
+
+We want to add a couple more functions for generating random `Temperature`, `Condition` and `Weather`.
+
+```fsharp
+module Condition =
+
+    let private conditions = 
+        [
+            0, Sunny
+            1, Cloudy
+            2, Rainy
+        ] |> Map
+
+    let sample (rng: Random) =
+        conditions.[rng.Next(0, 2)]
+
+
+module Temperature =
+
+    let sample (rng: Random) (Temperature minTemperature) (Temperature maxTemperature) =
+        rng.NextDouble() * (maxTemperature - minTemperature) + minTemperature
+        |> Math.Round
+        |> Temperature
+
+
+module Weather =
+
+    let sample (rng: Random) (minTemperature: Temperature) (maxTemperature: Temperature) : Weather =
+        let condition = Condition.sample rng
+        let temperature = Temperature.sample rng minTemperature maxTemperature
+        {
+            Condition = condition
+            Temperature = temperature
+        }
+```
+
+Well, this is great. We now have a way of generating data for which we can train a ML model on. Let's do this for Burgers.
+
+```fsharp
+// Parameters for generating samples data
+let burgerParameters = {
+    BaselineDemand = 337.5
+    TemperatureCoefficient = 3.5
+    ConditionOffsets = Map [ Sunny, -30.0; Cloudy, 0.0; Rainy, 30.0 ]
+}
+
+let rng = System.Random(123)
+// Number of days for which to generate data
+let numberOfDays = 100
+let minTemp = Temperature 40.0
+let maxTemp = Temperature 110.0
+let pastDays =
+    [1..numberOfDays]
+    |> List.map Day
+
+let pastWeather =
+    pastDays
+    |> List.map (fun day -> {| Day = day; Weather = Simulation.Weather.sample rng minTemp maxTemp |})
+    
+let burgerDemand =
+    pastWeather
+    |> List.map (fun d -> {| d with Demand = Simulation.Demand.sample rng burgerParameters d.Weather |})
+    |> List.map (fun d -> DemandSimulationResult.create d.Day d.Weather d.Demand )
+```
+
+We have now simulated 100 days’ worth of Burger demand based on the weather for that day. We now want to use this data to train a Machine Learning model so that we can make predictions of Demand going forward and better optimize our inventory at the beginning of the day.
+
+## Training a Machine Learning Model
+
+We will use [ML.NET](https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet) to create a simple ML Model to predict demand. The ML.NET API can use many different data sources as inputs. For our case, we will save our historical weather and demand data to a local `.csv` file. I am not giong to show the boilerplate for saving the data but you can find it in the [full code example](https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx).
+
+The ML.NET API has you define types for your training data that it uses for parsing the input. In our case we will have delimited records in a `.csv` file.
+
+```fsharp
+[<CLIMutable>]
+type DemandData = {
+    [<LoadColumn(1)>]
+    Temperature : single
+    [<LoadColumn(2)>]
+    Condition : string
+    [<LoadColumn(3); ColumnName("Label")>]
+    Demand : single
+}
+```
+
+The `[<LoadColumn(n)>]` attribute tells ML.NET which column in the source data corresponds to that field. Our saved data looks like this:
+
+| Day | Temperature | Condition | Demand |
+|---|---|---|---|
+| 1 | 104 | Cloudy | 706 |
+| 2 | 97 | Cloudy | 645 |
+| 3 | 43 | Cloudy | 492 |
+| 4 | 50 | Sunny | 457 |
+
+We don't need the data in the `Day` column so we are ignoring it. The `[<ColumnName("Label")>]` is what tells ML.NET the field that I am trying to predict. It will use the other fields as inputs to try to predict `Demand`. We want to create a function which takes an input file, trains a model, and then saves the model locally. ML.NET allows you to save trained models as `.zip` files. This makes it easy to load a pre-existing model to use in your code.
+
+We will be working with several different types of files and I find it useful to create some simple types to represent that.
+
+```fsharp
+type DataFile = DataFile of string
+type ModelFile = ModelFile of string
+type OutputDirectory = OutputDirectory of string
+```
+
+A `DataFile` is a filepath to the `.csv` which holds our data. A `ModelFile` is the `.zip` which holds the persisted form of our ML model for predicting demand. The `OutputDirectory` is just a directory where we want to put data and models.
+
+We can now put together a simple `train` function which will take our input data, train an ML model, and then save it for us to use later. We will also report the metrics from the training.
+
+```fsharp
+open Microsoft.ML
+open Microsoft.ML.Data
+open Types
+
+let private reportMetrics (metrics: RegressionMetrics) =
+    // show the metrics
+    printfn "Model metrics:"
+    printfn "  RMSE:%f" metrics.RootMeanSquaredError
+    printfn "  MSE: %f" metrics.MeanSquaredError
+    printfn "  MAE: %f" metrics.MeanAbsoluteError
+
+let train (OutputDirectory outputDir) (modelName: string) (inputFile) =
+    let context = MLContext()
+    let dataView = context.Data.LoadFromTextFile<DemandData> (inputFile, hasHeader = true, separatorChar = ',')
+    let partitions = context.Data.TrainTestSplit(dataView, testFraction = 0.2)
+    let pipeline = 
+        EstimatorChain()
+            .Append(context.Transforms.Categorical.OneHotEncoding("Condition"))
+            .Append(context.Transforms.NormalizeMeanVariance("Temperature"))
+            .Append(context.Transforms.Concatenate("Features", "Condition", "Temperature"))
+            .Append(context.Regression.Trainers.Sdca())
+    
+    let model = partitions.TrainSet |> pipeline.Fit
+    let metrics = partitions.TestSet |> model.Transform |> context.Regression.Evaluate
+    reportMetrics metrics |> ignore
+
+    System.IO.Directory.CreateDirectory outputDir |> ignore
+    let outputFile = $"{outputDir}/%O{modelName}.zip"
+    context.Model.Save (model, dataView.Schema, outputFile)
+
+    ModelFile outputFile
+```
+
+The part where we define the shape of our model is in the definition of `pipeline`.
+
+```fsharp
+let pipeline = 
+    EstimatorChain()
+        .Append(context.Transforms.Categorical.OneHotEncoding("Condition"))
+        .Append(context.Transforms.NormalizeMeanVariance("Temperature"))
+        .Append(context.Transforms.Concatenate("Features", "Condition", "Temperature"))
+        .Append(context.Regression.Trainers.Sdca())
+```
+
+We know that the `Condition` data is categorical so we need to encode it in a way that the training code understands. [One-hot Encoding](https://en.wikipedia.org/wiki/One-hot) represents categories as a set of Boolean values. It's a similar concept to binary encoding of numbers but they are not the same, so don't mix them up!
+
+We then take the step to normalize the mean and variance of the `Temperature` data. ML training really likes to have the data lie between -1.0 and 1.0. This protects against features appearing more important than they are. Our temperature values are between 40.0 and 110.0 which could cause a problem for the training code.
+
+We now combine our One-hot encoded `Condition` column with the normalized `Temperature` data using `Transforms.Concatenate`.
+
+```fsharp
+.Append(context.Transforms.Concatenate("Features", "Condition", "Temperature"))
+```
+
+What this does is create a new column of data called "Features". ML.NET wants there to be a "Features" column for it to use as the input to the training algorithm. "Features" is the default name for the input data of a training model. It can be configured but I am going with the default.
+
+The final part of the definition for our `pipeline` is the type of model we want it to fit. In our case we are performing regression since we are trying to predict continuous data, `Demand` in this case. ML.NET has a large number of possible algorithms. In our case we are using the Stochastic Dual Coordinate Ascent (SDCA) method to fit a linear model.
+
+```fsharp
+.Append(context.Regression.Trainers.Sdca())
+```
+
+We now train the model using the training data set and evaluate the metrics with the test data.
+
+```fsharp
+let model = partitions.TrainSet |> pipeline.Fit
+let metrics = partitions.TestSet |> model.Transform |> context.Regression.Evaluate
+reportMetrics metrics |> ignore
+```
+
+If we run our Burger data through we will see the following metrics reported
+
+```fsharp
+let burgerDemandModelFile =
+    Training.train outputDirectory "BurgerDemandModel" burgerDemandDataFile
+
+> Model metrics:
+    RMSE:19.713698
+    MSE: 388.629880
+    MAE: 13.099727
+```
+
+`MAE` stands for [Mean Absolute Error](https://en.wikipedia.org/wiki/Mean_absolute_error). It is the average of how far our prediction is off from the correct value. `MSE` stands for [Mean Squared Error](https://en.wikipedia.org/wiki/Mean_squared_error) and is the average of the square of the error. `RMSE` is the [Root Mean Square Error](https://en.wikipedia.org/wiki/Root-mean-square_deviation) which is the square root of `MSE`. Which one of these is the most important? It depends. When I'm working with someone, I want to understand the implications of a bad prediction. That would guide which metrics I tune for.
+
+There are many great resources out there on Machine Learning, so I will not go in depth here. For now, let's say that our model looks good enough and see how it performs when we combine it with our Mathematical Planning model.
+
+## MP + ML = $$$
+
+To evaluate how our new predictor performs, we will combine it with our Mathematical Planning model. Let's simulate 30 days into the future and compare the three approaches: Simple Heuristic, Mathematical Planning, Mathematical Planning + Machine Learning.
+
+We generate 30 days into the future. For each day we sample from the possible weather conditions. We then take the `Weather` for each day and generate a sample of the demand for each food from our underlying statistical model. We store the result in a `Map<Food, Demand>` to simplify some of our later code.
+
+To make our code cleaner we are going to add a new function to our `Simulation` module for the demand for all the foods in each day.
+
+```fsharp
+module DayDemand =
+
+    let sample (rng: Random) (parameters: Map<Food, DemandModelParameters>) (weather: Weather) =
+
+        parameters
+        |> Map.map (fun food demandParameters -> Demand.sample rng demandParameters weather)
+```
+
+It's a small thing, but I have rarely regretted making my code clean and simple. Now we will generate 30 days’ worth of weather data.
+
+```fsharp
+let numberFutureDays = 30
+
+// Let's create some future data that we will evaluate our different techniques against
+let futureDays =
+    [1..numberFutureDays]
+    |> List.map (fun d -> {| Day = Day d; Weather = Simulation.Weather.sample rng minTemp maxTemp |})
+```
+
+With 30 days’ worth of future weather data, we will now generate theoretical demand on those days. We are “cheating” in that we have control of the generation of demand data. In real world scenarios there are some additional complexities that need to be dealt with. My desire is to show the concepts. Future posts can deal with the idiosyncrasies. We now generate the demand that would be observed on those days.
+
+```fsharp
+// Let's create some future data that we will evaluate our different techniques against
+let futureDays =
+    futureWeather
+    |> List.map (fun d -> {| d with FoodDemand = Simulation.DayDemand.sample rng foodParameters d.Weather |})
+```
+
+We now have a list of days where we have the weather on that day and the demand. We can now calculate what our revenue would have been using the simple heuristic from the first blog post. We create a function which takes the planned inventory and the demand on a day to calculate the revenue.
+
+```fsharp
+module RevenueModel =
+
+    open Types
+
+    let evaluate (revenuePerServing: Map<Food, RevenuePerServing>) (inventoryPlan: Map<Food, Inventory>) (demand: Map<Food, Demand>) =
+        inventoryPlan
+        |> Map.toSeq
+        |> Seq.sumBy (fun (food, inventory) -> revenuePerServing.[food] * (Sales.calculate inventory demand.[food]))
+```
+
+The `RevenueModel.evaluate` function calculates what the revenue would have been on a day given the inventory plan that was used and the demand that was realized. We now use our simple heuristic plan for each of the future 30 days to see what our total revenue would have been.
+
+```fsharp
+let simpleHueristicPlan =
+    Map [
+        Burger, Inventory 0.0<serving>
+        Pizza, Inventory 900.0<serving>
+        Taco, Inventory 466.0<serving>
+    ]
+
+let simpleHeuristicRevenue =
+    futureDays
+    |> List.sumBy (fun d -> RevenueModel.evaluate revenuePerServing simpleHueristicPlan d.FoodDemand)
+```
+
+`simpleHeuristicRevenue` comes to $62,247.20. This will be our baseline. We now use the inventory plan we found using Mathematical Planning and find the revenue we would achieve.
+
+```fsharp
+let optimizedPlan =
+    Map [
+        Burger, Inventory 572.0<serving>
+        Pizza, Inventory 355.0<serving>
+        Taco, Inventory 669.0<serving>
+    ]
+
+let optimizedPlanRevenue =
+    futureDays
+    |> List.sumBy (fun d -> RevenueModel.evaluate revenuePerServing optimizedPlan d.FoodDemand)
+```
+
+`optimizedPlanRevenue` comes to $65,462.50, a 2.58% improvement. That will add up to significant additional revenue as the business scales. We now want to bring Mathematical Planning and Machine Learning together. We will use our Machine Learning models to predict the expected demand given the weather as input. The result of the prediction will be used as the input to the Mathematical Planning model which will suggest the ideal amount of inventory to carry.
+
+I am going to gloss over some details that I will address in a future post at this point. I defined two new interfaces which cleaned up the code, `IDemandPredictor` and `IInventoryOptimizer`. They are simple interfaces I used to wrap the ML.NET model and the inventory optimization model. The [full example code](https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx) shows everything but for the sake of keeping this blog post a reasonable length, I left out these nuances.
+
+In this code `burgerPredictor`, `pizzaPredictor` and `tacoPredictor` are instances of `IDemandPredictor` which wrap the ML.NET models we trained earlier. `planOptimizer` is an `IInventoryOptimizer` that wraps our Mathematical Planning model.
+
+```fsharp
+let predictorPlusOptimizerRevenue =
+    futureDays
+    |> List.map (fun d -> {| d with DemandRates = Map [ Burger, burgerPredictor.predict d.Weather
+                                                        Pizza, pizzaPredictor.predict d.Weather
+                                                        Taco, tacoPredictor.predict d.Weather
+                                                      ] |})
+    |> List.map (fun d -> {| d with Plan = planOptimizer.plan d.DemandRates |})
+    |> List.sumBy (fun d -> RevenueModel.evaluate revenuePerServing d.Plan d.FoodDemand)
+```
+
+`predictorPlusOptimizerRevenue` comes to $67,214.30, a 7.98% improvement from our baseline. Here are the results side by side:
+
+| Metric | Simple Heuristic | MP | MP + ML |
+|---|---|---|---|
+| Revenue | $62,247.20 | $65,462.50 | $67,214.30 |
+| % Improvement | - | 2.58% | 7.98% |
+
+## Next Steps
+
+I hope this illustrates a simple use case for combining the power of Mathematical Planning and Machine Learning. The techniques are highly complementary and lead to highly effective solutions which are far better than either technique in isolation. We can improve this solution in many ways. We spent no time on tuning the Machine Learning model. It would be nice to have real world data for this problem. The challenges is that the real world data sets I have access to are proprietary which is why I generated my own.
+
+In future posts I hope to explore how to tune Machine Learning models to protect against specific failure modes by tuning for different metrics. We are also assuming that we restock the food cart every morning. We likely need to make inventory decisions several days ahead of time which introduces some interesting optimization challenges we will explore in the future.
+
+Let me know if there are any problems you would like me to explore!
+
+Please send me an email at matthewcrews@gmail.com if you have any questions and subscribe so you can stay on top new posts and products I am offering.
+
+{{<subscribe>}}
+

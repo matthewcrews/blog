@@ -1,0 +1,307 @@
+# Minimizing Waste for the Cutting Stock Problem
+
+
+I was recently posed the question, "Can you use Mathematical Planning to optimize the Cutting Stock problem?" For those who are not familiar with this problem, you can find the Wikipedia article [here](https://en.wikipedia.org/wiki/Cutting_stock_problem). In summary, you have a stock size of paper material from which you need to produce smaller sizes. In the example provided on Wikipedia, the stock size is 5600mm. You are asked to produce a variety of sizes between 1380mm and 2200mm. The ideal plan is one which minimizes the amount of waste. This is a classic planning problem that can actually be reduced to the [knapsack problem](https://en.wikipedia.org/wiki/Knapsack_problem).
+
+> **Note**: Full code for this post can be found [here](https://github.com/matthewcrews/modelmondays/blob/main/CuttingStockProblem.fsx)
+
+These are the cut lengths and quantities you need to produce in the example problem.
+
+| Width [mm] | Number of Items |
+|---|---|
+| 1380 | 22 |
+| 1520 | 25 |
+| 1560 | 12 |
+| 1710 | 14 |
+| 1820 | 18 |
+| 1880 | 18 |
+| 1930 | 20 |
+| 2000 | 10 |
+| 2050 | 12 |
+| 2100 | 14 |
+| 2140 | 16 |
+| 2150 | 18 |
+| 2200 | 20 |
+
+
+There are a variety of different ways you can cut the stock size into the smaller sizes. For example, you could produce 3 x 1820mm cuts from a 5600mm stock roll. You could also do 2200mm, 1820mm, and 1560mm. In total there are 308 possible combinations of cuts, not including the empty combination which has zero cuts. The most important thing to realize when approaching this problem is that the order you make the cuts does not matter. A more technical term would be that the order of cuts is [commutative](https://en.wikipedia.org/wiki/Commutative_property).
+
+## Generating the Possible Cuts
+
+The most difficult part of this problem turned out to be the generating of the possible cuts. Before we dive right into that though, let's create some simple domain types to describe our problem.
+
+```fsharp
+type Cut = Cut of float
+type Plan = Plan of Map<Cut, int>
+```
+
+A `Cut` is a length we want to create from our stock rolls. A `Plan` is a set of cuts. We want an algorithm which will generate the possible `Plan`s for a set of `Cut`s for our stock roll. To make our lives easier, I am going to go ahead and write some functions which allow us to work with these types more easily.
+
+```fsharp
+module Cut =
+
+    /// Take a Cut and return the length as a float
+    let length (Cut length) =
+        length
+
+module Plan =
+
+    /// Give me a Plan with no cuts
+    let empty : Plan =
+        Plan Map.empty
+
+    /// Give me the total length of cuts in the plan
+    let length (Plan plan) =
+       plan
+       |> Seq.sumBy (fun (KeyValue(Cut cut, count)) -> cut * float count)
+
+    /// Add a Cut to a Plan and return a new Plan
+    let addCut (cut: Cut) (Plan plan) =
+        match Map.tryFind cut plan with
+        | Some count -> Plan (Map.add cut (count + 1) plan)
+        | None -> Plan (Map.add cut 1 plan)
+
+    /// Give me the count of each distinct cut in a given Plan
+    let cutCounts (Plan plan) =
+        plan
+        |> Seq.map (fun (KeyValue(cut, count)) -> cut, count)
+```
+
+We now have our domain for working in this space. Let's talk about the function which will generate the possible `Plan`s given a set of `Cut`s and a Stock Length. We want something like this:
+
+```fsharp
+let generatePlans (stockLength: float) (cuts: Cut list) : Plan list =
+    // Do some magic here??
+```
+
+Now, I'm going to show you the answer that I came up with. What you are not seeing though is the couple of hours I spent with my notebook sketching out how this would work. It was not intuitive to me, so I don't want you to think that this stuff just materializes out of thin air. I had to struggle. It was not intuitive but by the time I was done, I felt immense satisfaction.
+
+The first thing I am going to do is sort `cuts` from the shortest length to the longest and ensure that I only have distinct cuts.
+
+```fsharp
+let sortedCuts = 
+    cuts 
+    |> List.distinct
+    |> List.sortBy (fun (Cut length) -> length)
+```
+
+This algorithm is going to take advantage of the fact that the cuts are sorted from shortest to longest so that it can terminate early. Now I want to write a recursive function which is going to take an initially empty `Plan` and try adding cuts to it. It will keep adding cuts until it exceeds the Stock Length. You can think of this as a sort of [Constructive Heuristic](https://en.wikipedia.org/wiki/Constructive_heuristic). I'm going to show you the full function but then we will unpack it.
+
+```fsharp
+let rec generate (candidates: (Plan * Cut list) list) (approved: Plan list) =
+    match candidates with
+    | [] -> approved
+    | testCandidate::remainingCandidates ->
+        let plan, cuts = testCandidate
+        match cuts with
+        | [] -> 
+            let newApproved = plan::approved
+            generate remainingCandidates newApproved
+        | nextCut::remainingCuts ->
+            if Plan.length plan + Cut.length nextCut <= stockLength then
+                let newPlan = Plan.addCut nextCut plan
+                let newCandidates = (newPlan, cuts)::(plan, remainingCuts)::remainingCandidates
+                generate newCandidates approved
+            else
+                let newApproved = plan::approved
+                generate remainingCandidates newApproved
+```
+
+We have a list of plans and possible cuts which we are exploring called `candidates`. As candidates are approved, they are added to the `approved` list of plans. Keep in mind, this function will be initially called with an empty `Plan` and the full list of `Cut`s available. Let's go through the cases step by step.
+
+```fsharp
+match candidates with
+| [] -> approved
+```
+
+This is the terminal case. We have evaluated all the `Plan`s that were generated, and we return the `Plan`s in the `approved` list. Now for the case where we still have remaining candidates.
+
+```fsharp
+| testCandidate::remainingCandidates ->
+    let plan, cuts = testCandidate
+```
+
+In this case, there is at least one remaining candidate to evaluate, `testCandidate`. We create `plan` and `cuts` values using structural unpacking of `testCandidate`. `plan` is the `Plan` we are testing. `cuts` is the list of possible cuts we can add to `plan`. You will see that this list will shrink as our algorithm continues.
+
+Now let's match against the list of `Cut`s to see what we should do.
+
+```fsharp
+match cuts with
+| [] -> 
+    let newApproved = plan::approved
+    generate remainingCandidates newApproved
+```
+
+If the list of cuts is empty, as indicated by the `[]` case, then we create `newApproved` by adding `plan` to `approved` and calling `generate` again. Now let's look at the case where there are `Cut`s remaining.
+
+```fsharp
+| nextCut::remainingCuts ->
+    if Plan.length plan + Cut.length nextCut <= stockLength then
+        let newPlan = Plan.addCut nextCut plan
+        let newCandidates = (newPlan, cuts)::(plan, remainingCuts)::remainingCandidates
+        generate newCandidates approved
+    else
+        let newApproved = plan::approved
+        generate remainingCandidates newApproved
+```
+
+We now look at `nextCut` which we know is the shortest of the `Cut`s in the list due to our sorting. We check that if we add this `Cut` to `plan` whether we will exceed the `stockLength` limit. If we do not exceed the limit, we create a new plan `newPlan`. We will add `newPlan` to the list of `candidates` with `cuts` as the list of possible `Cut`s to explore. We also add the current `Plan` we are testing, `plan`, to the list of `candidates` but now with `remainingCuts` as the possible `Cut`s to add. Take your time with that. That puzzle took me awhile to figure out.
+
+In the case that the length of `nextCut` is too long, we add `plan` to `approved` and then continue to search the remaining `candidates`.
+
+We call our recursive function with an empty `Plan` to start and the full list of `Cut`s to get all the possible `Plan`s we would want to consider.
+
+```fsharp
+let initialCandidate = Plan.empty, sortedCuts
+generate [initialCandidate] []
+```
+
+## The Optimization Problem
+
+The optimization model for this is rather simple. We will create the list of possible `Plan`s using the function we just described. We will associate an integer `Decision` with each `Plan` which is to indicate how many of each of those plans we will schedule. Let's setup the data for our model so that we can build it. All this data is taken from the Wikipedia example.
+
+```fsharp
+let cuts = 
+    [
+        1380.0
+        1520.0
+        1560.0
+        1710.0
+        1820.0
+        1880.0
+        1930.0
+        2000.0
+        2050.0
+        2100.0
+        2140.0
+        2150.0
+        2200.0
+    ] |> List.map Cut
+
+let cutRequirements =
+    [
+        Cut 1380.0 , 22.0
+        Cut 1520.0 , 25.0
+        Cut 1560.0 , 12.0
+        Cut 1710.0 , 14.0
+        Cut 1820.0 , 18.0
+        Cut 1880.0 , 18.0
+        Cut 1930.0 , 20.0
+        Cut 2000.0 , 10.0
+        Cut 2050.0 , 12.0
+        Cut 2100.0 , 14.0
+        Cut 2140.0 , 16.0
+        Cut 2150.0 , 18.0
+        Cut 2200.0 , 20.0
+    ] |> Map
+
+let stockLength = 5600.0
+let plans = generatePlans stockLength cuts
+```
+
+We now want to start building our model. We'll open the namespaces we need and create our set of `Decision`s associated with each `Plan` in `plans`. We are using [SliceMaps](http://matthewcrews.com/SliceMap/#/) to simplify formulation.
+
+```fsharp
+open Flips
+open Flips.Types
+open Flips.SliceMap
+
+let planDecs =
+    DecisionBuilder "PlanCount" {
+        for plan in plans ->
+        Integer (0.0, infinity)
+    } |> SMap
+```
+
+We then need to calculate the number of each `Cut` that is associated with each `Plan`. This will be important for us to formulate the constraints around meeting the minimum cut requirements. We will store this information in a 2-D `SliceMap` where the first index is the `Plan` and the second index is the `Cut`. The value in the `SliceMap` is the number of a given `Cut` in the `Plan`.
+
+```fsharp
+let planCutCounts =
+    plans
+    |> Seq.collect (fun plan -> Plan.cutCounts plan
+                                |> Seq.map (fun (cut, count) -> (plan, cut), float count)
+    ) |> SMap2
+```
+
+It's now actually simple to create our constraints. We will create a constraint for each `Cut` in our data stating that the solution must meet the minimum quantity of each `Cut`.
+
+```fsharp
+let cutRequirementConstraints =
+    ConstraintBuilder "CutRequirements" {
+        for cut in cuts ->
+        sum (planDecs .* planCutCounts.[All, cut]) >== cutRequirements.[cut]
+    }
+```
+
+Our objective is to minimize the total number of stock rolls required to meet the demand for each `Cut`.
+
+```fsharp
+let objective = Objective.create "MinRolls" Minimize (sum planDecs)
+```
+
+We combine these into our model and solve.
+
+```fsharp
+let model =
+    Model.create objective
+    |> Model.addConstraints cutRequirementConstraints
+
+let result = Solver.solve Settings.basic model
+```
+
+Let's go ahead and provide some nice printing of the results to the console.
+
+```fsharp
+match result with
+| Optimal solution ->
+    let values = 
+        Solution.getValues solution planDecs
+        |> Map.filter (fun _ quantity -> quantity > 0.0)
+
+    let totalNumberOfRolls =
+        values
+        |> Seq.sumBy (fun (KeyValue(_, count)) -> count)
+
+    printfn "Quantity | Plan"
+    for KeyValue(plan, quantity) in values do
+        printfn $"%8.0f{quantity} | {plan}"
+
+    printfn "=========================================="
+    printfn $"Total Number of Rolls: {totalNumberOfRolls}"
+    printfn "=========================================="
+
+| _ -> failwith "Unable to solve"
+```
+
+When you run the full script, you will see the following printed out.
+
+```terminal
+Quantity | Plan
+8 | Plan (map [(Cut 1380.0, 1); (Cut 2000.0, 1); (Cut 2200.0, 1)])
+7 | Plan (map [(Cut 1380.0, 1); (Cut 2050.0, 1); (Cut 2150.0, 1)])
+7 | Plan (map [(Cut 1380.0, 1); (Cut 2100.0, 2)])
+10 | Plan (map [(Cut 1520.0, 1); (Cut 1880.0, 1); (Cut 2200.0, 1)])
+10 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2140.0, 1)])
+3 | Plan (map [(Cut 1520.0, 1); (Cut 1930.0, 1); (Cut 2150.0, 1)])
+2 | Plan (map [(Cut 1520.0, 1); (Cut 2000.0, 1); (Cut 2050.0, 1)])
+2 | Plan (map [(Cut 1560.0, 1); (Cut 1820.0, 1); (Cut 2200.0, 1)])
+8 | Plan (map [(Cut 1560.0, 1); (Cut 1880.0, 1); (Cut 2150.0, 1)])
+1 | Plan (map [(Cut 1560.0, 2); (Cut 2050.0, 1)])
+2 | Plan (map [(Cut 1710.0, 1); (Cut 1820.0, 1); (Cut 2050.0, 1)])
+6 | Plan (map [(Cut 1710.0, 2); (Cut 2140.0, 1)])
+7 | Plan (map [(Cut 1820.0, 2); (Cut 1930.0, 1)])
+==========================================
+Total Number of Cuts: 73
+==========================================
+```
+
+If you check the Wikipedia article, you will see that the best possible answer is 73. There are multiple, equally good solutions. This is called Degeneracy. Problems with high levels of Degeneracy can be difficult to solve but fortunately this one was not. You may run this code on your machine and get a different set of plans, but you'll still have a total of 73 stock rolls required.
+
+## Next Steps
+
+This was a fun challenge and was a bit of a brain teaser. These types of problems are everywhere in manufacturing planning and scheduling. Minimizing the amount of raw resources required is incredibly important but can be brutally difficult. It's often done by domain experts spending hours with Excel finding a plan that meets all the requirements. These are some of my favorite problems to turn into Mathematical Planning models. Thank you for your time and I look forward to chatting next week!
+
+Please send me an email at matthewcrews@gmail.com if you have any questions and subscribe so you can stay on top new posts and products I am offering.
+
+{{<subscribe>}}
+

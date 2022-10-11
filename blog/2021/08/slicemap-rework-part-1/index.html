@@ -1,0 +1,415 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>SliceMap Rework - Part 1 - Matthew Crews</title><meta name=Description content="Hugo theme - LoveIt"><meta property="og:title" content="SliceMap Rework - Part 1"><meta property="og:description" content="I have been on a journey to overhaul the underpinnings of the Flips library and it has been a humbling experience. Part of what I believe provides a unique value add compared to other libraries for Mathematical Planning is the SliceMap types. They provide a convenient method for subsetting your data that is intuitive for someone who writes optimization models. The SliceMap types are heavily influenced by the TupleDict type in the Gurobi library for Python."><meta property="og:type" content="article"><meta property="og:url" content="https://matthewcrews.com/blog/2021/08/slicemap-rework-part-1/"><meta property="og:image" content="https://matthewcrews.com/logo.png"><meta property="article:section" content="blog"><meta property="article:published_time" content="2021-08-16T00:00:00+00:00"><meta property="article:modified_time" content="2022-10-11T10:21:38-07:00"><meta property="og:site_name" content="Matthew Crews"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://matthewcrews.com/logo.png"><meta name=twitter:title content="SliceMap Rework - Part 1"><meta name=twitter:description content="I have been on a journey to overhaul the underpinnings of the Flips library and it has been a humbling experience. Part of what I believe provides a unique value add compared to other libraries for Mathematical Planning is the SliceMap types. They provide a convenient method for subsetting your data that is intuitive for someone who writes optimization models. The SliceMap types are heavily influenced by the TupleDict type in the Gurobi library for Python."><meta name=application-name content="Mathew Crews"><meta name=apple-mobile-web-app-title content="Mathew Crews"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://matthewcrews.com/blog/2021/08/slicemap-rework-part-1/><link rel=prev href=https://matthewcrews.com/blog/2021/05/2021-05-04/><link rel=next href=https://matthewcrews.com/blog/2021/08/slicemap-rework-part-2/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"SliceMap Rework - Part 1","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/matthewcrews.com\/blog\/2021\/08\/slicemap-rework-part-1\/"},"image":[{"@type":"ImageObject","url":"https:\/\/matthewcrews.com\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"blog","wordcount":3275,"url":"https:\/\/matthewcrews.com\/blog\/2021\/08\/slicemap-rework-part-1\/","datePublished":"2021-08-16T00:00:00+00:00","dateModified":"2022-10-11T10:21:38-07:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":"https:\/\/matthewcrews.com\/images\/fast_fsharp_avatar.png"},"author":{"@type":"Person","name":"Matthew Crews"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/blog/>Blog </a><a class=menu-item href=/about/>About </a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder="Search titles or contents..." id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder="Search titles or contents..." id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>Cancel</a></div><a class=menu-item href=/blog/ title>Blog</a><a class=menu-item href=/about/ title>About</a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">SliceMap Rework - Part 1</h1><div class=content id=content><p>I have been on a journey to overhaul the underpinnings of the <a href=https://flipslibrary.com/#/ target=_blank rel="noopener noreffer">Flips</a> library and it has been a humbling experience. Part of what I believe provides a unique value add compared to other libraries for Mathematical Planning is the <code>SliceMap</code> types. They provide a convenient method for subsetting your data that is intuitive for someone who writes optimization models. The <code>SliceMap</code> types are heavily influenced by the <code>TupleDict</code> type in the <a href=https://www.gurobi.com/documentation/9.1/refman/py_tupledict.html target=_blank rel="noopener noreffer">Gurobi library</a> for Python.</p><p>The major problem with <code>SliceMap</code> is that it does not scale well to sparse data sets. I knew this would be the case when I wrote it originally, but the performance was good enough at the time, so I decided to ship. Since then, this performance degradation has been a splinter in my mind that I simply could not shake. There had to be a way to do this well, I just didn&rsquo;t know it yet.</p><p>I have spent a year on and off searching for answers. I now have a shelf in my office that is full of books on algorithms, data structures, and multi-dimensional data structures. It&rsquo;s all the best resources I could find that could possibly help me with this problem. While it was fun reading them, it ultimately didn&rsquo;t help much. All these fancy data structures didn&rsquo;t support what appeared to be a unique use case.</p><p>This series of posts is going to be me taking you through the journey to where I had the breakthrough and then kept on pushing. I have kept a repo set aside with branches which illustrate each of the milestones so you can see the impact. It includes code for easy benchmarking with <a href=https://github.com/dotnet/BenchmarkDotNet target=_blank rel="noopener noreffer">benchmarkDotNet</a> and code that you can profile yourself if you wish.</p><p>My goal is for you to see the mistakes and understand why some approaches are inefficient, even if the <a href=https://en.wikipedia.org/wiki/Big_O_notation target=_blank rel="noopener noreffer">Big O notation</a> says they should be faster. Also, I am not a &ldquo;Pro&rdquo; performance person. I&rsquo;m actively learning to diagnose and address performance issues so if you see that I missed something, please let me know! Let&rsquo;s start our journey with understanding the domain we are working in and what the requirements of <code>SliceMap</code> are.</p><h2 id=the-linear-programming-domain>The Linear Programming Domain</h2><p><code>SliceMap</code> is a set of types specifically for working in the <a href=https://en.wikipedia.org/wiki/Linear_programming target=_blank rel="noopener noreffer">Linear Programming</a> and <a href=https://en.wikipedia.org/wiki/Linear_programming target=_blank rel="noopener noreffer">Mixed-Integer Programming</a> domains. I often refer to these domains as &ldquo;Mathematical Planning&rdquo; because they are primarily concerned with using mathematics to find the best possible plans. The word &ldquo;Program&rdquo; used to mean &ldquo;Plan&rdquo; but now the word &ldquo;Program&rdquo; has become overloaded since the advent of Computer Science, so I don&rsquo;t like to use it anymore. The academic literature still calls it &ldquo;Linear Programming&rdquo; and &ldquo;Mixed-Integer Programming&rdquo; though so if you go searching for more resources, you&rsquo;ll need to use the original terms.</p><p>The foundation of the LP and MIP domains is the humble Linear Expression. The term &ldquo;Linear&rdquo; in mathematics carries a special meaning that I won&rsquo;t go into here. The key thing you need to know is that these expressions are straight. They are not curved in any way. Here are some examples of Linear Expressions:</p><p>$$1.0 + x_{1} + 2 \times x_{2}$$
+$$3.5 \times x_{1} + 5.7 \times x_{2}$$
+$$3.5 \times x_{1} + 14.0$$</p><p>The most important thing to note is that you never see two $x$ multiplied together and there is no division. Here the $x$ values correspond to Decisions that we want to evaluate using Mathematical Planning. We can model this small domain using a simple set of types in F#.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>DecisionType</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Boolean</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Integer</span> <span class=k>of</span> <span class=n>LowerBound</span><span class=o>:</span><span class=kt>float</span> <span class=o>*</span> <span class=n>UpperBound</span><span class=o>:</span><span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Continuous</span> <span class=k>of</span> <span class=n>LowerBound</span><span class=o>:</span><span class=kt>float</span> <span class=o>*</span> <span class=n>UpperBound</span><span class=o>:</span><span class=kt>float</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>DecisionName</span> <span class=o>=</span> <span class=n>DecisionName</span> <span class=k>of</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Decision</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Name</span> <span class=o>:</span> <span class=n>DecisionName</span>
+</span></span><span class=line><span class=cl>    <span class=n>Type</span> <span class=o>:</span> <span class=n>DecisionType</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>LinearExpr</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Float</span> <span class=k>of</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Decision</span> <span class=k>of</span> <span class=n>Decision</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Scale</span> <span class=k>of</span> <span class=n>scale</span><span class=o>:</span> <span class=kt>float</span> <span class=o>*</span> <span class=n>expr</span><span class=o>:</span> <span class=n>LinearExpr</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Add</span> <span class=k>of</span> <span class=n>lExpr</span><span class=o>:</span> <span class=n>LinearExpr</span> <span class=o>*</span> <span class=n>rExpr</span><span class=o>:</span> <span class=n>LinearExpr</span>
+</span></span></code></pre></td></tr></table></div></div><p>This doesn&rsquo;t show you how these can interact though. If we add the operators for these types, we get the following.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>DecisionType</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Boolean</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Integer</span> <span class=k>of</span> <span class=n>LowerBound</span><span class=o>:</span><span class=kt>float</span> <span class=o>*</span> <span class=n>UpperBound</span><span class=o>:</span><span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Continuous</span> <span class=k>of</span> <span class=n>LowerBound</span><span class=o>:</span><span class=kt>float</span> <span class=o>*</span> <span class=n>UpperBound</span><span class=o>:</span><span class=kt>float</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>DecisionName</span> <span class=o>=</span> <span class=n>DecisionName</span> <span class=k>of</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Decision</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Name</span> <span class=o>:</span> <span class=n>DecisionName</span>
+</span></span><span class=line><span class=cl>    <span class=n>Type</span> <span class=o>:</span> <span class=n>DecisionType</span>
+</span></span><span class=line><span class=cl><span class=o>}</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>+</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=kt>float</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>Decision</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Add</span> <span class=o>(</span><span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Float</span> <span class=n>l</span><span class=o>,</span> <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Decision</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>+</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=n>Decision</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>Decision</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Add</span> <span class=o>(</span><span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Decision</span> <span class=n>l</span><span class=o>,</span> <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Decision</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>*</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=kt>float</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>Decision</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Scale</span> <span class=o>(</span><span class=n>l</span><span class=o>,</span> <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Decision</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>RequireQualifiedAccess</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>LinearExpr</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Float</span> <span class=k>of</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Decision</span> <span class=k>of</span> <span class=n>Decision</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Scale</span> <span class=k>of</span> <span class=n>scale</span><span class=o>:</span> <span class=kt>float</span> <span class=o>*</span> <span class=n>expr</span><span class=o>:</span> <span class=n>LinearExpr</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Add</span> <span class=k>of</span> <span class=n>lExpr</span><span class=o>:</span> <span class=n>LinearExpr</span> <span class=o>*</span> <span class=n>rExpr</span><span class=o>:</span> <span class=n>LinearExpr</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>+</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=kt>float</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Add</span> <span class=o>(</span><span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Float</span> <span class=n>l</span><span class=o>,</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>+</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=n>Decision</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Add</span> <span class=o>(</span><span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Decision</span> <span class=n>l</span><span class=o>,</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>+</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Add</span> <span class=o>(</span><span class=n>l</span><span class=o>,</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>*</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=kt>float</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Scale</span> <span class=o>(</span><span class=n>l</span><span class=o>,</span> <span class=n>r</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=o>(</span> <span class=o>*</span> <span class=o>)</span> <span class=o>(</span><span class=n>l</span><span class=o>:</span> <span class=n>LinearExpr</span><span class=o>,</span> <span class=n>r</span><span class=o>:</span> <span class=kt>float</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Scale</span> <span class=o>(</span><span class=n>r</span><span class=o>,</span> <span class=n>l</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>static</span> <span class=k>member</span> <span class=n>Zero</span> <span class=o>=</span> <span class=nn>LinearExpr</span><span class=p>.</span><span class=n>Float</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>The reason this is important is that we want to use <code>SliceMap</code> to be able to subset these types, multiply them together, and then sum the result. We aren&rsquo;t just working with <code>float</code> values. It&rsquo;s a more complex domain than that. If it was just float, I would have been trying to use <a href=https://en.wikipedia.org/wiki/SIMD target=_blank rel="noopener noreffer">SIMD</a> or <a href=https://en.wikipedia.org/wiki/Advanced_Vector_Extensions target=_blank rel="noopener noreffer">AVX</a> instructions.</p><h2 id=slicemap-requirements>SliceMap Requirements</h2><p>Okay, we&rsquo;ve talked a little about the primitives we are working with, let&rsquo;s talk about what <code>SliceMap</code> needs to be able to do. Now, <code>SliceMap</code> is like tuples in F#. Tuples are not a single type; they are a family of types. A 2-element tuple is not the same as a 3-element tuple. In the same way <code>SliceMap</code> is a family of types and each has a dimensionality to it. The dimensionality corresponds to the keys being used to index the value. A <code>SliceMap</code> has a 1-dimensional key. A <code>SliceMap2D</code> has a 2-dimensional key and so on. Right now, I only plan on supporting up to a 5D key. I have not come across a real-world problem that needed a higher dimensional key.</p><p>I think the best analogy for explaining what <code>SliceMap</code>s are meant to do is with database tables. Think of each <code>SliceMap</code> as a table where the <code>'key</code> is unique and there is a corresponding value <code>'value</code>. The table would look something like this.</p><table><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody><tr><td>1</td><td>2.0</td></tr><tr><td>2</td><td>1.7</td></tr><tr><td>3</td><td>2.5</td></tr><tr><td>&mldr;</td><td>&mldr;</td></tr></tbody></table><p>Now, a <code>SliceMap2D</code> would have two columns for the keys like so.</p><table><thead><tr><th>Key1</th><th>Key2</th><th>Value</th></tr></thead><tbody><tr><td>1</td><td>&ldquo;A&rdquo;</td><td>2.0</td></tr><tr><td>1</td><td>&ldquo;B&rdquo;</td><td>8.0</td></tr><tr><td>1</td><td>&ldquo;C&rdquo;</td><td>3.0</td></tr><tr><td>2</td><td>&ldquo;B&rdquo;</td><td>1.7</td></tr><tr><td>2</td><td>&ldquo;C&rdquo;</td><td>1.7</td></tr><tr><td>3</td><td>&ldquo;A&rdquo;</td><td>9.4</td></tr><tr><td>3</td><td>&ldquo;B&rdquo;</td><td>4.6</td></tr><tr><td>&mldr;</td><td>&mldr;</td><td></td></tr></tbody></table><p>Now, we would like to be able to subset these datasets quickly and easily. To simplify this for the developer, the <code>SliceMap</code> types provide several overloads for the <code>Item</code> method. Let&rsquo;s look at an example. We will fill a <code>SliceMap2D</code> with some values and then select only the values where the first key is equal to <code>1</code> and we can slice it again but only take the values where the second key equals <code>2</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>key1</span> <span class=o>=</span> <span class=o>[</span><span class=n>1</span><span class=o>..</span><span class=n>5</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>key2</span> <span class=o>=</span> <span class=o>[</span><span class=n>1</span><span class=o>..</span><span class=n>2</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>sm2</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap2D</span> <span class=o>[</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>k1</span> <span class=k>in</span> <span class=n>key1</span> <span class=k>do</span> 
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>k2</span> <span class=k>in</span> <span class=n>key2</span> <span class=o>-&gt;</span> 
+</span></span><span class=line><span class=cl>        <span class=n>k1</span><span class=o>,</span> <span class=n>k2</span><span class=o>,</span> <span class=n>k1</span> <span class=o>+</span> <span class=n>k2</span>
+</span></span><span class=line><span class=cl>    <span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// slice will only contain the values where the first index = 1
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>slice1</span> <span class=o>=</span> <span class=n>sm2</span><span class=o>[</span><span class=n>1</span><span class=o>,</span> <span class=n>All</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// slice2 will only contain values where the second index = 2
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>slice2</span> <span class=o>=</span> <span class=n>sm2</span><span class=o>[</span><span class=n>All</span><span class=o>,</span> <span class=n>2</span><span class=o>]</span>
+</span></span></code></pre></td></tr></table></div></div><p>This &ldquo;slicing&rdquo; provides a terse way to quickly filter down to the values that we care about. We then add the ability to take the <a href=https://en.wikipedia.org/wiki/Hadamard_product_%28matrices%29 target=_blank rel="noopener noreffer">Hadamard Product</a> of two <code>SliceMap</code>. Think of this as an inner join on two tables. Where the keys match, the value in the two tables is multiplied. In Matlab and other languages it is the <code>.*</code> operator. It&rsquo;s meant to signify element by element multiplication. In our case, whenever the keys match the values are multiplied. Here&rsquo;s a quick example of what it looks like</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>a</span> <span class=o>=</span> <span class=n>SliceMap</span> <span class=o>[</span><span class=k>for</span> <span class=n>i</span> <span class=k>in</span> <span class=n>1</span><span class=o>..</span><span class=n>5</span> <span class=o>-&gt;</span> <span class=n>i</span><span class=o>,</span> <span class=n>i</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>b</span> <span class=o>=</span> <span class=n>SliceMap</span> <span class=o>[</span><span class=k>for</span> <span class=n>i</span> <span class=k>in</span> <span class=n>1</span><span class=o>..</span><span class=n>3</span> <span class=o>-&gt;</span> <span class=n>i</span><span class=o>,</span> <span class=n>i</span> <span class=o>*</span> <span class=n>i</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>c</span> <span class=o>=</span> <span class=n>a</span> <span class=o>.*</span> <span class=n>b</span>
+</span></span><span class=line><span class=cl><span class=c1>// The key/value pairs in `c` will be
+</span></span></span><span class=line><span class=cl><span class=c1>// [(1, 1); (2, 8); (3, 27)]
+</span></span></span></code></pre></td></tr></table></div></div><p>The Hadamard Product of two <code>SliceMap</code> allow us to quickly multiply values together for the same key which is one of the cornerstones of Mathematical Planning. Finally, we then need to sum of these values to get the final result. We define a <code>sum</code> function which knows how to take any <code>SliceMap</code> and return the total of the values that it contains.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>a</span> <span class=o>=</span> <span class=n>SliceMap</span> <span class=o>[</span><span class=k>for</span> <span class=n>i</span> <span class=k>in</span> <span class=n>1</span><span class=o>..</span><span class=n>5</span> <span class=o>-&gt;</span> <span class=n>i</span><span class=o>,</span> <span class=n>i</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>b</span> <span class=o>=</span> <span class=n>SliceMap</span> <span class=o>[</span><span class=k>for</span> <span class=n>i</span> <span class=k>in</span> <span class=n>1</span><span class=o>..</span><span class=n>3</span> <span class=o>-&gt;</span> <span class=n>i</span><span class=o>,</span> <span class=n>i</span> <span class=o>*</span> <span class=n>i</span><span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>c</span> <span class=o>=</span> <span class=n>a</span> <span class=o>.*</span> <span class=n>b</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>total</span> <span class=o>=</span> <span class=n>sum</span> <span class=n>c</span>
+</span></span><span class=line><span class=cl><span class=c1>// total is 36
+</span></span></span></code></pre></td></tr></table></div></div><p>If you want a deeper explanation of <code>SliceMap</code> and how they are meant to work, you can check out <a href=https://flipslibrary.com/#/slicemaps/ target=_blank rel="noopener noreffer">this page</a>.</p><h2 id=baseline-test>Baseline Test</h2><blockquote><p><strong>Note:</strong> If you want to see this code all at once, check out this <a href=https://github.com/matthewcrews/SliceMapPerformanceExploration/tree/step01-uom target=_blank rel="noopener noreffer">repo and branch</a></p></blockquote><p>Now that we just had a whirlwind introduction to the Mathematical Planning domain and <code>SliceMap</code>, we can start talking about the implementation. We want to rewrite the <code>SliceMap</code> implementations to support fast slicing, Hadamard Product, and summing of values. Those are the critical operations. We also want it to be performance as the data becomes more sparse. Before we go about rewriting though, we should know what our current performance is.</p><p>The current implementation of <code>SliceMap</code> assumes that data is dense across all dimensions. This means that when it sums up values or performs a Hadamard Product, it will check every combination of keys to see if there is a value. Currently the actual values of the <code>SliceMap</code> are stored in a <code>Dictionary</code> and are accessed using a <code>TryGetValue</code>. For dense data, this is not a problem because every entry will have a value. As data gets sparse though, you end up doing a lot of unnecessary work.</p><p>For our baseline benchmarks we are going to test 3 different scenarios: Dense, Medium Sparsity, and High Sparsity. Dense for us will mean there is a value for every key. Medium sparsity will only have values for 10% of the possible keys. High Sparsity will have values only 1% of the time. Here is the code for setting up our data. We will have a set of Cities modeled as an <code>int</code> with a Unit of Measure and a set of Trucks also modeled as an <code>int</code> with Unit of Measure.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>City</span>
+</span></span><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>Truck</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>rng</span> <span class=o>=</span> <span class=n>Random</span> <span class=n>123</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>numberOfCities</span> <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>numberOfTrucks</span> <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>cities</span> <span class=o>=</span> <span class=o>[|</span> <span class=k>for</span> <span class=n>c</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>numberOfCities</span> <span class=o>-&gt;</span> <span class=nn>LanguagePrimitives</span><span class=p>.</span><span class=n>Int32WithMeasure</span><span class=o>&lt;</span><span class=n>City</span><span class=o>&gt;</span> <span class=n>c</span> <span class=o>|]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>trucks</span> <span class=o>=</span> <span class=o>[|</span> <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>numberOfTrucks</span> <span class=o>-&gt;</span> <span class=nn>LanguagePrimitives</span><span class=p>.</span><span class=n>Int32WithMeasure</span><span class=o>&lt;</span><span class=n>Truck</span><span class=o>&gt;</span> <span class=n>t</span><span class=o>|]</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then create some random Cost and Capacity data that we will use in our <code>SliceMap</code>s.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>costs</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap</span> <span class=o>[|</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>trucks</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>t</span><span class=o>,</span> <span class=n>100</span><span class=o>.</span><span class=n>0</span> <span class=o>+</span> <span class=n>10</span><span class=o>.</span><span class=n>0</span> <span class=o>*</span> <span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>capacity</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap</span> <span class=o>[|</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>trucks</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>t</span><span class=o>,</span> <span class=n>1_000</span><span class=o>.</span><span class=n>0</span> <span class=o>+</span> <span class=n>10</span><span class=o>.</span><span class=n>0</span> <span class=o>*</span> <span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span> <span class=bp>()</span> 
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now create a <code>Decision</code> for the pairs of City and Truck that we are modeling.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>cityTruckPairs</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[|</span> 
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>c</span> <span class=k>in</span> <span class=n>cities</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>trucks</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>c</span><span class=o>,</span> <span class=n>t</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// For the Dense case
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>decisions</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap2D</span> <span class=o>[|</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>)</span> <span class=k>in</span> <span class=n>cityTruckPairs</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>decisionName</span> <span class=o>=</span> <span class=n>DecisionName</span> <span class=o>($</span><span class=s>&#34;{c.ToString()}_{t.ToString()}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>,</span> <span class=o>{</span> <span class=n>Name</span> <span class=o>=</span> <span class=n>decisionName</span><span class=o>;</span> <span class=n>Type</span> <span class=o>=</span> <span class=nn>DecisionType</span><span class=p>.</span><span class=n>Boolean</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span></code></pre></td></tr></table></div></div><p>For the Medium and Highly sparse cases we generate our <code>SliceMap2D</code> of <code>Decision</code> differently. We randomly omit pairs of City and Truck to make the data sparse.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Medium Density case
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>densityPercent</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>cityTruckPairs</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[|</span> 
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>c</span> <span class=k>in</span> <span class=n>cities</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>trucks</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span><span class=bp>()</span> <span class=o>&lt;</span> <span class=n>densityPercent</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=n>Some</span> <span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span>
+</span></span><span class=line><span class=cl>                <span class=n>None</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>choose</span> <span class=n>id</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Medium Density decisions
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>decisions</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap2D</span> <span class=o>[|</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>)</span> <span class=k>in</span> <span class=n>cityTruckPairs</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>decisionName</span> <span class=o>=</span> <span class=n>DecisionName</span> <span class=o>($</span><span class=s>&#34;{c.ToString()}_{t.ToString()}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>,</span> <span class=o>{</span> <span class=n>Name</span> <span class=o>=</span> <span class=n>decisionName</span><span class=o>;</span> <span class=n>Type</span> <span class=o>=</span> <span class=nn>DecisionType</span><span class=p>.</span><span class=n>Boolean</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span></code></pre></td></tr></table></div></div><p>And for Sparse we only accept 1% of the pairs.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>densityPercent</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>01</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>cityTruckPairs</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[|</span> 
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>c</span> <span class=k>in</span> <span class=n>cities</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>t</span> <span class=k>in</span> <span class=n>trucks</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span><span class=bp>()</span> <span class=o>&lt;</span> <span class=n>densityPercent</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=n>Some</span> <span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span>
+</span></span><span class=line><span class=cl>                <span class=n>None</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>choose</span> <span class=n>id</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>decisions</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>SliceMap2D</span> <span class=o>[|</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>(</span><span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>)</span> <span class=k>in</span> <span class=n>cityTruckPairs</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>decisionName</span> <span class=o>=</span> <span class=n>DecisionName</span> <span class=o>($</span><span class=s>&#34;{c.ToString()}_{t.ToString()}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>c</span><span class=o>,</span> <span class=n>t</span><span class=o>,</span> <span class=o>{</span> <span class=n>Name</span> <span class=o>=</span> <span class=n>decisionName</span><span class=o>;</span> <span class=n>Type</span> <span class=o>=</span> <span class=nn>DecisionType</span><span class=p>.</span><span class=n>Boolean</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>|]</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now that we have setup our data, we can run some benchmarks! We will use benchmarkDotNet which makes this type of work incredibly easy. For each case we create a <code>loop</code> function which iterates through each of the Cities in our data and computes a linear expression using the <code>SliceMap</code>s we populated, the Hadamard Product, and summing them. We loop through all the Cities 10 times so that our test is sufficiently long. Anything under 100 ms causes a warning from benchmarkDotNet that the test may be too short and the results not valid. We are assigning to a <code>mutable</code> value and returning it to ensure that the compiler doesn&rsquo;t do something clever and just skip unused code.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// There&#39;s a loop like this for each case
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>loop</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=nn>LanguagePrimitives</span><span class=p>.</span><span class=n>GenericZero</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=o>_</span> <span class=o>=</span> <span class=n>1</span> <span class=k>to</span> <span class=n>10</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>c</span> <span class=k>in</span> <span class=n>cities</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>total</span> <span class=o>=</span> <span class=n>sum</span> <span class=o>(</span><span class=n>capacity</span> <span class=o>.*</span> <span class=n>decisions</span><span class=o>[</span><span class=n>c</span><span class=o>,</span> <span class=n>All</span><span class=o>]</span> <span class=o>.*</span> <span class=n>costs</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>total</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then create a class to hold our tests for benchmarkDotNet.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>MemoryDiagnoser</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>DenseData</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>Dense</span><span class=p>.</span><span class=n>loop</span> <span class=bp>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>MediumSparsity</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>MediumSparsity</span><span class=p>.</span><span class=n>loop</span> <span class=bp>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>HighSparsity</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=nn>HighSparsity</span><span class=p>.</span><span class=n>loop</span> <span class=bp>()</span>
+</span></span></code></pre></td></tr></table></div></div><p>We can now add a call to the <code>main</code> function to run the benchmarks.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>EntryPoint</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>main</span> <span class=n>argv</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>summary</span> <span class=o>=</span> <span class=nn>BenchmarkRunner</span><span class=p>.</span><span class=n>Run</span><span class=o>&lt;</span><span class=n>Benchmarks</span><span class=o>&gt;</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>    <span class=n>0</span> <span class=c1>// return an integer exit code
+</span></span></span></code></pre></td></tr></table></div></div><p>We can build using the <code>Release</code> settings and run the command line. At the end we get the following table from benchmarkDotNet.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-md data-lang=md><span class=line><span class=cl>|         Method |    Mean |    Error |   StdDev |
+</span></span><span class=line><span class=cl>|--------------- |--------:|---------:|---------:|
+</span></span><span class=line><span class=cl>|      DenseData | 7.993 s | 0.0748 s | 0.0700 s |
+</span></span><span class=line><span class=cl>| MediumSparsity | 2.154 s | 0.0176 s | 0.0156 s |
+</span></span><span class=line><span class=cl>|   HighSparsity | 1.209 s | 0.0134 s | 0.0126 s |
+</span></span></code></pre></td></tr></table></div></div><p>We now have a baseline of performance to judge improvements on. If you want to run this yourself, check out this <a href=https://github.com/matthewcrews/SliceMapPerformanceExploration/tree/step01-uom target=_blank rel="noopener noreffer">repo and branch</a>. Let&rsquo;s see what we can do to improve this!</p><h2 id=first-failure-clever-ienumerable>First failure: Clever IEnumerable</h2><p>The first thing I tried when I came back to this problem was to try to be cleverer about which keys I iterated through. The idea was to encode the outer keys with a <a href=https://en.wikipedia.org/wiki/Run-length_encoding target=_blank rel="noopener noreffer">Run-Length Encoding</a> and the inner keys would have an index for the next time that value showed up. This meant if I slice the outer dimension, I will only look at the small section for that run. If I slice the inner dimensions, I can find the first instance of a value and then just skip from row to row.</p><p>I know that&rsquo;s not a detailed explanation, but I don&rsquo;t think it&rsquo;s worth going into the details. You can see the code <a href=https://github.com/matthewcrews/SliceMapPerformanceExploration/tree/step02-new-algorithm target=_blank rel="noopener noreffer">here</a> if you want. The reason it&rsquo;s not worth the explanation can be found in the performance results.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-md data-lang=md><span class=line><span class=cl>|         Method |     Mean |    Error |   StdDev |
+</span></span><span class=line><span class=cl>|--------------- |---------:|---------:|---------:|
+</span></span><span class=line><span class=cl>|      DenseData | 86.070 s | 0.4374 s | 0.4091 s |
+</span></span><span class=line><span class=cl>| MediumSparsity | 10.592 s | 0.0938 s | 0.0832 s |
+</span></span><span class=line><span class=cl>|   HighSparsity |  3.343 s | 0.0289 s | 0.0270 s |
+</span></span></code></pre></td></tr></table></div></div><p>This was deeply disappointing. Even though I was able to skip so many values, the overhead of the IEnumerable and the fact that I was skipping all over these arrays caused havoc. This is a case of trying to be too clever and it can bite you. I may have theoretically been doing less work, but the algorithm was so much less friendly for the CPU and I suffered the consequences.</p><p>Now, I didn&rsquo;t want to give up right away with this approach. I took a long time coming up with it. I thought that maybe I had done something silly and had made some error. I decided to profile to find what I was doing wrong. I like to use <a href=https://www.jetbrains.com/profiler/ target=_blank rel="noopener noreffer">dotTrace</a> and <a href=https://www.jetbrains.com/dotmemory/ target=_blank rel="noopener noreffer">dotMemory</a> for this kind of work. I&rsquo;ve recently also started using <a href=https://superluminal.eu/ target=_blank rel="noopener noreffer">Superluminal</a> which shows a lot of promise.</p><h2 id=second-failure-struct-tuples-isnt-enough>Second Failure: Struct Tuples Isn&rsquo;t Enough</h2><p>When I ran the code through dotMemory I saw that I was generating a huge number of tuples. These were coming from the calls to <code>Seq.unfold</code> which was using a normal F# tuple which is a ref type.</p><p><img class=lazyload src=/svg/loading.min.svg data-src=/blog/2021/08/slicemap-rework-part-1/GeneratingTuples.PNG data-srcset="/blog/2021/08/slicemap-rework-part-1/GeneratingTuples.PNG, /blog/2021/08/slicemap-rework-part-1/GeneratingTuples.PNG 1.5x, /blog/2021/08/slicemap-rework-part-1/GeneratingTuples.PNG 2x" data-sizes=auto alt=/blog/2021/08/slicemap-rework-part-1/GeneratingTuples.PNG title="Generating Tuples" width=1520 height=339></p><p>I knew I could cut down on the GC if I converted these to <code>struct</code> tuples. I went ahead and made the change which you can check out <a href=https://github.com/matthewcrews/SliceMapPerformanceExploration/tree/step03-struct-tuples target=_blank rel="noopener noreffer">here</a>. Sadly, this helped some, but not enough.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-md data-lang=md><span class=line><span class=cl>|         Method |     Mean |    Error |   StdDev |
+</span></span><span class=line><span class=cl>|--------------- |---------:|---------:|---------:|
+</span></span><span class=line><span class=cl>|      DenseData | 51.158 s | 0.1429 s | 0.1337 s |
+</span></span><span class=line><span class=cl>| MediumSparsity |  7.619 s | 0.0367 s | 0.0344 s |
+</span></span><span class=line><span class=cl>|   HighSparsity |  2.934 s | 0.0223 s | 0.0209 s |
+</span></span></code></pre></td></tr></table></div></div><p>There were some additional things that I could have done to try to eek out some more performance but I knew none of them had the potential to give me a 10x or more improvement which was what I was really looking for. I sat with this for a day trying to see if I had missed something obvious but nothing came to me. It looks like the clever enumeration approach is a dead end.</p><h2 id=where-from-here>Where from here?</h2><p>Fortunately, this story does have a good ending but it will have to wait for my next post. I had to go back to the drawing board and rethink my approach. Fortunately, I had picked up <a href=https://www.amazon.com/gp/product/1916478700/ target=_blank rel="noopener noreffer">Data-Oriented Design</a> and had been reading through it for inspiration. In it I found an idea that proved to be the key to unlocking this problem. Sorry to leave you hanging but this dad needs some sleep 😴.</p><p>Please send me an email at <a href=mailto:matthewcrews@gmail.com rel>matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p><script>window.mootrack||!function(e,t,n,s,o){function i(e){var s,o=~~(Date.now()/3e5),t=document.createElement(n);t.async=!0,t.src=e+"?ts="+o,s=document.getElementsByTagName(n)[0],s.parentNode.insertBefore(t,s)}e.MooTrackerObject=o,e[o]=e[o]||function(){return e[o].q?void e[o].q.push(arguments):void(e[o].q=[arguments])},window.attachEvent?window.attachEvent("onload",i.bind(this,s)):window.addEventListener("load",i.bind(this,s),!1)}(window,document,"script","https://cdn.stat-track.com/statics/moosend-tracking.min.js","mootrack"),mootrack("loadForm","b498d29aaba84b5bb3e0479003dc7264")</script><div data-mooform-id=b498d29a-aba8-4b5b-b3e0-479003dc7264></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></div></div></main><footer class=footer><div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2019 - 2022</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=matthewcrews.com target=_blank>Matthew Crews</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/copy-tex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/mhchem.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"en",pageSize:10,placeholder:"Your comment ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!0,left:"\\begin{equation}",right:"\\end{equation}"},{display:!0,left:"\\begin{equation*}",right:"\\end{equation*}"},{display:!0,left:"\\begin{align}",right:"\\end{align}"},{display:!0,left:"\\begin{align*}",right:"\\end{align*}"},{display:!0,left:"\\begin{alignat}",right:"\\end{alignat}"},{display:!0,left:"\\begin{alignat*}",right:"\\end{alignat*}"},{display:!0,left:"\\begin{gather}",right:"\\end{gather}"},{display:!0,left:"\\begin{CD}",right:"\\end{CD}"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.en",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"No results found",snippetLength:30,type:"algolia"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>

@@ -1,0 +1,227 @@
+# Scheduling Jobs for Maximum Efficiency - Part 2
+
+
+In my previous [post](/blog/2021/01/2021-01-25/) I introduced a scheduling problem where I needed to assign jobs to machines to achieve the maximum efficiency. We say efficiency is calculated as the number of times a machine must change the job-type it is working on. I want to continue exploring this problem by adding some nuance.
+
+> **Note**: Full code for this post can be found [here](https://github.com/matthewcrews/modelmondays/blob/main/2021-01-22-MachineAllocation/2021-01-28-MachineAllocationPercentConstraints.fsx)
+
+## Not Too Many Bad Jobs
+
+As my conversation continued with my friend regarding this problem a new constraint came up. It turns out there is a fourth job-type, let's call it job-type D, that can cause significant wear on a machine if it is run for too long. He wanted to add a constraint to the problem which would limit that amount of job-type D assigned to any given machine. In his case, he wanted a machine to have no more than 50% of the total work assigned to it to be of job-type D. Fortunately this is a relatively simple update to our model.
+
+## Refactoring the Domain
+
+The great thing about F# is that it is easy to refactor our domain. In our case the `Job` type and the `Machine` type don't need to change. What does need to be updated is the `JobType` type. We will add another case to the discriminated union to represent job-type D. I have also decided to do some refactoring and clean up how the code is organized. We are also going to move all the type definitions into their own Module.
+
+```fsharp
+module Types =
+
+    // The Domain
+    [<RequireQualifiedAccess>]
+    type JobType =
+        | A
+        | B
+        | C
+        | D // This is the new case we have added
+
+    type Job = {
+        Id : int
+        JobType : JobType
+        Size : float
+    } with
+        override this.ToString () =
+            $"Job_{this.Id}"
+
+    type Machine = {
+        Id : int
+        JobTypes : Set<JobType>
+    } with
+        override this.ToString () =
+            $"Machine_{this.Id}"
+```
+
+Next, we need to adjust our data generation. Again, we are going to do some code cleanup and move all the code for generating random jobs and machines into its own module. We are adjusting two thing from the [previous post](/blog/2021/01/2021-01-25/). The `jobTypes` Array had the new `JobType` case. We are also going to adjust the `jobTypeSets`. This is the possible job qualifications for a machine. In our new problem, job-type A is the most difficult and therefore fewer machines are qualified. All machines are capable of job-type D, even though it is not preferred.
+
+```fsharp
+module DataGeneration =
+
+    open System
+    open Types
+
+    // Set of JobTypes for iterating over and sampling from
+    let jobTypes = 
+        [|
+            JobType.A
+            JobType.B
+            JobType.C
+            JobType.D // The new DU case we added
+        |]
+
+    // Some theoretical JobTypeSets to be used in generating
+    // random Machines
+    let jobTypeSets =
+        [|
+            Set jobTypes
+            Set jobTypes[1..]
+            Set jobTypes[2..]
+        |]
+
+    let minJobSize = 1
+    let maxJobSize = 3
+
+    let randomJobSize (rng: Random) =
+        rng.Next(minJobSize, maxJobSize)
+        |> float
+
+    let randomJobType (rng: Random) =
+        jobTypes.[rng.Next(0, jobTypes.Length)]
+
+    let randomJobTypeSet (rng: Random) =
+        jobTypeSets.[rng.Next(0, jobTypeSets.Length)]
+
+    let randomJob (rng: Random) (id: int) =
+        { 
+            Id = id
+            JobType = randomJobType rng
+            Size = randomJobSize rng 
+        }
+
+    let randomMachine (rng: Random) (id: int) =
+        {
+            Id = id
+            JobTypes = randomJobTypeSet rng
+        }
+```
+
+## Updating Our Model
+
+I won't go over all the model code that we created before. I am just going to show the new constraints that we need to add to the original formulation. One of the reasons I love Mathematical Planning is that it makes it relatively easy to tweak and update models over time. If the code is well organized, it's trivial to turn features on and off. To add our limits on the amount of job-type D that a machine has, let's define a value which is the maximum percent of D allowed.
+
+```fsharp
+// Limit on the amount of JobType D on any given machine
+let maxJobTypeDPercentage = 0.30
+```
+
+Now we want to create a constraint for each of our machines which says the the percent of the total work assigned to the machine is no more than this percentage. Fortunately, this is relatively easy with Flips.
+
+```fsharp
+let maxJobTypeDConstraints =
+    ConstraintBuilder "MaxTypeD" {
+        for machine in machines ->
+            let totalWork = sum (assignments[machine, All, All] .* jobSizes)
+            let jobTypeDWork = sum (assignments[machine, JobType.D, All] .* jobSizes)
+            jobTypeDWork <== maxJobTypeDPercentage * totalWork
+    }
+```
+
+Okay, let's unpack this. We are using the `ConstraintBuilder` Computation Expression to create a constraint for each `machine` in `machines`. We then calculate the total amount of work assigned to a `machine` by using the `assignments` SliceMap and selecting all the assignments for our `machine` and performing elementwise multiplication, `.*`, by the `jobSizes`. We then sum that up to get the total amount of work assigned to the `machine`. We store that expression in the `totalWork` value.
+
+To get the total amount of job-type D work assigned to the machine, we need to sub-select the `assignments` SliceMap for the `machine` and `JobType.D` then elementwise multiply by the `jobSizes`. We sum these values up to get the `jobTypeDWork` expression. `totalWork` is an expression which represents the total amount of work assigned to the `machine`. `jobTypeDWork` represent the total amount of job-type D assigned to the `machine`.
+
+We can now create our constraint expression. We state that `jobTypeDWork` must be less or equal to the `totalWork` expression multiplied by the max allowed percentage of job-type D, `maxJobTypeDPercentage`. This constraint will limit just how much work of job-type D that is allowed on the machine. That's all we must do to accommodate this new restriction from my friend.
+
+## Unpacking the Results
+
+The only other change my friend asked for was to increase the number of jobs up to 100 because it would be more represented of the size of the real-world problem. With that adjustment, we can now compose our new model with these new constraints included.
+
+```fsharp
+let model =
+    Model.create minSetupsObjective
+    |> Model.addConstraints maxWorkConstraints
+    |> Model.addConstraints minWorkConstraints
+    |> Model.addConstraint maxWorkDifferenceConstraint
+    |> Model.addConstraints setupConstraints
+    |> Model.addConstraints jobsAssignmentConstraints
+    |> Model.addConstraints maxJobTypeDConstraints // Our new constraints
+```
+
+We setup our solver settings and attempt to solve.
+
+```fsharp
+// Give the solver plenty of time to find a solution
+let settings = { Settings.basic with MaxDuration = 60_000L }
+
+let result = Solver.solve settings model
+```
+
+We now inspect the result. We add a couple of functions for getting the job assignments for each machine and summarizing the total loading of the machines.
+
+```fsharp
+// This will return a list<Machine * list<Job>>
+let getMachineAssignments (solution: Solution) (assignments: SMap3<Machine, JobType, Job, Decision>) =
+    Solution.getValues solution assignments
+    |> Map.filter (fun _ v -> v = 1.0)
+    |> Map.toList
+    |> List.map (fun ((machine, _, job), _) -> machine, job)
+    |> List.sortBy (fun (machine, job) -> machine.Id, job.Id)
+    |> List.groupBy fst
+    |> List.map (fun (machine, jobs) -> machine, jobs |> List.map snd)
+
+// This create an anonymous record which holds the Machine,
+// the total loading and the job-type D loading
+let getMachineLoading jobAssignments =
+    jobAssignments
+    |> List.map (fun (machine, jobs) -> 
+        {| Machine = machine
+           TotalWork = 
+                jobs 
+                |> List.sumBy (fun j -> j.Size)
+           JobTypeDWork = 
+                jobs 
+                |> List.filter (fun j -> j.JobType = JobType.D) 
+                |> List.sumBy (fun j -> j.Size)
+        |})
+```
+
+We then use these to analyze the result and print out what we found.
+
+```fsharp
+match result with
+| Optimal solution ->
+
+    // Get which jobs are assigned to each machine
+    let machineAssignments = getMachineAssignments solution assignments
+
+    // Calculate the total work for each machine and the amount of job-type D
+    let machineLoads = getMachineLoading machineAssignments
+
+    printfn ""
+    printfn "Machine Loading:"
+    for (m) in machineLoads do
+        // Print out the loading for each machine and the percent of job-type D work
+        printfn $"Machine: {m.Machine.Id} | Total Work: {m.TotalWork} | Type D Work %.2f{m.JobTypeDWork / m.TotalWork} %%"
+
+    // Find the min and max loads and calculate the difference
+    let maxDifference =
+        let loads = machineLoads |> List.map (fun m -> m.TotalWork)
+        (List.max loads) - (List.min loads)
+
+    printfn ""
+    printfn $"Max Difference in Loading: { maxDifference }"
+
+| _ -> printfn "%A" result
+```
+
+This will show the following results.
+
+```terminal
+Machine Loading:
+Machine: 1 | Total Work: 28 | Type D Work 0.00 %
+Machine: 2 | Total Work: 28 | Type D Work 0.50 %
+Machine: 3 | Total Work: 29 | Type D Work 0.00 %
+Machine: 4 | Total Work: 30 | Type D Work 0.50 %
+Machine: 5 | Total Work: 29 | Type D Work 0.00 %
+
+Max Difference in Loading: 2
+```
+
+You can see that the machines are evenly loaded according to the maximum allowable difference and that no machine has more than 50% loading of job-type D. I would say that we have a success!
+
+## Takeaways
+
+We are only beginning to look at variations of this problem. Hopefully, what you have been able to observe was that it was simple to update our model code to add this new requirement my friend found. I think that is part of the beautify of Mathematical Planning. Updating and adjusting the logic can be simple. In our next post we are going to look at what happens when we add capacity for the machines and our problem becomes unsolvable!
+
+Please send me an email at matthewcrews@gmail.com if you have any questions and subscribe so you can stay on top new posts and products I am offering.
+
+{{<subscribe>}}
+

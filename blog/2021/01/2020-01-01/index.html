@@ -1,0 +1,423 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3 - Matthew Crews</title><meta name=Description content="Hugo theme - LoveIt"><meta property="og:title" content="Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3"><meta property="og:description" content="In the previous two posts in this series we introduced the Food Cart Problem. We want a plan for stocking our Food Cart which will maximizes our revenue. In the first post we discussed the foods that we can stock and the restrictions we are operating under. We introduced a simple heuristic for stocking the food cart and created a simulation in order to validate what our expected revenue is."><meta property="og:type" content="article"><meta property="og:url" content="https://matthewcrews.com/blog/2021/01/2020-01-01/"><meta property="og:image" content="https://matthewcrews.com/logo.png"><meta property="article:section" content="blog"><meta property="article:published_time" content="2021-01-01T00:00:00+00:00"><meta property="article:modified_time" content="2022-10-11T10:21:38-07:00"><meta property="og:site_name" content="Matthew Crews"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://matthewcrews.com/logo.png"><meta name=twitter:title content="Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3"><meta name=twitter:description content="In the previous two posts in this series we introduced the Food Cart Problem. We want a plan for stocking our Food Cart which will maximizes our revenue. In the first post we discussed the foods that we can stock and the restrictions we are operating under. We introduced a simple heuristic for stocking the food cart and created a simulation in order to validate what our expected revenue is."><meta name=application-name content="Mathew Crews"><meta name=apple-mobile-web-app-title content="Mathew Crews"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://matthewcrews.com/blog/2021/01/2020-01-01/><link rel=prev href=https://matthewcrews.com/blog/2020/12/2020-12-21/><link rel=next href=https://matthewcrews.com/blog/2021/01/2021-01-09/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/matthewcrews.com\/blog\/2021\/01\/2020-01-01\/"},"image":[{"@type":"ImageObject","url":"https:\/\/matthewcrews.com\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"blog","wordcount":2996,"url":"https:\/\/matthewcrews.com\/blog\/2021\/01\/2020-01-01\/","datePublished":"2021-01-01T00:00:00+00:00","dateModified":"2022-10-11T10:21:38-07:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":"https:\/\/matthewcrews.com\/images\/fast_fsharp_avatar.png"},"author":{"@type":"Person","name":"Matthew Crews"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/blog/>Blog </a><a class=menu-item href=/about/>About </a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder="Search titles or contents..." id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder="Search titles or contents..." id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>Cancel</a></div><a class=menu-item href=/blog/ title>Blog</a><a class=menu-item href=/about/ title>About</a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 3</h1><div class=content id=content><p>In the previous two posts in this series we introduced the Food Cart Problem. We want a plan for stocking our Food Cart which will maximizes our revenue. In the <a href=/blog/2020/12/2020-12-14/ rel>first post</a> we discussed the foods that we can stock and the restrictions we are operating under. We introduced a simple heuristic for stocking the food cart and created a simulation in order to validate what our expected revenue is.</p><p>In the <a href=/blog/2020/12/2020-12-21/ rel>second post</a> we formulated a Mathematical Planning model to create a plan to maximize our expected revenue. We validated that the plan found with Mathematical Planning is superior to the simple heuristic in the first post through simulations and statistical tests.</p><p>In this final post of the series, we will create a simple Machine Learning model to make predictions of expected demand using the weather conditions as predictors. We will combine the tools of Mathematical Planning and Machine Learning to create an even more profitable algorithm for stocking the food cart.</p><blockquote><p><strong>Note:</strong> To see all the code for this post, go <a href=https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx target=_blank rel="noopener noreffer">here</a></p></blockquote><h2 id=generating-test-data>Generating Test Data</h2><p>Since this problem is a hypothetical, we need to generate data to train a Machine Learning model on. The demand for food will be modeled using a <a href=https://en.wikipedia.org/wiki/Poisson_distribution target=_blank rel="noopener noreffer">Poisson Distribution</a> but the mean of the demand, the $\lambda$, depend on the weather. We are going to generate data that follows a simple model.</p><p>$$
+\begin{align}
+\text{Demand Mean} = \ &\text{Baseline Demand} \ + \\
+&\text{Temperature Coefficient} \times \text{temperature} \ + \\
+&\text{Condition Offset}
+\end{align}
+$$</p><p>Each food will have a baseline amount of demand, Baseline Demand. The demand for the food will go up or down depending on the temperature. The weather condition (Sunny, Cloudy, Rainy) will also bump the demand up or down in a stepwise manner. We will generate several months’ worth of weather conditions and then use them to generate our historical demand data.</p><p>We want to make our code clear and maintainable so we create a domain model. Let&rsquo;s create types to describe a day, temperature, conditions, and weather.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Day</span> <span class=o>=</span> <span class=n>Day</span> <span class=k>of</span> <span class=n>int</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Temperature</span> <span class=o>=</span> <span class=n>Temperature</span> <span class=k>of</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Condition</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Sunny</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Cloudy</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Rainy</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Weather</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Condition</span> <span class=o>:</span> <span class=n>Condition</span>
+</span></span><span class=line><span class=cl>    <span class=n>Temperature</span> <span class=o>:</span> <span class=n>Temperature</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now we can create the type which holds the parameters for our demand model.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>DemandModelParameters</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>BaselineDemand</span> <span class=o>:</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=n>TemperatureCoefficient</span> <span class=o>:</span> <span class=kt>float</span>
+</span></span><span class=line><span class=cl>    <span class=n>ConditionOffsets</span> <span class=o>:</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Condition</span><span class=o>,</span> <span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Our model will take the <code>Weather</code> as an input and simulate a random <code>Demand</code> based on the statistical model we just proposed. Let&rsquo;s create a type which describes this simulation result.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>serving</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Demand</span> <span class=o>=</span> <span class=n>Demand</span> <span class=k>of</span> <span class=kt>float</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>DemandSimulationResult</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>Day</span> <span class=o>:</span> <span class=n>Day</span>
+</span></span><span class=line><span class=cl>    <span class=n>Weather</span> <span class=o>:</span> <span class=n>Weather</span>
+</span></span><span class=line><span class=cl>    <span class=n>Demand</span> <span class=o>:</span> <span class=n>Demand</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now we can write a function which takes the <code>DemandModelParameters</code>, <code>Weather</code> and gives us a random <code>Demand</code> that follows our model. In statistics this is often called &ldquo;sampling from the distribution&rdquo; so we will call our function <code>sample</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>Demand</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=o>(</span><span class=n>parameters</span><span class=o>:</span> <span class=n>DemandModelParameters</span><span class=o>)</span> <span class=o>(</span><span class=n>weather</span><span class=o>:</span> <span class=n>Weather</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=o>(</span><span class=n>Temperature</span> <span class=n>temperature</span><span class=o>)</span> <span class=o>=</span> <span class=n>weather</span><span class=o>.</span><span class=n>Temperature</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>lambda</span> <span class=o>=</span> <span class=n>parameters</span><span class=o>.</span><span class=n>BaselineDemand</span> <span class=o>+</span> 
+</span></span><span class=line><span class=cl>                     <span class=n>temperature</span> <span class=o>*</span> <span class=n>parameters</span><span class=o>.</span><span class=n>TemperatureCoefficient</span> <span class=o>+</span>
+</span></span><span class=line><span class=cl>                     <span class=n>parameters</span><span class=o>.</span><span class=n>ConditionOffsets</span><span class=o>.[</span><span class=n>weather</span><span class=o>.</span><span class=n>Condition</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>result</span> <span class=o>=</span> <span class=nn>Poisson</span><span class=p>.</span><span class=n>Sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>,</span> <span class=n>lambda</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>Demand</span> <span class=o>(</span><span class=kt>float</span> <span class=n>result</span> <span class=o>*</span> <span class=n>1</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;)</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>Poisson.Sample</code> function returns an <code>int</code> which isn&rsquo;t what we will want for training our Machine Learning model, so we go ahead and turn it into a <code>float</code> and attach Units of Measure. Units of Measure are incredibly valuable in tracking what numbers mean but they can add a little bit of boilerplate in some cases. I find it worth the clarity they bring.</p><p>We want to add a couple more functions for generating random <code>Temperature</code>, <code>Condition</code> and <code>Weather</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>Condition</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>private</span> <span class=n>conditions</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>        <span class=o>[</span>
+</span></span><span class=line><span class=cl>            <span class=n>0</span><span class=o>,</span> <span class=n>Sunny</span>
+</span></span><span class=line><span class=cl>            <span class=n>1</span><span class=o>,</span> <span class=n>Cloudy</span>
+</span></span><span class=line><span class=cl>            <span class=n>2</span><span class=o>,</span> <span class=n>Rainy</span>
+</span></span><span class=line><span class=cl>        <span class=o>]</span> <span class=o>|&gt;</span> <span class=n>Map</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>conditions</span><span class=o>.[</span><span class=n>rng</span><span class=o>.</span><span class=n>Next</span><span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>2</span><span class=o>)]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>module</span> <span class=nn>Temperature</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=o>(</span><span class=n>Temperature</span> <span class=n>minTemperature</span><span class=o>)</span> <span class=o>(</span><span class=n>Temperature</span> <span class=n>maxTemperature</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span><span class=bp>()</span> <span class=o>*</span> <span class=o>(</span><span class=n>maxTemperature</span> <span class=o>-</span> <span class=n>minTemperature</span><span class=o>)</span> <span class=o>+</span> <span class=n>minTemperature</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Math</span><span class=p>.</span><span class=n>Round</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=n>Temperature</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>module</span> <span class=nn>Weather</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=o>(</span><span class=n>minTemperature</span><span class=o>:</span> <span class=n>Temperature</span><span class=o>)</span> <span class=o>(</span><span class=n>maxTemperature</span><span class=o>:</span> <span class=n>Temperature</span><span class=o>)</span> <span class=o>:</span> <span class=n>Weather</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>condition</span> <span class=o>=</span> <span class=nn>Condition</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>temperature</span> <span class=o>=</span> <span class=nn>Temperature</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>minTemperature</span> <span class=n>maxTemperature</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Condition</span> <span class=o>=</span> <span class=n>condition</span>
+</span></span><span class=line><span class=cl>            <span class=n>Temperature</span> <span class=o>=</span> <span class=n>temperature</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Well, this is great. We now have a way of generating data for which we can train a ML model on. Let&rsquo;s do this for Burgers.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Parameters for generating samples data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>burgerParameters</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>BaselineDemand</span> <span class=o>=</span> <span class=n>337</span><span class=o>.</span><span class=n>5</span>
+</span></span><span class=line><span class=cl>    <span class=n>TemperatureCoefficient</span> <span class=o>=</span> <span class=n>3</span><span class=o>.</span><span class=n>5</span>
+</span></span><span class=line><span class=cl>    <span class=n>ConditionOffsets</span> <span class=o>=</span> <span class=n>Map</span> <span class=o>[</span> <span class=n>Sunny</span><span class=o>,</span> <span class=o>-</span><span class=n>30</span><span class=o>.</span><span class=n>0</span><span class=o>;</span> <span class=n>Cloudy</span><span class=o>,</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span><span class=o>;</span> <span class=n>Rainy</span><span class=o>,</span> <span class=n>30</span><span class=o>.</span><span class=n>0</span> <span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>rng</span> <span class=o>=</span> <span class=nn>System</span><span class=p>.</span><span class=n>Random</span><span class=o>(</span><span class=n>123</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=c1>// Number of days for which to generate data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>numberOfDays</span> <span class=o>=</span> <span class=n>100</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>minTemp</span> <span class=o>=</span> <span class=n>Temperature</span> <span class=n>40</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxTemp</span> <span class=o>=</span> <span class=n>Temperature</span> <span class=n>110</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>pastDays</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span><span class=n>1</span><span class=o>..</span><span class=n>numberOfDays</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=n>Day</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>pastWeather</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>pastDays</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>day</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>Day</span> <span class=o>=</span> <span class=n>day</span><span class=o>;</span> <span class=n>Weather</span> <span class=o>=</span> <span class=nn>Simulation</span><span class=p>.</span><span class=nn>Weather</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>minTemp</span> <span class=n>maxTemp</span> <span class=o>|})</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>burgerDemand</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>pastWeather</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>d</span> <span class=k>with</span> <span class=n>Demand</span> <span class=o>=</span> <span class=nn>Simulation</span><span class=p>.</span><span class=nn>Demand</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>burgerParameters</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span> <span class=o>|})</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=nn>DemandSimulationResult</span><span class=p>.</span><span class=n>create</span> <span class=n>d</span><span class=o>.</span><span class=n>Day</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span> <span class=n>d</span><span class=o>.</span><span class=n>Demand</span> <span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We have now simulated 100 days’ worth of Burger demand based on the weather for that day. We now want to use this data to train a Machine Learning model so that we can make predictions of Demand going forward and better optimize our inventory at the beginning of the day.</p><h2 id=training-a-machine-learning-model>Training a Machine Learning Model</h2><p>We will use <a href=https://dotnet.microsoft.com/apps/machinelearning-ai/ml-dotnet target=_blank rel="noopener noreffer">ML.NET</a> to create a simple ML Model to predict demand. The ML.NET API can use many different data sources as inputs. For our case, we will save our historical weather and demand data to a local <code>.csv</code> file. I am not giong to show the boilerplate for saving the data but you can find it in the <a href=https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx target=_blank rel="noopener noreffer">full code example</a>.</p><p>The ML.NET API has you define types for your training data that it uses for parsing the input. In our case we will have delimited records in a <code>.csv</code> file.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>CLIMutable</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>DemandData</span> <span class=o>=</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>LoadColumn</span><span class=o>(</span><span class=n>1</span><span class=o>)&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=n>Temperature</span> <span class=o>:</span> <span class=kt>single</span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>LoadColumn</span><span class=o>(</span><span class=n>2</span><span class=o>)&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=n>Condition</span> <span class=o>:</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>LoadColumn</span><span class=o>(</span><span class=n>3</span><span class=o>);</span> <span class=n>ColumnName</span><span class=o>(</span><span class=s>&#34;Label&#34;</span><span class=o>)&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=n>Demand</span> <span class=o>:</span> <span class=kt>single</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>[&lt;LoadColumn(n)>]</code> attribute tells ML.NET which column in the source data corresponds to that field. Our saved data looks like this:</p><table><thead><tr><th>Day</th><th>Temperature</th><th>Condition</th><th>Demand</th></tr></thead><tbody><tr><td>1</td><td>104</td><td>Cloudy</td><td>706</td></tr><tr><td>2</td><td>97</td><td>Cloudy</td><td>645</td></tr><tr><td>3</td><td>43</td><td>Cloudy</td><td>492</td></tr><tr><td>4</td><td>50</td><td>Sunny</td><td>457</td></tr></tbody></table><p>We don&rsquo;t need the data in the <code>Day</code> column so we are ignoring it. The <code>[&lt;ColumnName("Label")>]</code> is what tells ML.NET the field that I am trying to predict. It will use the other fields as inputs to try to predict <code>Demand</code>. We want to create a function which takes an input file, trains a model, and then saves the model locally. ML.NET allows you to save trained models as <code>.zip</code> files. This makes it easy to load a pre-existing model to use in your code.</p><p>We will be working with several different types of files and I find it useful to create some simple types to represent that.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>DataFile</span> <span class=o>=</span> <span class=n>DataFile</span> <span class=k>of</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>ModelFile</span> <span class=o>=</span> <span class=n>ModelFile</span> <span class=k>of</span> <span class=kt>string</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>OutputDirectory</span> <span class=o>=</span> <span class=n>OutputDirectory</span> <span class=k>of</span> <span class=kt>string</span>
+</span></span></code></pre></td></tr></table></div></div><p>A <code>DataFile</code> is a filepath to the <code>.csv</code> which holds our data. A <code>ModelFile</code> is the <code>.zip</code> which holds the persisted form of our ML model for predicting demand. The <code>OutputDirectory</code> is just a directory where we want to put data and models.</p><p>We can now put together a simple <code>train</code> function which will take our input data, train an ML model, and then save it for us to use later. We will also report the metrics from the training.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>open</span> <span class=nn>Microsoft.ML</span>
+</span></span><span class=line><span class=cl><span class=k>open</span> <span class=nn>Microsoft.ML.Data</span>
+</span></span><span class=line><span class=cl><span class=k>open</span> <span class=nn>Types</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>private</span> <span class=n>reportMetrics</span> <span class=o>(</span><span class=n>metrics</span><span class=o>:</span> <span class=n>RegressionMetrics</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// show the metrics
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>printfn</span> <span class=s>&#34;Model metrics:&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;  RMSE:%f&#34;</span> <span class=n>metrics</span><span class=o>.</span><span class=n>RootMeanSquaredError</span>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;  MSE: %f&#34;</span> <span class=n>metrics</span><span class=o>.</span><span class=n>MeanSquaredError</span>
+</span></span><span class=line><span class=cl>    <span class=n>printfn</span> <span class=s>&#34;  MAE: %f&#34;</span> <span class=n>metrics</span><span class=o>.</span><span class=n>MeanAbsoluteError</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>train</span> <span class=o>(</span><span class=n>OutputDirectory</span> <span class=n>outputDir</span><span class=o>)</span> <span class=o>(</span><span class=n>modelName</span><span class=o>:</span> <span class=kt>string</span><span class=o>)</span> <span class=o>(</span><span class=n>inputFile</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>context</span> <span class=o>=</span> <span class=n>MLContext</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>dataView</span> <span class=o>=</span> <span class=n>context</span><span class=o>.</span><span class=n>Data</span><span class=o>.</span><span class=n>LoadFromTextFile</span><span class=o>&lt;</span><span class=n>DemandData</span><span class=o>&gt;</span> <span class=o>(</span><span class=n>inputFile</span><span class=o>,</span> <span class=n>hasHeader</span> <span class=o>=</span> <span class=k>true</span><span class=o>,</span> <span class=n>separatorChar</span> <span class=o>=</span> <span class=sc>&#39;,&#39;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>partitions</span> <span class=o>=</span> <span class=n>context</span><span class=o>.</span><span class=n>Data</span><span class=o>.</span><span class=n>TrainTestSplit</span><span class=o>(</span><span class=n>dataView</span><span class=o>,</span> <span class=n>testFraction</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>2</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>pipeline</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>        <span class=n>EstimatorChain</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>Categorical</span><span class=o>.</span><span class=n>OneHotEncoding</span><span class=o>(</span><span class=s>&#34;Condition&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>            <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>NormalizeMeanVariance</span><span class=o>(</span><span class=s>&#34;Temperature&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>            <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>Concatenate</span><span class=o>(</span><span class=s>&#34;Features&#34;</span><span class=o>,</span> <span class=s>&#34;Condition&#34;</span><span class=o>,</span> <span class=s>&#34;Temperature&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>            <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Regression</span><span class=o>.</span><span class=n>Trainers</span><span class=o>.</span><span class=n>Sdca</span><span class=bp>()</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>model</span> <span class=o>=</span> <span class=n>partitions</span><span class=o>.</span><span class=n>TrainSet</span> <span class=o>|&gt;</span> <span class=n>pipeline</span><span class=o>.</span><span class=n>Fit</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>metrics</span> <span class=o>=</span> <span class=n>partitions</span><span class=o>.</span><span class=n>TestSet</span> <span class=o>|&gt;</span> <span class=n>model</span><span class=o>.</span><span class=n>Transform</span> <span class=o>|&gt;</span> <span class=n>context</span><span class=o>.</span><span class=n>Regression</span><span class=o>.</span><span class=n>Evaluate</span>
+</span></span><span class=line><span class=cl>    <span class=n>reportMetrics</span> <span class=n>metrics</span> <span class=o>|&gt;</span> <span class=n>ignore</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nn>System</span><span class=p>.</span><span class=nn>IO</span><span class=p>.</span><span class=nn>Directory</span><span class=p>.</span><span class=n>CreateDirectory</span> <span class=n>outputDir</span> <span class=o>|&gt;</span> <span class=n>ignore</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>outputFile</span> <span class=o>=</span> <span class=o>$</span><span class=s>&#34;{outputDir}/%O{modelName}.zip&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>context</span><span class=o>.</span><span class=n>Model</span><span class=o>.</span><span class=n>Save</span> <span class=o>(</span><span class=n>model</span><span class=o>,</span> <span class=n>dataView</span><span class=o>.</span><span class=n>Schema</span><span class=o>,</span> <span class=n>outputFile</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>ModelFile</span> <span class=n>outputFile</span>
+</span></span></code></pre></td></tr></table></div></div><p>The part where we define the shape of our model is in the definition of <code>pipeline</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>pipeline</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>    <span class=n>EstimatorChain</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>Categorical</span><span class=o>.</span><span class=n>OneHotEncoding</span><span class=o>(</span><span class=s>&#34;Condition&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>NormalizeMeanVariance</span><span class=o>(</span><span class=s>&#34;Temperature&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>Concatenate</span><span class=o>(</span><span class=s>&#34;Features&#34;</span><span class=o>,</span> <span class=s>&#34;Condition&#34;</span><span class=o>,</span> <span class=s>&#34;Temperature&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Regression</span><span class=o>.</span><span class=n>Trainers</span><span class=o>.</span><span class=n>Sdca</span><span class=bp>()</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We know that the <code>Condition</code> data is categorical so we need to encode it in a way that the training code understands. <a href=https://en.wikipedia.org/wiki/One-hot target=_blank rel="noopener noreffer">One-hot Encoding</a> represents categories as a set of Boolean values. It&rsquo;s a similar concept to binary encoding of numbers but they are not the same, so don&rsquo;t mix them up!</p><p>We then take the step to normalize the mean and variance of the <code>Temperature</code> data. ML training really likes to have the data lie between -1.0 and 1.0. This protects against features appearing more important than they are. Our temperature values are between 40.0 and 110.0 which could cause a problem for the training code.</p><p>We now combine our One-hot encoded <code>Condition</code> column with the normalized <code>Temperature</code> data using <code>Transforms.Concatenate</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Transforms</span><span class=o>.</span><span class=n>Concatenate</span><span class=o>(</span><span class=s>&#34;Features&#34;</span><span class=o>,</span> <span class=s>&#34;Condition&#34;</span><span class=o>,</span> <span class=s>&#34;Temperature&#34;</span><span class=o>))</span>
+</span></span></code></pre></td></tr></table></div></div><p>What this does is create a new column of data called &ldquo;Features&rdquo;. ML.NET wants there to be a &ldquo;Features&rdquo; column for it to use as the input to the training algorithm. &ldquo;Features&rdquo; is the default name for the input data of a training model. It can be configured but I am going with the default.</p><p>The final part of the definition for our <code>pipeline</code> is the type of model we want it to fit. In our case we are performing regression since we are trying to predict continuous data, <code>Demand</code> in this case. ML.NET has a large number of possible algorithms. In our case we are using the Stochastic Dual Coordinate Ascent (SDCA) method to fit a linear model.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>.</span><span class=n>Append</span><span class=o>(</span><span class=n>context</span><span class=o>.</span><span class=n>Regression</span><span class=o>.</span><span class=n>Trainers</span><span class=o>.</span><span class=n>Sdca</span><span class=bp>()</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now train the model using the training data set and evaluate the metrics with the test data.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>model</span> <span class=o>=</span> <span class=n>partitions</span><span class=o>.</span><span class=n>TrainSet</span> <span class=o>|&gt;</span> <span class=n>pipeline</span><span class=o>.</span><span class=n>Fit</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>metrics</span> <span class=o>=</span> <span class=n>partitions</span><span class=o>.</span><span class=n>TestSet</span> <span class=o>|&gt;</span> <span class=n>model</span><span class=o>.</span><span class=n>Transform</span> <span class=o>|&gt;</span> <span class=n>context</span><span class=o>.</span><span class=n>Regression</span><span class=o>.</span><span class=n>Evaluate</span>
+</span></span><span class=line><span class=cl><span class=n>reportMetrics</span> <span class=n>metrics</span> <span class=o>|&gt;</span> <span class=n>ignore</span>
+</span></span></code></pre></td></tr></table></div></div><p>If we run our Burger data through we will see the following metrics reported</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>burgerDemandModelFile</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=nn>Training</span><span class=p>.</span><span class=n>train</span> <span class=n>outputDirectory</span> <span class=s>&#34;BurgerDemandModel&#34;</span> <span class=n>burgerDemandDataFile</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>&gt;</span> <span class=n>Model</span> <span class=n>metrics</span><span class=o>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>RMSE</span><span class=o>:</span><span class=n>19</span><span class=o>.</span><span class=n>713698</span>
+</span></span><span class=line><span class=cl>    <span class=n>MSE</span><span class=o>:</span> <span class=n>388</span><span class=o>.</span><span class=n>629880</span>
+</span></span><span class=line><span class=cl>    <span class=n>MAE</span><span class=o>:</span> <span class=n>13</span><span class=o>.</span><span class=n>099727</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>MAE</code> stands for <a href=https://en.wikipedia.org/wiki/Mean_absolute_error target=_blank rel="noopener noreffer">Mean Absolute Error</a>. It is the average of how far our prediction is off from the correct value. <code>MSE</code> stands for <a href=https://en.wikipedia.org/wiki/Mean_squared_error target=_blank rel="noopener noreffer">Mean Squared Error</a> and is the average of the square of the error. <code>RMSE</code> is the <a href=https://en.wikipedia.org/wiki/Root-mean-square_deviation target=_blank rel="noopener noreffer">Root Mean Square Error</a> which is the square root of <code>MSE</code>. Which one of these is the most important? It depends. When I&rsquo;m working with someone, I want to understand the implications of a bad prediction. That would guide which metrics I tune for.</p><p>There are many great resources out there on Machine Learning, so I will not go in depth here. For now, let&rsquo;s say that our model looks good enough and see how it performs when we combine it with our Mathematical Planning model.</p><h2 id=mp--ml-->MP + ML = $$$</h2><p>To evaluate how our new predictor performs, we will combine it with our Mathematical Planning model. Let&rsquo;s simulate 30 days into the future and compare the three approaches: Simple Heuristic, Mathematical Planning, Mathematical Planning + Machine Learning.</p><p>We generate 30 days into the future. For each day we sample from the possible weather conditions. We then take the <code>Weather</code> for each day and generate a sample of the demand for each food from our underlying statistical model. We store the result in a <code>Map&lt;Food, Demand></code> to simplify some of our later code.</p><p>To make our code cleaner we are going to add a new function to our <code>Simulation</code> module for the demand for all the foods in each day.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>DayDemand</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>sample</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=o>(</span><span class=n>parameters</span><span class=o>:</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Food</span><span class=o>,</span> <span class=n>DemandModelParameters</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>weather</span><span class=o>:</span> <span class=n>Weather</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>parameters</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Map</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>food</span> <span class=n>demandParameters</span> <span class=o>-&gt;</span> <span class=nn>Demand</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>demandParameters</span> <span class=n>weather</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>It&rsquo;s a small thing, but I have rarely regretted making my code clean and simple. Now we will generate 30 days’ worth of weather data.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>numberFutureDays</span> <span class=o>=</span> <span class=n>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Let&#39;s create some future data that we will evaluate our different techniques against
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>futureDays</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span><span class=n>1</span><span class=o>..</span><span class=n>numberFutureDays</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>Day</span> <span class=o>=</span> <span class=n>Day</span> <span class=n>d</span><span class=o>;</span> <span class=n>Weather</span> <span class=o>=</span> <span class=nn>Simulation</span><span class=p>.</span><span class=nn>Weather</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>minTemp</span> <span class=n>maxTemp</span> <span class=o>|})</span>
+</span></span></code></pre></td></tr></table></div></div><p>With 30 days’ worth of future weather data, we will now generate theoretical demand on those days. We are “cheating” in that we have control of the generation of demand data. In real world scenarios there are some additional complexities that need to be dealt with. My desire is to show the concepts. Future posts can deal with the idiosyncrasies. We now generate the demand that would be observed on those days.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Let&#39;s create some future data that we will evaluate our different techniques against
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>futureDays</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>futureWeather</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>d</span> <span class=k>with</span> <span class=n>FoodDemand</span> <span class=o>=</span> <span class=nn>Simulation</span><span class=p>.</span><span class=nn>DayDemand</span><span class=p>.</span><span class=n>sample</span> <span class=n>rng</span> <span class=n>foodParameters</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span> <span class=o>|})</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now have a list of days where we have the weather on that day and the demand. We can now calculate what our revenue would have been using the simple heuristic from the first blog post. We create a function which takes the planned inventory and the demand on a day to calculate the revenue.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>RevenueModel</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>open</span> <span class=nn>Types</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>evaluate</span> <span class=o>(</span><span class=n>revenuePerServing</span><span class=o>:</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Food</span><span class=o>,</span> <span class=n>RevenuePerServing</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>inventoryPlan</span><span class=o>:</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Food</span><span class=o>,</span> <span class=n>Inventory</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>demand</span><span class=o>:</span> <span class=n>Map</span><span class=o>&lt;</span><span class=n>Food</span><span class=o>,</span> <span class=n>Demand</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>inventoryPlan</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Map</span><span class=p>.</span><span class=n>toSeq</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Seq</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=o>(</span><span class=n>food</span><span class=o>,</span> <span class=n>inventory</span><span class=o>)</span> <span class=o>-&gt;</span> <span class=n>revenuePerServing</span><span class=o>.[</span><span class=n>food</span><span class=o>]</span> <span class=o>*</span> <span class=o>(</span><span class=nn>Sales</span><span class=p>.</span><span class=n>calculate</span> <span class=n>inventory</span> <span class=n>demand</span><span class=o>.[</span><span class=n>food</span><span class=o>]))</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>RevenueModel.evaluate</code> function calculates what the revenue would have been on a day given the inventory plan that was used and the demand that was realized. We now use our simple heuristic plan for each of the future 30 days to see what our total revenue would have been.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>simpleHueristicPlan</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>Map</span> <span class=o>[</span>
+</span></span><span class=line><span class=cl>        <span class=n>Burger</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Pizza</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>900</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Taco</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>466</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>simpleHeuristicRevenue</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>futureDays</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=nn>RevenueModel</span><span class=p>.</span><span class=n>evaluate</span> <span class=n>revenuePerServing</span> <span class=n>simpleHueristicPlan</span> <span class=n>d</span><span class=o>.</span><span class=n>FoodDemand</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>simpleHeuristicRevenue</code> comes to $62,247.20. This will be our baseline. We now use the inventory plan we found using Mathematical Planning and find the revenue we would achieve.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>optimizedPlan</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>Map</span> <span class=o>[</span>
+</span></span><span class=line><span class=cl>        <span class=n>Burger</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>572</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Pizza</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>355</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Taco</span><span class=o>,</span> <span class=n>Inventory</span> <span class=n>669</span><span class=o>.</span><span class=n>0</span><span class=o>&lt;</span><span class=n>serving</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>optimizedPlanRevenue</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>futureDays</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=nn>RevenueModel</span><span class=p>.</span><span class=n>evaluate</span> <span class=n>revenuePerServing</span> <span class=n>optimizedPlan</span> <span class=n>d</span><span class=o>.</span><span class=n>FoodDemand</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>optimizedPlanRevenue</code> comes to $65,462.50, a 2.58% improvement. That will add up to significant additional revenue as the business scales. We now want to bring Mathematical Planning and Machine Learning together. We will use our Machine Learning models to predict the expected demand given the weather as input. The result of the prediction will be used as the input to the Mathematical Planning model which will suggest the ideal amount of inventory to carry.</p><p>I am going to gloss over some details that I will address in a future post at this point. I defined two new interfaces which cleaned up the code, <code>IDemandPredictor</code> and <code>IInventoryOptimizer</code>. They are simple interfaces I used to wrap the ML.NET model and the inventory optimization model. The <a href=https://github.com/matthewcrews/modelmondays/blob/main/FoodCartSeries/FoodCart-Part3.fsx target=_blank rel="noopener noreffer">full example code</a> shows everything but for the sake of keeping this blog post a reasonable length, I left out these nuances.</p><p>In this code <code>burgerPredictor</code>, <code>pizzaPredictor</code> and <code>tacoPredictor</code> are instances of <code>IDemandPredictor</code> which wrap the ML.NET models we trained earlier. <code>planOptimizer</code> is an <code>IInventoryOptimizer</code> that wraps our Mathematical Planning model.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>predictorPlusOptimizerRevenue</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>futureDays</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>d</span> <span class=k>with</span> <span class=n>DemandRates</span> <span class=o>=</span> <span class=n>Map</span> <span class=o>[</span> <span class=n>Burger</span><span class=o>,</span> <span class=n>burgerPredictor</span><span class=o>.</span><span class=n>predict</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span>
+</span></span><span class=line><span class=cl>                                                        <span class=n>Pizza</span><span class=o>,</span> <span class=n>pizzaPredictor</span><span class=o>.</span><span class=n>predict</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span>
+</span></span><span class=line><span class=cl>                                                        <span class=n>Taco</span><span class=o>,</span> <span class=n>tacoPredictor</span><span class=o>.</span><span class=n>predict</span> <span class=n>d</span><span class=o>.</span><span class=n>Weather</span>
+</span></span><span class=line><span class=cl>                                                      <span class=o>]</span> <span class=o>|})</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=o>{|</span> <span class=n>d</span> <span class=k>with</span> <span class=n>Plan</span> <span class=o>=</span> <span class=n>planOptimizer</span><span class=o>.</span><span class=n>plan</span> <span class=n>d</span><span class=o>.</span><span class=n>DemandRates</span> <span class=o>|})</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>List</span><span class=p>.</span><span class=n>sumBy</span> <span class=o>(</span><span class=k>fun</span> <span class=n>d</span> <span class=o>-&gt;</span> <span class=nn>RevenueModel</span><span class=p>.</span><span class=n>evaluate</span> <span class=n>revenuePerServing</span> <span class=n>d</span><span class=o>.</span><span class=n>Plan</span> <span class=n>d</span><span class=o>.</span><span class=n>FoodDemand</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>predictorPlusOptimizerRevenue</code> comes to $67,214.30, a 7.98% improvement from our baseline. Here are the results side by side:</p><table><thead><tr><th>Metric</th><th>Simple Heuristic</th><th>MP</th><th>MP + ML</th></tr></thead><tbody><tr><td>Revenue</td><td>$62,247.20</td><td>$65,462.50</td><td>$67,214.30</td></tr><tr><td>% Improvement</td><td>-</td><td>2.58%</td><td>7.98%</td></tr></tbody></table><h2 id=next-steps>Next Steps</h2><p>I hope this illustrates a simple use case for combining the power of Mathematical Planning and Machine Learning. The techniques are highly complementary and lead to highly effective solutions which are far better than either technique in isolation. We can improve this solution in many ways. We spent no time on tuning the Machine Learning model. It would be nice to have real world data for this problem. The challenges is that the real world data sets I have access to are proprietary which is why I generated my own.</p><p>In future posts I hope to explore how to tune Machine Learning models to protect against specific failure modes by tuning for different metrics. We are also assuming that we restock the food cart every morning. We likely need to make inventory decisions several days ahead of time which introduces some interesting optimization challenges we will explore in the future.</p><p>Let me know if there are any problems you would like me to explore!</p><p>Please send me an email at <a href=mailto:matthewcrews@gmail.com rel>matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p><script>window.mootrack||!function(e,t,n,s,o){function i(e){var s,o=~~(Date.now()/3e5),t=document.createElement(n);t.async=!0,t.src=e+"?ts="+o,s=document.getElementsByTagName(n)[0],s.parentNode.insertBefore(t,s)}e.MooTrackerObject=o,e[o]=e[o]||function(){return e[o].q?void e[o].q.push(arguments):void(e[o].q=[arguments])},window.attachEvent?window.attachEvent("onload",i.bind(this,s)):window.addEventListener("load",i.bind(this,s),!1)}(window,document,"script","https://cdn.stat-track.com/statics/moosend-tracking.min.js","mootrack"),mootrack("loadForm","b498d29aaba84b5bb3e0479003dc7264")</script><div data-mooform-id=b498d29a-aba8-4b5b-b3e0-479003dc7264></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></div></div></main><footer class=footer><div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2019 - 2022</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=matthewcrews.com target=_blank>Matthew Crews</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/copy-tex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/mhchem.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"en",pageSize:10,placeholder:"Your comment ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!0,left:"\\begin{equation}",right:"\\end{equation}"},{display:!0,left:"\\begin{equation*}",right:"\\end{equation*}"},{display:!0,left:"\\begin{align}",right:"\\end{align}"},{display:!0,left:"\\begin{align*}",right:"\\end{align*}"},{display:!0,left:"\\begin{alignat}",right:"\\end{alignat}"},{display:!0,left:"\\begin{alignat*}",right:"\\end{alignat*}"},{display:!0,left:"\\begin{gather}",right:"\\end{gather}"},{display:!0,left:"\\begin{CD}",right:"\\end{CD}"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.en",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"No results found",snippetLength:30,type:"algolia"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>

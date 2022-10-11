@@ -1,0 +1,285 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>BenchmarkDotNet Gotcha with F# - Matthew Crews</title><meta name=Description content="Hugo theme - LoveIt"><meta property="og:title" content="BenchmarkDotNet Gotcha with F#"><meta property="og:description" content="I have been working on creating some types which allow me to wrap an array and index it with an int which has a Unit of Measure (UoM). Right now, if you want to index into an array with an int that has a UoM, you need to remove the units.
+1 2 3 4 5 6 7 8 [<Measure>] type ItemIdx let a = [|1.0 .. 10.0|] let idx = 1<ItemIdx> let x = a[idx] // This will raise an error saying that the type `int<ItemIdx>` is not correct let y = a[int idx] // This will work because the units are removed when calling `int` You may think, &ldquo;Matthew, that call to int is going to cause a problem, isn&rsquo;t it?"><meta property="og:type" content="article"><meta property="og:url" content="https://matthewcrews.com/blog/2021/11/benchmarkdotnet-gotcha/"><meta property="og:image" content="https://matthewcrews.com/logo.png"><meta property="article:section" content="blog"><meta property="article:published_time" content="2021-11-16T00:00:00+00:00"><meta property="article:modified_time" content="2022-10-11T10:21:38-07:00"><meta property="og:site_name" content="Matthew Crews"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://matthewcrews.com/logo.png"><meta name=twitter:title content="BenchmarkDotNet Gotcha with F#"><meta name=twitter:description content="I have been working on creating some types which allow me to wrap an array and index it with an int which has a Unit of Measure (UoM). Right now, if you want to index into an array with an int that has a UoM, you need to remove the units.
+1 2 3 4 5 6 7 8 [<Measure>] type ItemIdx let a = [|1.0 .. 10.0|] let idx = 1<ItemIdx> let x = a[idx] // This will raise an error saying that the type `int<ItemIdx>` is not correct let y = a[int idx] // This will work because the units are removed when calling `int` You may think, &ldquo;Matthew, that call to int is going to cause a problem, isn&rsquo;t it?"><meta name=application-name content="Mathew Crews"><meta name=apple-mobile-web-app-title content="Mathew Crews"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://matthewcrews.com/blog/2021/11/benchmarkdotnet-gotcha/><link rel=prev href=https://matthewcrews.com/blog/2021/11/records-as-keys-for-dictionaries/><link rel=next href=https://matthewcrews.com/blog/2021/11/team-desk-assignments/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"BenchmarkDotNet Gotcha with F#","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/matthewcrews.com\/blog\/2021\/11\/benchmarkdotnet-gotcha\/"},"image":[{"@type":"ImageObject","url":"https:\/\/matthewcrews.com\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"blog","wordcount":1578,"url":"https:\/\/matthewcrews.com\/blog\/2021\/11\/benchmarkdotnet-gotcha\/","datePublished":"2021-11-16T00:00:00+00:00","dateModified":"2022-10-11T10:21:38-07:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":"https:\/\/matthewcrews.com\/images\/fast_fsharp_avatar.png"},"author":{"@type":"Person","name":"Matthew Crews"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/blog/>Blog </a><a class=menu-item href=/about/>About </a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder="Search titles or contents..." id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder="Search titles or contents..." id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>Cancel</a></div><a class=menu-item href=/blog/ title>Blog</a><a class=menu-item href=/about/ title>About</a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">BenchmarkDotNet Gotcha with F#</h1><div class=content id=content><p>I have been working on creating some types which allow me to wrap an array and index it with an <code>int</code> which has a Unit of Measure (UoM). Right now, if you want to index into an array with an <code>int</code> that has a UoM, you need to remove the units.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>ItemIdx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>a</span> <span class=o>=</span> <span class=o>[|</span><span class=n>1</span><span class=o>.</span><span class=n>0</span> <span class=o>..</span> <span class=n>10</span><span class=o>.</span><span class=n>0</span><span class=o>|]</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>idx</span> <span class=o>=</span> <span class=n>1</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>x</span> <span class=o>=</span> <span class=n>a</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span> <span class=c1>// This will raise an error saying that the type `int&lt;ItemIdx&gt;` is not correct
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>y</span> <span class=o>=</span> <span class=n>a</span><span class=o>[</span><span class=n>int</span> <span class=n>idx</span><span class=o>]</span> <span class=c1>// This will work because the units are removed when calling `int`
+</span></span></span></code></pre></td></tr></table></div></div><p>You may think, &ldquo;Matthew, that call to <code>int</code> is going to cause a problem, isn&rsquo;t it?&rdquo; That&rsquo;s a great question. Let&rsquo;s put together an experiment and see what assembly is generated. This code&mldr;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>test</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>x</span> <span class=o>=</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>    <span class=n>a</span><span class=o>[</span><span class=n>x</span><span class=o>]</span>
+</span></span></code></pre></td></tr></table></div></div><p>Will generate this assembly.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>; Core CLR 6.0.21.52210 on amd64
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>_.test(System.Double[])
+</span></span><span class=line><span class=cl>    L0000: sub rsp, 0x28
+</span></span><span class=line><span class=cl>    L0004: vzeroupper
+</span></span><span class=line><span class=cl>    L0007: cmp dword ptr [rcx+8], 1
+</span></span><span class=line><span class=cl>    L000b: jbe short L0017
+</span></span><span class=line><span class=cl>    L000d: vmovsd xmm0, [rcx+0x18]
+</span></span><span class=line><span class=cl>    L0012: add rsp, 0x28
+</span></span><span class=line><span class=cl>    L0016: ret
+</span></span><span class=line><span class=cl>    L0017: call 0x00007ffd109ee750
+</span></span><span class=line><span class=cl>    L001c: int3
+</span></span></code></pre></td></tr></table></div></div><p>Let&rsquo;s add a UoM to the index and see what happens when we use it to index into the array while using <code>int</code> to remove the units.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>ItemIdx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>test</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>x</span> <span class=o>=</span> <span class=n>1</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=n>a</span><span class=o>[</span><span class=n>int</span> <span class=n>x</span><span class=o>]</span> <span class=c1>// Does calling `int` here incur a performance penalty?
+</span></span></span></code></pre></td></tr></table></div></div><p>And here is the assembly&mldr;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>; Core CLR 6.0.21.52210 on amd64
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>_.test(System.Double[])
+</span></span><span class=line><span class=cl>    L0000: sub rsp, 0x28
+</span></span><span class=line><span class=cl>    L0004: vzeroupper
+</span></span><span class=line><span class=cl>    L0007: cmp dword ptr [rcx+8], 1
+</span></span><span class=line><span class=cl>    L000b: jbe short L0017
+</span></span><span class=line><span class=cl>    L000d: vmovsd xmm0, [rcx+0x18]
+</span></span><span class=line><span class=cl>    L0012: add rsp, 0x28
+</span></span><span class=line><span class=cl>    L0016: ret
+</span></span><span class=line><span class=cl>    L0017: call 0x00007ffd109ee750
+</span></span><span class=line><span class=cl>    L001c: int3
+</span></span></code></pre></td></tr></table></div></div><p>You should notice that we are getting the exact same result. The F# compiler is smart enough to see that we are calling the <code>int</code> conversion function on a type that is already an <code>int</code> so it removes it.</p><p>This kind of thing is annoying to have to do manually all the time and I really wanted a wrapper around an <code>array</code> which had a UoM type associated with the index. I decided to code up something simple.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>ClassWrapper</span><span class=o>&lt;[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>&#39;</span><span class=n>Measure</span><span class=o>,</span> <span class=k>&#39;</span><span class=n>Value</span><span class=o>&gt;(</span><span class=n>values</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Value</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>Values</span> <span class=o>=</span> <span class=n>values</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>this</span><span class=p>.</span><span class=nf>Item</span>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=n>get</span> <span class=o>(</span><span class=n>idx</span><span class=o>:</span> <span class=n>int</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Measure</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=n>this</span><span class=o>.</span><span class=n>Values</span><span class=o>.[</span><span class=n>int</span> <span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>this</span><span class=p>.</span><span class=nf>Length</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>        <span class=nn>LanguagePrimitives</span><span class=p>.</span><span class=n>Int32WithMeasure</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Measure</span><span class=o>&gt;</span> <span class=n>this</span><span class=o>.</span><span class=n>Values</span><span class=o>.</span><span class=n>Length</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now have a class which is taking an <code>array&lt;'Value></code> as part of its constructor and it is giving us a view of the underlying <code>array</code> which is forcing the use of an <code>int</code> with a UoM to retrieve values. This allows us to do the following.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>type</span> <span class=nc>ItemIdx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>classWrapper</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>   <span class=o>[|</span><span class=n>1</span><span class=o>.</span><span class=n>0</span> <span class=o>..</span> <span class=o>(</span><span class=kt>float</span> <span class=n>numberCount</span><span class=o>)|]</span> 
+</span></span><span class=line><span class=cl>   <span class=o>|&gt;</span> <span class=n>ClassWrapper</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>,</span> <span class=kt>float</span><span class=o>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>ClassWrapper</code> will now force us to use an <code>int&lt;ItemIdx></code> to retrieve values. You may think this is cumbersome but if you are working with many arrays simultaneously it can be easy to mix up which index is meant to be associated with which array. I like the compiler to be able to help me out so the idea of using UoM as a way provide some guarantees is nice provided there is not a speed penalty.</p><p>I also thought, &ldquo;You know, why not use a Struct instead of a Class to wrap the value? Using a Struct means the reference to the array will be on the stack, right? That should save you chasing a reference before getting to the array.&rdquo; Rather than assuming that was the case I decided to put together a test using <a href=https://github.com/dotnet/BenchmarkDotNet target=_blank rel="noopener noreffer">BenchmarkDotNet</a> to verify my assumption was correct.</p><h2 id=the-setup>The Setup</h2><p>The first thing I need to do is define a Struct for wrapping my <code>array</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=o>[&lt;</span><span class=n>Struct</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>StructWrapper</span><span class=o>&lt;[&lt;</span><span class=n>Measure</span><span class=o>&gt;]</span> <span class=k>&#39;</span><span class=n>Measure</span><span class=o>,</span> <span class=k>&#39;</span><span class=n>Value</span><span class=o>&gt;</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>val</span> <span class=n>Values</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Value</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>new</span> <span class=o>(</span><span class=n>values</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Value</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Values</span> <span class=o>=</span> <span class=n>values</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=k>inline</span> <span class=n>this</span><span class=o>.</span><span class=n>Item</span>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=k>inline</span> <span class=n>get</span> <span class=o>(</span><span class=n>idx</span><span class=o>:</span> <span class=n>int</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Measure</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=n>this</span><span class=o>.</span><span class=n>Values</span><span class=o>[</span><span class=n>int</span> <span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>this</span><span class=p>.</span><span class=nf>Length</span> <span class=o>=</span> 
+</span></span><span class=line><span class=cl>        <span class=nn>LanguagePrimitives</span><span class=p>.</span><span class=n>Int32WithMeasure</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>Measure</span><span class=o>&gt;</span> <span class=n>this</span><span class=o>.</span><span class=n>Values</span><span class=o>.</span><span class=n>Length</span>
+</span></span></code></pre></td></tr></table></div></div><p>Then I setup some test data. I typically am working with small arrays so I&rsquo;m just going to be summing up the values from <code>1.0</code> to <code>100.0</code> and I&rsquo;ll perform that <code>100,000</code> times. I create my three different types for my testing.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>iterations</span> <span class=o>=</span> <span class=n>100_000</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>numberCount</span> <span class=o>=</span> <span class=n>100</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>rawArray</span> <span class=o>=</span> <span class=o>[|</span><span class=n>1</span><span class=o>.</span><span class=n>0</span> <span class=o>..</span> <span class=o>(</span><span class=kt>float</span> <span class=n>numberCount</span><span class=o>)|]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>classWrapper</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>   <span class=o>[|</span><span class=n>1</span><span class=o>.</span><span class=n>0</span> <span class=o>..</span> <span class=o>(</span><span class=kt>float</span> <span class=n>numberCount</span><span class=o>)|]</span> 
+</span></span><span class=line><span class=cl>   <span class=o>|&gt;</span> <span class=n>ClassWrapper</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>,</span> <span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>structWrapper</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>[|</span><span class=n>1</span><span class=o>.</span><span class=n>0</span> <span class=o>..</span> <span class=o>(</span><span class=kt>float</span> <span class=n>numberCount</span><span class=o>)|]</span> 
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=n>StructWrapper</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>,</span> <span class=o>_&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Alright, data prepared, time to create some tests. I open the namespaces I need from BenchmarkDotNet and create my <code>Benchmark</code> class. I create three tests to see which approach is faster. I’m assuming that the raw array is the absolute limit (short of SIMD).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>RawArray</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>iterationIdx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>iterationIdx</span> <span class=o>&lt;</span> <span class=n>iterations</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>rawArray</span><span class=o>.</span><span class=n>Length</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>len</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>                <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>result</span> <span class=o>+</span> <span class=n>rawArray</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>                <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>                
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span> <span class=c1>// Reset
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=n>iterationIdx</span> <span class=o>&lt;-</span> <span class=n>iterationIdx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>ClassWrapper</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>iterationIdx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>iterationIdx</span> <span class=o>&lt;</span> <span class=n>iterations</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>classWrapper</span><span class=o>.</span><span class=n>Length</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>len</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>                <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>result</span> <span class=o>+</span> <span class=n>classWrapper</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>                <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>                
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span> <span class=c1>// Reset
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=n>iterationIdx</span> <span class=o>&lt;-</span> <span class=n>iterationIdx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>StructWrapper</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>iterationIdx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>iterationIdx</span> <span class=o>&lt;</span> <span class=n>iterations</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>structWrapper</span><span class=o>.</span><span class=n>Length</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>len</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>                <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>result</span> <span class=o>+</span> <span class=n>structWrapper</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>                <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span><span class=o>&lt;</span><span class=n>ItemIdx</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>                
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>0</span><span class=o>.</span><span class=n>0</span> <span class=c1>// Reset
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=n>iterationIdx</span> <span class=o>&lt;-</span> <span class=n>iterationIdx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>I run the benchmarks and get an unexpected result.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>RawArray</td><td style=text-align:right>6.434 ms</td><td style=text-align:right>0.1241 ms</td><td style=text-align:right>0.1100 ms</td></tr><tr><td>ClassWrapper</td><td style=text-align:right>6.969 ms</td><td style=text-align:right>0.1177 ms</td><td style=text-align:right>0.1101 ms</td></tr><tr><td>StructWrapper</td><td style=text-align:right>23.983 ms</td><td style=text-align:right>0.2800 ms</td><td style=text-align:right>0.2619 ms</td></tr></tbody></table><p>I am shocked that the <code>StructWrapper</code> performed so much more poorly that either the <code>RawArray</code> or <code>ClassWrapper</code>. This does not make any sense to me. If anything, <code>StructWrapper</code> should be faster than <code>ClassWrapper</code> but these numbers aren&rsquo;t lying. The .NET Runtime has some special optimizations it can perform for Struct. In .NET 6.0 this includes keeping the values of the struct in the registers. You can check out the work <a href=https://github.com/dotnet/runtime/issues/43867 target=_blank rel="noopener noreffer">here</a></p><h2 id=the-fix>The Fix</h2><p>I go to StackOverflow and Twitter to see if anyone had insight into what is going on. Upon the recommendation of <a href=https://twitter.com/_cartermp target=_blank rel="noopener noreffer">Phillip Carter</a> I move the code for generating the test data to inside the <code>Benchmark</code> class. When I do this, I get these results.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>InternalRawArray</td><td style=text-align:right>5.788 ms</td><td style=text-align:right>0.0241 ms</td><td style=text-align:right>0.0225 ms</td></tr><tr><td>InternalClassWrapper</td><td style=text-align:right>5.983 ms</td><td style=text-align:right>0.0174 ms</td><td style=text-align:right>0.0154 ms</td></tr><tr><td>InternalStructWrapper</td><td style=text-align:right>5.980 ms</td><td style=text-align:right>0.0423 ms</td><td style=text-align:right>0.0396 ms</td></tr></tbody></table><p>Now the performance is roughly equivalent. Apparently, there are some gotchas with the BenchmarkDotNet library and F# modules. I go ahead and define some additional types for wrapping an <code>array</code>. I wrap an <code>array</code> using a Record and a Record with the <code>[&lt;Struct>]</code> attribute. I create tests where the data is defined inside the <code>Benchmark</code> class and tests where the data is defined in a separate module. Here is what I ended up finding.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>InternalRawArray</td><td style=text-align:right>5.839 ms</td><td style=text-align:right>0.0517 ms</td><td style=text-align:right>0.0431 ms</td></tr><tr><td>ExternalRawArray</td><td style=text-align:right>6.537 ms</td><td style=text-align:right>0.0429 ms</td><td style=text-align:right>0.0401 ms</td></tr><tr><td>InternalClassWrapper</td><td style=text-align:right>5.866 ms</td><td style=text-align:right>0.0183 ms</td><td style=text-align:right>0.0203 ms</td></tr><tr><td>ExternalClassWrapper</td><td style=text-align:right>6.903 ms</td><td style=text-align:right>0.0734 ms</td><td style=text-align:right>0.0686 ms</td></tr><tr><td>InternalStructWrapper</td><td style=text-align:right>6.032 ms</td><td style=text-align:right>0.0933 ms</td><td style=text-align:right>0.0827 ms</td></tr><tr><td>ExternalStructWrapper</td><td style=text-align:right>21.042 ms</td><td style=text-align:right>0.0932 ms</td><td style=text-align:right>0.0826 ms</td></tr><tr><td>InternalRecordApproach</td><td style=text-align:right>5.920 ms</td><td style=text-align:right>0.0728 ms</td><td style=text-align:right>0.0608 ms</td></tr><tr><td>ExternalRecordApproach</td><td style=text-align:right>6.899 ms</td><td style=text-align:right>0.0760 ms</td><td style=text-align:right>0.0674 ms</td></tr><tr><td>InternalStructRecordApproach</td><td style=text-align:right>5.899 ms</td><td style=text-align:right>0.0947 ms</td><td style=text-align:right>0.1297 ms</td></tr><tr><td>ExternalStructRecordApproach</td><td style=text-align:right>5.841 ms</td><td style=text-align:right>0.0576 ms</td><td style=text-align:right>0.0450 ms</td></tr></tbody></table><p>As you can see, I stumbled upon what appears to be a single outlier. You can also see that across the board the tests that are operating on data defined inside the <code>Benchmark</code> class outperform those where the data is defined externally. The only exception is the Struct Record but the difference in means is withen the noise of the tests. I think it&rsquo;s important for an F# developer whose looking for performance to be aware that where data is declared can affect your benchmarks and could lead to incorrect conclusions. The guidance I received from Phillip was to declare the data in the <code>Benchmark</code> class. <a href=https://twitter.com/badamczewski01 target=_blank rel="noopener noreffer">Bartosz Adamczewski</a> recommends writing the library code in F# and the benchmarks in C#. This makes sense as I believe the BenchmarkDotNet library considers the C# use case primarily.</p><p>If you would like to see the full set of tests you can check out the repo <a href=https://github.com/matthewcrews/UnitsOfMeasureIndexArray target=_blank rel="noopener noreffer">here</a>. Until next time, stay safe out there and have fun with your benchmarking!</p><p>Please send me an email at <a href=mailto:matthewcrews@gmail.com rel>matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p><script>window.mootrack||!function(e,t,n,s,o){function i(e){var s,o=~~(Date.now()/3e5),t=document.createElement(n);t.async=!0,t.src=e+"?ts="+o,s=document.getElementsByTagName(n)[0],s.parentNode.insertBefore(t,s)}e.MooTrackerObject=o,e[o]=e[o]||function(){return e[o].q?void e[o].q.push(arguments):void(e[o].q=[arguments])},window.attachEvent?window.attachEvent("onload",i.bind(this,s)):window.addEventListener("load",i.bind(this,s),!1)}(window,document,"script","https://cdn.stat-track.com/statics/moosend-tracking.min.js","mootrack"),mootrack("loadForm","b498d29aaba84b5bb3e0479003dc7264")</script><div data-mooform-id=b498d29a-aba8-4b5b-b3e0-479003dc7264></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></div></div></main><footer class=footer><div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2019 - 2022</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=matthewcrews.com target=_blank>Matthew Crews</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/copy-tex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/mhchem.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"en",pageSize:10,placeholder:"Your comment ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!0,left:"\\begin{equation}",right:"\\end{equation}"},{display:!0,left:"\\begin{equation*}",right:"\\end{equation*}"},{display:!0,left:"\\begin{align}",right:"\\end{align}"},{display:!0,left:"\\begin{align*}",right:"\\end{align*}"},{display:!0,left:"\\begin{alignat}",right:"\\end{alignat}"},{display:!0,left:"\\begin{alignat*}",right:"\\end{alignat*}"},{display:!0,left:"\\begin{gather}",right:"\\end{gather}"},{display:!0,left:"\\begin{CD}",right:"\\end{CD}"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.en",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"No results found",snippetLength:30,type:"algolia"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>

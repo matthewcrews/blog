@@ -1,0 +1,39 @@
+# Resources for Linear Programming
+
+
+I was recently asked about what resources I would recommend for Linear Programming. My response was, "Are you interested in problem formulation? Solution techniques? Algorithmic implementation?" The answer was, "Yes!" Here are the resources that I would recommend for those wanting to dive deep into Linear Programming (LP). Note, I will be focusing strictly on LP instead of Mixed-Integer Programming (MIP). MIP is a logical evolution of LP but brings in a whole host of other challenges. LP is the foundation for any MIP solver, so it is worth starting with LP.
+
+## Formulation
+
+I believe the foundation of Linear Programming begins with model formulation. Many textbooks start with Simplex Algorithm and explain how it works. I believe this is backwards. As a practitioner, I spend little time implementing the Simplex Algorithm and all of my time on writing models. Therefore, I believe understanding what kinds of problems can be modeled with LP should be where someone starts. I have found no better book for this than [Model Building in Mathematical Programming](https://read.amazon.com/kp/embed?asin=B00B8Y6MIG&preview=newtab&linkCode=kpe&ref_=cm_sw_r_kb_dp_C1XK0D6FPDQXY9AP603E) by H. Paul Williams. It does a fantastic job of talking through real world problems and explaining how to model them. I have referred to this book more than any other in my time actually "doing" Linear Programming.
+
+Another great intro book would be [An Illustrated Guide to Linear Programming](https://www.amazon.com/Illustrated-Guide-Linear-Programming/dp/0486262588/) by Saul I. Gass. This is possibly the gentlest introduction to the subject outside of a workshop. It is short, sweet, and to point. The example problems are straightforward and easy to follow. As the title suggests, there are lots of illustrations. Saul is trying to make the tool of LP as approachable as possible.
+
+## Solution Techniques
+
+I think of the workflow around Mathematical Planning as being like writing queries for a database. You can use a database if you can write a query for it, typically in SQL. You don't have to understand the internals of how a database works to get tremendous value out of it. In the same way, you can derive significant value from Mathematical Planning without needing to understand how a Solver works.
+
+For the curious though, it's fun to understand how things work. Modern LP Solvers are miracles of engineering and the math behind them is still comprehensible for someone with a background in Linear Algebra. If you want to understand the variety of ways that LPs can be solved I would recommend [Linear Programming](https://www.amazon.com/Linear-Programming-Books-Mathematical-Sciences/dp/0716715872/) by Vasek Chvatal and [Introduction to Linear Optimization](https://www.amazon.com/Introduction-Linear-Optimization-Scientific-Computation/dp/1886529191/) by Dimitris Bertsimas and John N. Tsitsiklis. I have gotten more out of Chvatal's book, but it is rarer and more difficult to get ahold of. You may need to search around for a good price on it. It's worth it if you can though. There are nuances covered in it that I haven't found in any other textbook.
+
+I also offered up “Introduction to Linear Optimization” as an easier book to get ahold of. It covers much of the same material, but I found their pseudocode a little more difficult to follow. I eventually got it, but it was a struggle at times. This is in part due to multiple ways of stating the Linear Programming problem. Every book claims they are presenting the "standard form" of the problem. This is not true. There is no "standard form". Standard Form only exists within a given book. I would often keep notes for each book on what they meant by "standard form".
+
+## Algorithmic Implementation
+
+We've offered some resources on formulation and solution techniques, but what about actually building a solver? First, I would suggest against it unless your motivation is purely out of curiosity. Solvers are complex and there are many edge cases that you must deal with.
+
+Let's say you are committed to the task though and you really wanted to write one. First, make sure you grasp the resources in the previous sections. Chvatal's book has some refinements on the Simplex and Dual Simplex that will be critical if you want to write a high-performance solver.
+
+One book that I have really enjoyed that explicitly focuses on writing a LP Solver is [Computational Techniques of the Simplex Method](https://www.amazon.com/Computational-Techniques-International-Operations-Management/dp/1402073321/) by Istvan Maros. Unfortunately, it is expensive. You could probably get away without this one, but I found it useful for finding the appropriate research papers. When I was at university it was available as a PDF from the library. When I left university, I bought a copy once I had some extra cash for books.
+
+If you plan on writing a solver, you will be doing an enormous amount of sparse linear algebra. Almost all real-world problems involve sparse, if not hyper-sparse, matrices. A fast solver must take advantage of the sparsity of the data. The best resource I have found is [Direct Methods for Sparse Linear Systems](https://www.amazon.com/Direct-Methods-Systems-Fundamentals-Algorithms/dp/0898716136/) by Timothy Davis. You can even find Dr. Davis's lectures on [YouTube](https://www.youtube.com/playlist?list=PL5EvFKC69QIyRLFuxWRnH6hIw6e1-bBXB). The example code is all in C but if you have come this far, understanding C will not be much of an obstacle for you.
+
+Alright, I may have saved the best for last. Dr. Robert Bixby is one of the founders of [Gurobi](https://www.gurobi.com/) and the first author of [CPLEX](https://en.wikipedia.org/wiki/CPLEX). He's a bit of a legend when it comes to writing LP solvers. I randomly came across a lecture he gave on how to implement a high-quality LP solver on YouTube. It's three parts and if you are serious about writing a solver, they are gold. You can find the videos here: [Part1](https://www.youtube.com/watch?v=z1xvqwQR6xU), [Part2](https://www.youtube.com/watch?v=ZNf84y4M-Dw), and [Part3](https://www.youtube.com/watch?v=uccbVoamiUM). These are extremely valuable in giving you an overview of what it takes to write a good solver and where the big pain points are. You will come to admire the amazing engineering that has gone into modern solvers.
+
+## Wrap Up
+
+So that's what I would recommend. I know that was a lot of books but that's where the resources are for understanding LP. To go deeper you will need to start diving into research papers. This blog will also continue to feature modeling examples. I took a short break from blogging as I was changing jobs, but I am picking it back up again. You will see plenty of examples on how to formulate problems on this blog.
+
+Please send me an email at matthewcrews@gmail.com if you have any questions and subscribe so you can stay on top new posts and products I am offering.
+
+{{<subscribe>}}
+

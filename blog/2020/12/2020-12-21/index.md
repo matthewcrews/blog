@@ -1,0 +1,185 @@
+# Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 2
+
+
+In a [previous post](/blog/2020/12/2020-12-14/) we discussed the problem of stocking our food cart to maximize our profitability. We created a simple heuristic and then performed simulations to evaluate the expected profitability. We discussed that knowing the expected profitability was not enough, we calculated Confidence Intervals to understand the where the true expected profitability lies. This week we want to find a better plan for packing the food cart. We will use Mathematical Planning to find an answer which maximize the expected profitability which outperforms the heuristic used in the first post.
+
+> **Note:** To see all the code for this post, go [here](https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-14-FoodCartSeries/2020-12-17-Part2.fs)
+
+## The Probability of Selling
+
+> **Math Warning:** I like to explain the math behind how we calculate the probablility of us selling items. If you would like to skip the math, feel free to jump to the next [section](/blog/2020/12/2020-12-21/#applying-to-food-cart-problem)
+
+There's a nuance to this problem that the heuristic from the previous post did not take into consideration. We know that the number of sales of a food can be modeled by a [Poisson Distribution](https://en.wikipedia.org/wiki/Poisson_distribution). The Poisson Distribution takes a single parameter, $\lambda$, which is the average arrival rate of a process. In our case, the "process" is people placing orders for a given food. Our historical data shows that the average daily demand for food is 600 burgers, 900 pizzas, and 700 tacos.
+
+|    | Burger | Pizza | Taco |
+|----|--------|-------|------|
+| Average Demand | $600.0 \frac{\text{item}}{\text{day}}$ | $900.0 \frac{\text{item}}{\text{day}}$ | $700.0 \frac{\text{item}}{\text{day}}$ |
+
+Why do we care about this? Why do we care that the demand is actually a Poisson Distribution? Let's perform a thought experiment. What are the odds that we sell at least 1 pizza in a day? Essentially 100%, right? What about 2 pizzas? Still 100% but maybe infinitesimally smaller. What are the odds of us selling 900 pizzas? Well, ~50% because historically we have seen that is the average demand. On rare days we will only sell 800 pizzas and on some we may sell over 1,000 if we do not run out of inventory. We can use the Poisson Distribution to calculate the odds of us selling a particular number of pizzas on any given day. Before we go any farther, lets plot the distribution of pizza demand between 800 and 1,000.
+
+![Pizza Demand Distribution](/img/2020-12-21-demand-distribution.png)
+
+You notice that the peak is at 900 which is what we expect since that is the average. Visually we can tell that the probability of demand being between 850 and 950 is high but drops off rapidly at the tails.
+
+We need to figure out how to use this information to help us find the ideal number of each food we should pack. What would be really useful is being able to calculate what the probability is of us completely selling our inventory. If we pack 950 pizzas, how likely are we to sell through all of them? We would rather not waste space on foods that are not going to sell. We need a function which allows us to calculate the probability of demand exceeding some value of $x$. In math terms we would write:
+
+$$
+P(demand > x)
+$$
+
+One the ingredients for this calculation is called the Cumulative Distribution Function (CDF). The CDF for the Poisson Distribution is:
+
+$$
+\text{CDF}(x) = P(X \le x) = \frac{\Gamma(x + 1,\  \lambda)}{\lfloor x \rfloor !} \qquad \qquad x = 0,1,2 , \ldots
+$$
+
+That's some scary looking math so let's unpack what this means. The function $F(x)$ calculates the probability of a random observation from our Poisson Distribution being less than or equal to the value of $x$. In our case, $x$ is the number of servings we pack of a food.
+
+The CDF isn't quite what we need. What we want is to know the probability of demand **exceeding** $x$, not being less or equal to $x$. It is pretty simple to adjust the formula though. The probability of demand being greater than $x$ is equal to 1.0 minus the probability of demand being less than $x$
+
+$$
+P(demand > x) = 1 - P(demand \leq x)
+$$
+
+We can swap in our CDF for the Poisson distribution to get a new formula which allows us to calculate the demand exceeding $x$.
+
+$$
+P(demand > x) = 1 - \frac{\Gamma(x + 1,\  \lambda)}{\lfloor x \rfloor !}
+$$
+
+Fortunately, the `MathNET` library includes a function for calculating these values so we will not need to worry about implementing them.
+
+## Applying to Food Cart Problem
+
+How do we apply this to the food cart problem? Let's say we want to know the odds of us being able to sell at least 800 pizzas. We can plug the value into the function, and we get a probability of 99.963% chance of demand exceeding 800. We can also put 1,000 in and find that there is only a 0.049% chance of demand for pizza being that high.
+
+We will use this in our objective function. We want to maximize the expected revenue so we will weight the revenue we receive for an item by the probability that we actually sell it. This means that the revenue we receive for the $n^\text{th}$ item of a given food will be multiplied by the probability that demand meets are exceeds that amount. This gives us the following formula for expected revenue.
+
+$$
+\text{Expected Revenue} = \sum_{f \in food}\sum_{n} P(\text{demand} \ge n) * \text{Revenue}_{f}
+$$
+
+We are using the same domain as in the previous post and we will be extending it. Let's write a function which will gives us the probabilities of selling the $n^\text{th}$ number of a food. To keep track of the $n^\text{th}$ item we are going to add a new type to our domain.
+
+```fsharp
+type NthItem = NthItem of int
+```
+
+Now we create the function which calculates the probabilites for a given food for 1 item up to some max number of items.
+
+```fsharp
+let createIncrementProbability
+    (foodDemands: seq<Food * DemandRate>)
+    (maxItems: int) =
+
+    seq {
+        for (food, DemandRate demandRate) in foodDemands do
+            for i in 1..maxItems ->
+                let probability =  1.0 - (Poisson.CDF (demandRate - 1.0, (float i)))
+                (food, NthItem i), probability
+    } |> SMap2
+```
+
+The `createIncrementProbability` function takes in a sequence of `Food * DemandRate` tuples for which we will generate probabilities. `Food` is a type we are using to represent burger, pizza, or taco. The `DemandRate` type represents the average daily demand for a food.
+
+For each food, we calculate the probability of demand meeting or exceeding the values from 1 to `maxItems`. `maxItems` is the maximum quantity of a given food we would consider packing into our food cart. We store this data in a `SMap2` for ease use in our model formulation.
+
+We now create a function for building a model for our problem. Let's call it `create` and have it take all the arguments we will need for our model.
+
+```fsharp
+let create 
+    (revenue: SMap<Food, float<USD/serving>>)
+    (storage: SMap<Food, float<cm^3/serving>>)
+    (fridgeSpace: SMap<Food, float<cm^3/serving>>)
+    (weight: SMap<Food, float<gm/serving>>)
+    (incrementProbability: SMap2<Food, NthItem, float>)
+    (packDecision: SMap2<Food, NthItem, Decision<serving>>)
+    (maxStorage: float<cm^3>)
+    (maxWeight: float<gm>)
+    (maxFridgeSpace: float<cm^3>) =
+```
+
+Parameter Definitions:
+
+* `revenue` is the amount of money we make when selling a particular `Food`
+* `storage` is the amount of pantry space required to pack a single serving
+* `fridgeSpace` is the amount of fridge space required to for a single serving
+* `weight` is the weight for a single serving of a food
+* `incrementProbability` is the probability of selling a particular quantity of a `Food`
+* `packDecision` is a 2-dimensional SliceMap indexed by `Food` and `NthItem`. `Food` will correspond to burger, pizza, or taco. `NthItem` is the index of particular food within the group. The $1^\text{st}$ pizza, the $2^\text{nd}$ pizza, the $3^\text{rd}$ pizza etc. The value stored in the SliceMap is a `Boolean` decision variable where 1 indicates that you should pack the food and 0 indicates that you should not.
+* `maxStorage` is the maximum amount of storage space
+* `maxweight` is the maxumum amount of weight that can be packed
+* `maxFridgeSpace` is the maximum amount of refrigerated storage
+
+From here creating our model is straightforward. We need to create a constraints for the available storage, weight, and fridge space. We take advantage of the `sum` function and [Hadamard Product](https://en.wikipedia.org/wiki/Hadamard_product_(matrices)) operator, `.*`, included in the `SliceMap` library to make the notation simple. The Hadamard Product is taking care of the joining of the data before multiplying the values.
+
+```fsharp
+let weightConstraint =
+    Constraint.create "MaxWeight" (sum (weight .* packDecision) <== maxWeight)
+
+let storageConstraint =
+    Constraint.create "MaxStorage" (sum (storage .* packDecision) <== maxStorage)
+
+let fridgeSpaceConstraint =
+    Constraint.create "MaxFridgeSpace" (sum (fridgeSpace .* packDecision) <== maxFridgeSpace)
+```
+
+Our objective function is the revenue adjusted for the probability of selling the number of items. We then use this expression to create an objective.
+
+```fsharp
+let revenueExpectation =
+    sum (revenue .* incrementProbability .* packDecision)
+
+let objective =
+    Objective.create "MaxRevenueExpectation" Maximize revenueExpectation
+```
+
+We bring all this together and create a model which is what the `create` function returns.
+
+```fsharp
+Model.create objective
+|> Model.addConstraint weightConstraint
+|> Model.addConstraint storageConstraint
+|> Model.addConstraint fridgeSpaceConstraint
+```
+
+Now we can calculate our probabilities, create decision variables, and use these functions to build the model and solve it.
+
+```fsharp
+let incrementProbabilities = PlanningModel.createIncrementProbability demandRates maxItems
+
+let packDecisions =
+    DecisionBuilder<serving> "Pack" {
+        for food in foods do
+            for increment in ([1 .. maxItems] |> List.map DemandLevel) ->
+                Boolean
+    } |> SMap2
+
+let planModel = PlanningModel.create revenue storage fridgeSpace weight incrementProbabilities packDecisions maxStorage maxWeight maxFridge
+
+let result = Solver.solve Settings.basic planModel
+```
+
+Let's compare the plan from the Heuristic in the last post to what the Optimization is recommending.
+
+|   | Burgers | Pizza | Taco | Storage Usage | Fridge Usage | Weight Usage |
+|---|---|---|---|---|---|---|
+| Heuristic | 0 | 900 | 466 | 40.93% | 62.10% | 99.96% |
+| Optimization | 572 | 355 | 669 | 42.43% | 70.86% | 100.00% |
+
+This is quite a different plan than what we saw before. The real test will come from performing the simulations with both plans and seeing which one ends up with a better expected revenue and tighter standard deviation. We perform 1M simulations of both plans and see the following.
+
+| Metric | Heuristic | Optimization |
+|---|---|---|
+| Revenue Mean ± (99% CI) | 2073.25 ± 0.07 | 2244.10 ± 0.03 |
+| Revenue Variance        | 776.27         | 110.34         |
+| Revenue StdDev          | 27.86          | 10.50          |
+
+The plan found by the optimization is providing an additional $171 in revenue but also has a lower Standard Deviation which means the revenue is more reliable. This is a fantastic result and shows how taking the randomness into account can yield superior results.
+
+## Next Steps
+
+This post showed that even a simple mathematical planning model can yield significant improvements over simple heuristics for decision making. By taking the variability of demand into account we were able to realize a higher average revenue but also a more reliable amount of revenue.
+
+In the next post we will introduce a simple Machine Learning model to make predictions about demand in the future. So far, we have only used the historical average of demand to create our plan. What if we took that data and instead created a model for predicting demand and then fed that into our Mathematical Planning model?
+

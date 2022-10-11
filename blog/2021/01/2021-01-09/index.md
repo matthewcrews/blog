@@ -1,0 +1,57 @@
+# Learning Resources for F#
+
+
+{{< youtube VSDn57oROC8 >}}
+
+One of the questions that I get quite a bit is, "How did you learn F#?" I keep getting this question, so I decided to write a short post where I laid out what I have found to be the most useful resources to develop my F# skills.
+
+## Practice
+
+This first piece of advice that I give to people is to choose an algorithm they already know and write it in F#. Don't try to learn a new concept and a new language at the same time. I am familiar with the Simulated Annealing algorithm, so I use it as my first algorithm that I try to write in any new language. The process of trying to write something you already know but in a new way is great for exposing your underlying presuppositions. It forces you out of your comfort zone and challenges you to rethink problems.
+
+## Books
+
+I, for one, love reading books. I enjoy having a physical copy of something that I can mark up with notes or put sticky notes into for quick reference. There is something about a person taking the time to organize their thoughts that creates a cohesive narrative. Each of these books are highly recommended. They are the foundation of all my F# understanding.
+
+### Get Programming With F#
+
+> Link: [Get Programing with F#](https://www.amazon.com/Get-Programming-guide-NET-developers/dp/1617293997)
+
+This is the first book I recommend to an experienced developer coming to F#. It does an excellent job of providing a comparison and contrast between C# and F#. I have found this is incredibly helpful in providing a bridge for developers coming to F#. I did not spend much time in other languages before learning F# so I had not developed many paradigms around Object-Oriented or procedural programming. I've seen people who have been steeped in OO struggle transitioning to functional style. This book provides some useful bridges between paradigms.
+
+### Stylish F#
+
+> Link: [Stylish F#](https://www.amazon.com/Stylish-Crafting-Elegant-Functional-Code/dp/1484239997)
+
+This is one of the most formative books for me. I knew how to write F# before reading this book but what this book did was help me understand why I was writing code in a particular way. Before this book, I kept writing code that felt clunky. It did the job, but it was not as clean and elegant as I would like. Kit provides some valuable insight into how to form F# code that is not only effective but delightful. I found that I enjoyed writing F# more after reading this book. This is the first book I recommend to new developers. If they ingest and absorb these principles, they will avoid many heartaches. This book really needs to be promoted more.
+
+### Domain Modeling Made Functional
+
+> Link: [Domain Modeling Made Functional](https://www.amazon.com/Domain-Modeling-Made-Functional-Domain-Driven/dp/1680502549)
+
+A must read for anyone really, but especially F# developers. There is a ridiculous amount of wisdom packed into these pages. Scott has spent years writing code and the lessons he shares in this book are incredible. I constantly try to instill new developers with the idea that abstractions are not just to hide details of implementation. A good abstraction provides a barrier around context. We often just think of an abstraction as obscuring the underlying implementation. Abstractions should also remove the need to be concerned about services adjacent to ours. I believe this is the idea of a bounded context and it is so critical for writing code that can be scaled, maintained, and reasoned about. Healthy systems having strong reasoning boundaries. Read this book, no matter what language you are writing.
+
+### Machine Learning Projects for .NET Developers
+
+> Link: [Machine Learning Projects for .NET Developers](https://www.amazon.com/Machine-Learning-Projects-NET-Developers/dp/1430267674)
+
+This one may be domain specific, but I recommend it to anyone who is wanting to understand how to translate algorithms to F#. What Mathias does in this book is implement ML algorithms from the ground up. Many other ML books simply tell you how to use an existing library. Mathias takes a different tactic and takes you behind the curtain and shows you how they are built. I think it really shows the elegance of F# for expressing algorithms. Highly recommended for someone interested in F#, ML, and algorithm implementation.
+
+## Blogs
+
+### F# for Fun and for Profit
+
+> [Link](https://fsharpforfunandprofit.com/)
+
+At some point, every F# developer finds their way to these hallowed halls. I haven't found an F# developer yet who hasn't mentioned Scott Wlaschin's blog when they describe their journey to F#. There is simply a cornucopia of knowledge in these pages. The only warning is that some of the content is old and may be out of style. I can't recommend this blog enough. Scott has poured his years of experience into these pages and it is a blessing to us developers following in his footsteps.
+
+### Mark Seemann's Blog
+
+> [Link](https://blog.ploeh.dk/)
+
+Mark has been speaking and teaching on functional programming for years. His blog is sure to inspire. I have had my mind regularly expanded reading through his posts. He has a way of reframing how you see the world which can fill you with awe. One of my best memories was sitting with him for an hour talking about programming as art. He is a deep thinker and how you think about code will be expanded if you spend any amount of time on his blog.
+
+Please send me an email at matthewcrews@gmail.com if you have any questions and subscribe so you can stay on top new posts and products I am offering.
+
+{{<subscribe>}}
+

@@ -1,0 +1,280 @@
+# Maximizing Profitability of Inventory with Mathematical Planning and Machine Learning in F# - Part 1
+
+
+One of the questions that I love to answer is, "What is the difference between Mathematical Planning and Machine Learning?" This is an excellent question. The fields are close to one another and solutions often involve both techniques. The way I differentiate is based on what question they are meant to answer. Mathematical Planning is primarily concerned with answering the question, "What should we do?" Machine Learning answers the question, "What is most likely?" We often ask these questions at the same time which is why the techniques can become conflated.
+
+I want to provide an example of a real-world problem that involves the marriage of these two techniques. Due to the amount of material to cover, I decided to break it into several posts. This first post will setup the problem, the Food Cart Packing Problem, and go over the tools we will use to evaluate the quality of different strategies. In the next post we will formulate a Mathematical Planning model to find a better strategy than the simple heuristic we start within this post. Finally, we will implement a Machine Learning model to make predictions on demand trends and feed that into the Mathematical Planning model for even more profitable strategies.
+
+> **Note:** To see all the code for this post, go [here](https://github.com/matthewcrews/modelmondays/blob/main/ModelMonday/2020-12-14-FoodCartSeries/2020-12-14-Part1.fs)
+
+## The Food Cart Problem
+
+An example problem that I frequently use is the Food Cart Problem. It is easy for people to conceptualize so we can focus on the techniques. We are running a Food Cart and we want to know what items to pack at the beginning of the day to maximize our revenue. In this case we sell Burgers, Pizza, and Tacos (it's an eclectic food cart). Each food takes up a certain amount of pantry space, fridge space, and weight. Our food cart has recently been downsized so we must be purposeful about what we pack. We have kept track of how much we sell each day when we didn't used to run out of inventory.
+
+We decide to start with a simple heuristic. On average, we sell 600 Burgers per day, 900 pizzas, and 700 tacos when we have excess inventory. Due to the downsize we are more restricted on space. We only have $3.0 m^3$ of storage, $2.0 m^3$ of fridge space, and can only carry $1,000 kg$ of weight. We have our same parking spot, so we expect to see the same demand.
+
+Below is a breakdown of the space and weight requirements per serving of the food we provide.
+
+|    | Burger | Pizza | Taco | Available |
+|----|--------|-------|------|---|
+| Storage Space | $700.0 cm^3$ | $950.0 cm^3$ | $800.0 cm^3$ | $3.0 m^3$ |
+| Fridge Space | $900.0 cm^3$ | $940.0 cm^3$ | $850.0 cm^3$ | $2.0 m^3$ |
+| Weight Capacity | $550.0 gm$ | $800.0 gm$ | $600.0 gm$ | $1,000 kg$ |
+
+## A Simple Heuristic
+
+We decide to prioritize pizza because it makes the most money, then tacos, then burgers. We pack for 900 pizza orders because that's the average demand. With the remaining space, we pack tacos until we meet the average daily demand. If there is any room leftover, we will pack some burgers. Given the dimensions of our food, the result comes to 900 pizzas, 466 tacos, and 0 burgers. This makes sense to us since we have much less space than we did before, and we thought we may have to drop a food item from the menu. If we run the numbers, we expect to make $2,668.50 per day... or do we?
+
+The important nuance to this problem is that this plan was made using the average demand. Half of the time the demand is higher, half of the time the demand is lower. On days where the demand for pizza is greater than 900, we would not be able to capture that additional revenue anymore because we do not have enough inventory. At the same time, when the demand for pizza is below 900, we lose out on the possibility we could have sold more of other foods had they been in stock. We would like to get some idea of what the actual revenue value we should expect. Fortunately there is a tool for this, [Monte Carlo Simulation](https://en.wikipedia.org/wiki/Monte_Carlo_method).
+
+## Monte Carlo Simulation
+
+Monte Carlo simulation is conceptually simple, you can get an idea for the shape of a distribution (in our case expected revenue) by sampling from it many times and then computing descriptive statistics. Our hope is to find what the average revenue is expected to be.
+
+> **Note**: I encourage people to read up on Monte Carlo. I do not have the space here to provide an exhaustive explanation. To my Statistician readers, I know I am glossing over details. I am trying to provide an engaging example without intimidating readers with mathematical rigor.
+
+Now, if you can remember your course on probability distributions, you may remember that the arrival rate of customers can be modeled by a [Poisson Distribution](https://en.wikipedia.org/wiki/Poisson_distribution). We will assume that this is a valid distribution to model the demand that we see at our food cart. Part of what makes this distribution easy to work with is that it takes a single parameter, $\lambda$. The $\lambda$ is easy to calculate, it is the mean of the data. Therefore, we say that pizza demand is a Poisson distribution with a $\lambda$ of 900.0 or in math notation:
+
+$$\text{PizzaDemand} \sim Poisson(\lambda = 900 )$$
+
+$\lambda$ can be thought of as the average rate of arrivals or in our case the overage number of orders in a day for a given food.
+
+Now we need to do some domain modeling and setup our little simulation. We will start with some types to describe our domain.
+
+
+```fsharp
+type Food = Food of string
+type Lambda = Lambda of float
+```
+
+The `Food` type differentiates between which food item we are referring to. The `Lambda` is the average demand we have observed and is the input for our Poisson distributions. We will use Units of Measure to track the units in our calculations. This will protect us from making silly conversion errors.
+
+```fsharp
+[<Measure>] type USD
+[<Measure>] type cm
+[<Measure>] type gm
+[<Measure>] type serving
+```
+
+`USD` stands for United States Dollars. `cm` and `gm` are the SI units for volume and mass. The `serving` measure is for the quantity of servings we are packing. We will be using the `Math.NET` library for performing calculations with distributions. We need a function for taking a plan and generating a random outcome for our revenue model. We will call this function many, many times to get an idea of the distribution of revenue.
+
+```fsharp
+let sample 
+    (foodDemands: seq<Food * Lambda>)
+    (revenue: SMap<Food, float<USD/serving>>)
+    (plan: Map<Food, float<serving>>)
+    (rng: System.Random) =
+    
+    let evaluteSoldQuantity planAmount (Lambda lambda) rng =
+        // Generate a random sample from the Poisson distribution and take the lesser
+        // of the planned inventory or of the random Demand value that was generated
+        let actualQuantity = Math.Min (float planAmount, Sample.poisson lambda rng |> float)
+        // Multiply by 1.0<serving> to get the correct units on the result
+        actualQuantity * 1.0<serving>
+
+    foodDemands
+    |> Seq.map (fun (food, demandRate) -> food, (evaluteSoldQuantity plan[food] demandRate rng))
+    |> Seq.sumBy (fun (food, soldQuantity) -> soldQuantity * revenue[food])
+```
+
+What `sample` does is take the plan and perform a single simulation. It generates a random demand value for the given food and compares that to what we planned to have in inventory. It takes the lesser of our planned quantity or the random demand that was generated which becomes the actual amount sold. It takes the quantity of each food that was sold and multiplies it by the revenue of the food. It sums this across all the foods which gives us our revenue for that single simulation. 
+
+`sample` performs a single simulation. We need to run many to calculate statistics on the results. We create an `evaluate` function which will call the `sample` function many times and gather the results. `evaluate` then computes the descriptive statistics and the revenues that were generated in our simulations.
+
+```fsharp
+let evalute 
+    (foodDemands: seq<Food * DemandRate>)
+    (revenue: SMap<Food, float<USD/serving>>)
+    (plan: Map<Food, float<serving>>)
+    (rng: System.Random)
+    (numberSamples: int) =
+
+    let samples =
+        seq {
+            for _ in 1..numberSamples ->
+                sample foodDemands revenue plan rng
+                |> float
+        } |> Array.ofSeq
+
+    DescriptiveStatistics samples
+```
+
+We provide an argument to `evaluate` called `numberSamples` which controls the number of simulations that we perform. `DescriptiveStatistics` from `Math.NET` allows us to compute the descriptive statistics. This provides us with the sample mean, variance, and standard deviation.
+
+## Evaluating Our Simple Heuristic
+
+Now that we have the ability to simulate the effects of different plans on our revenue, let’s see how well our simple heuristic does. First, we define the data for the parameters of our model.
+
+```fsharp
+let burger = Food "Burger"
+let pizza = Food "Pizza"
+let taco = Food "Taco"
+
+let foods =
+    [
+        burger
+        pizza
+        taco
+    ]
+
+let revenue = 
+    [
+        burger, 1.3<USD/serving>
+        pizza,  1.6<USD/serving>
+        taco,   1.4<USD/serving>
+    ] |> SMap
+
+let storage =
+    [
+        burger, 700.0<cm^3/serving>
+        pizza,  950.0<cm^3/serving>
+        taco,   800.0<cm^3/serving>
+    ] |> SMap
+
+let fridgeSpace =
+    [
+        burger, 900.0<cm^3/serving>
+        pizza,  940.0<cm^3/serving>
+        taco,   850.0<cm^3/serving>
+    ] |> SMap
+
+let weight =
+    [
+        burger, 550.0<gm/serving>
+        pizza,  800.0<gm/serving>
+        taco,   600.0<gm/serving>
+    ] |> SMap
+
+let demandRates =
+    [
+        burger, DemandRate 600.0
+        pizza,  DemandRate 900.0
+        taco,   DemandRate 700.0
+    ]
+
+let maxItems = 1_000
+let maxWeight = 1_000_000.0<gm>
+let maxStorage = 3_000_000.0<cm^3>
+let maxFridge = 2_000_000.0<cm^3>
+```
+
+We then define some functions which implement our simple heuristic for prioritizing pizza, then tacos, then burgers.
+
+```fsharp
+// A function to call Math.Floor on floats with Units of Measure
+let floor (x: float<'Measure>) =
+    Math.Floor (float x)
+    |> FSharp.Core.LanguagePrimitives.FloatWithMeasure<'Measure>
+
+// A function to call Math.Min on floats with Units of Measure
+let min (a: float<'Measure>, b: float<'Measure>) =
+    Math.Min (float a, float b)
+    |> FSharp.Core.LanguagePrimitives.FloatWithMeasure<'Measure>
+
+
+// We packe the average daily demand of pizzas
+let pizzaQuantity = 900.0<serving>
+
+let tacoQuantity =
+    // The number of possible tacos based on space
+    let tacosBasedOnSpace =
+        List.min [
+            (maxStorage - (pizzaQuantity * storage[pizza])) / storage.[taco]
+            (maxFridge - (pizzaQuantity * fridgeSpace[pizza])) / fridgeSpace.[taco]
+            (maxWeight - (pizzaQuantity * weight[pizza])) / weight.[taco]
+        ] |> floor
+    // The min of taco demand and the space available
+    min (700.0<serving>, tacosBasedOnSpace)
+
+let burgerQuantity =
+    // The number of possible burgers based on space
+    let burgersBasedOnSpace =
+        List.min [
+            (maxStorage - (pizzaQuantity * storage[pizza]) - (tacoQuantity * storage[taco])) / storage[taco]
+            (maxFridge - (pizzaQuantity * fridgeSpace[pizza]) - (tacoQuantity * fridgeSpace[taco])) / fridgeSpace[taco]
+            (maxWeight - (pizzaQuantity * weight[pizza]) - (tacoQuantity * weight[taco])) / weight[taco]
+        ] |> floor
+    // The min of burgers demand and the space available
+    min (600.0<serving>, burgersBasedOnSpace)
+
+let plan =
+    [
+        burger, burgerQuantity
+        pizza, pizzaQuantity
+        taco, tacoQuantity
+    ] |> Map
+```
+
+Now let's analyze the result of performing 100 simulations and analyze the distribution of the revenue.
+
+```fsharp
+let rng = System.Random ()
+let stats_100Runs = Simulation.evalute demandRates revenue plan rng 100
+```
+
+I like to print things out in tables, and I am loving the `Spectre.Console` [project](https://github.com/spectresystems/spectre.console). Here is a table with the results of our simulations.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │
+├──────────────┼─────────┼──────────┼────────┤
+│ 100          │ 2075.50 │ 605.37   │ 24.60  │
+└──────────────┴─────────┴──────────┴────────┘
+```
+
+Now we need to ask a critical question, "How confident are we in the answer?" Our initial run shows that on average, we appear to make $2,075.50. What happens if we run this experiment again?
+
+```console
+┌──────────────┬─────────┬──────────┬────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │
+├──────────────┼─────────┼──────────┼────────┤
+│ 100          │ 2071.54 │ 926.30   │ 30.44  │
+└──────────────┴─────────┴──────────┴────────┘
+```
+
+We get a slightly different answer, \\$2,071.54. Well, this is interesting. Our numbers are making sense based on our earlier thought experiment. We are no longer carrying extra inventory, so we do not benefit from days where demand is exceptionally high. We would have to have excessive demand for pizza and tacos to sell everything and achieve a revenue of \\$2,668.50.
+
+What we need to focus on answering now is how well do we know the Mean, the expected revenue. Fortunately, there is a useful statistical tool called the [Confidence Interval](https://en.wikipedia.org/wiki/Confidence_interval). It allows us to put bounds on where we think the true expected revenue is. The formula for the Confidence Interval is:
+
+$$
+CI = \bar{x} \pm z \frac{s}{\sqrt{n}}
+$$
+
+The Confidence Interval ($CI$) is defined as a lower and upper bound. $\bar{x}$ is the average of the data, $s$ is the standard deviation, and $n$ is the number of samples that were taken. $z$ is a parameter you choose based on how confident you want to be that the true mean of the distribution is between the lower and upper bound. If we want to be 95% confident that the true average revenue is between the lower and upper bound, we will use a $z$ of 1.960. If we wanted to be 99% percent sure, we would use a $z$ of 2.567. If you would like to know where the values of $z$ are coming from, look up the t-distribution and t-distribution Confidence Intervals.
+
+> **Note:** For my stats friends. I am assuming that the error is normally distributed and has a mean of 0. Normally I would plot this to verify but the blog series is already turning into 3 posts, so I have to cut some details somewhere.
+
+Let's add the confidence interval for 95% and 99% to our output table and see what we get.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┬──────────────────┬──────────────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │ 95% CI           │ 99% CI           │
+├──────────────┼─────────┼──────────┼────────┼──────────────────┼──────────────────┤
+│ 100          │ 2064.35 │ 997.13   │ 31.58  │ 2058.16, 2070.54 │ 2056.25, 2072.46 │
+└──────────────┴─────────┴──────────┴────────┴──────────────────┴──────────────────┘
+```
+
+This gives us a much clearer understanding of what we can expect out of our revenue. This is how we should interpret these Confidence Intervals. There is a 95% probability that the true average revenue is between 2058.16 and 2070.54. There is a 99% probability that the true average revenue is between 2056.25 and 2072.46. Notice that the bounds of the 99% CI are wider than the 95% CI. The more confident we want to be that we have captured the true average revenue, the wider we must make the bounds.
+
+The average revenue of 2064.35 we observed in this most recent run is only the average of the data we simulated. It is more valuable to understand where the true revenue average actually is. Let's increase the number of simulations that we perform and see how that affects the Confidence Intervals.
+
+```console
+┌──────────────┬─────────┬──────────┬────────┬──────────────────┬──────────────────┐
+│ NumberOfRuns │ Mean    │ Variance │ StdDev │ 95% CI           │ 99% CI           │
+├──────────────┼─────────┼──────────┼────────┼──────────────────┼──────────────────┤
+│ 100          │ 2073.74 │ 735.74   │ 27.12  │ 2068.43, 2079.06 │ 2066.78, 2080.71 │
+│ 1,000        │ 2071.96 │ 895.10   │ 29.92  │ 2070.11, 2073.81 │ 2069.53, 2074.39 │
+│ 10,000       │ 2073.31 │ 776.40   │ 27.86  │ 2072.77, 2073.86 │ 2072.60, 2074.03 │
+│ 100,000      │ 2073.34 │ 773.98   │ 27.82  │ 2073.16, 2073.51 │ 2073.11, 2073.56 │
+│ 1,000,000    │ 2073.20 │ 778.17   │ 27.90  │ 2073.14, 2073.25 │ 2073.13, 2073.27 │
+└──────────────┴─────────┴──────────┴────────┴──────────────────┴──────────────────┘
+```
+
+We see that the mean, variance, and standard deviation are not changing significantly as we increase the number of simulations. What we do see though is that the Confidence Intervals are getting tighter. This is because as we gather more data, we become more confident of where the true average revenue is. We can see that by the time we get to 1,000,000 samples the CI for 95% is only 0.011 wide.
+
+Our model for revenue does not have many random variables so it shouldn't surprise us that it is easy to get a tight bound on the CIs. As models becomes larger with more random variables though, the number of iterations to achieve tight bound goes up significantly. There is a cost trade off. The tighter you want the bounds, the more computational effort that is required.
+
+## Next Steps
+
+We've covered quite a bit of ground in this post. We have introduced a new problem, the Food Cart Problem. We formulated a simple simulation which allows us to perform some statistical experiments to understand how good our simple heuristic is for packing the Food Cart. We also introduced the idea of a Confidence Interval for understanding how good our estimates are. Next time we will show how to use Mathematical Planning to find a better plan for packing the Food Cart that achieves a higher expected revenue which is also more reliable.
+

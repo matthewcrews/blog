@@ -1,0 +1,1193 @@
+<!doctype html><html lang=en><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><meta name=robots content="noodp"><title>Accelerating Dictionary Lookup with Records as Keys - Matthew Crews</title><meta name=Description content="Hugo theme - LoveIt"><meta property="og:title" content="Accelerating Dictionary Lookup with Records as Keys"><meta property="og:description" content="NOTE: All the code can be found here. Feel free to follow along!
+The Problem I ran into an interesting problem a week ago and I think others may find some value in it. I am currently working on writing a small Discrete-Event Simulation engine for a manufacturing facility. This problem required a bespoke solution since the current products that are available on the market are built with Modelers in mind and not deployment."><meta property="og:type" content="article"><meta property="og:url" content="https://matthewcrews.com/blog/2021/11/records-as-keys-for-dictionaries/"><meta property="og:image" content="https://matthewcrews.com/logo.png"><meta property="article:section" content="blog"><meta property="article:published_time" content="2021-11-13T00:00:00+00:00"><meta property="article:modified_time" content="2022-10-11T10:21:38-07:00"><meta property="og:site_name" content="Matthew Crews"><meta name=twitter:card content="summary_large_image"><meta name=twitter:image content="https://matthewcrews.com/logo.png"><meta name=twitter:title content="Accelerating Dictionary Lookup with Records as Keys"><meta name=twitter:description content="NOTE: All the code can be found here. Feel free to follow along!
+The Problem I ran into an interesting problem a week ago and I think others may find some value in it. I am currently working on writing a small Discrete-Event Simulation engine for a manufacturing facility. This problem required a bespoke solution since the current products that are available on the market are built with Modelers in mind and not deployment."><meta name=application-name content="Mathew Crews"><meta name=apple-mobile-web-app-title content="Mathew Crews"><meta name=theme-color content="#ffffff"><meta name=msapplication-TileColor content="#da532c"><link rel="shortcut icon" type=image/x-icon href=/favicon.ico><link rel=icon type=image/png sizes=32x32 href=/favicon-32x32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16x16.png><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png><link rel=mask-icon href=/safari-pinned-tab.svg color=#5bbad5><link rel=manifest href=/site.webmanifest><link rel=canonical href=https://matthewcrews.com/blog/2021/11/records-as-keys-for-dictionaries/><link rel=prev href=https://matthewcrews.com/blog/2021/08/slicemap-rework-part-2/><link rel=next href=https://matthewcrews.com/blog/2021/11/benchmarkdotnet-gotcha/><link rel=stylesheet href=/css/style.min.css><link rel=preload href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.1.1/css/all.min.css></noscript><link rel=preload href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css as=style onload='this.onload=null,this.rel="stylesheet"'><noscript><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css></noscript><script type=application/ld+json>{"@context":"http://schema.org","@type":"BlogPosting","headline":"Accelerating Dictionary Lookup with Records as Keys","inLanguage":"en","mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/matthewcrews.com\/blog\/2021\/11\/records-as-keys-for-dictionaries\/"},"image":[{"@type":"ImageObject","url":"https:\/\/matthewcrews.com\/images\/Apple-Devices-Preview.png","width":3200,"height":2048}],"genre":"blog","wordcount":7272,"url":"https:\/\/matthewcrews.com\/blog\/2021\/11\/records-as-keys-for-dictionaries\/","datePublished":"2021-11-13T00:00:00+00:00","dateModified":"2022-10-11T10:21:38-07:00","license":"This work is licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.","publisher":{"@type":"Organization","name":"xxxx","logo":"https:\/\/matthewcrews.com\/images\/fast_fsharp_avatar.png"},"author":{"@type":"Person","name":"Matthew Crews"},"description":""}</script></head><body data-header-desktop=fixed data-header-mobile=auto><script type=text/javascript>(window.localStorage&&localStorage.getItem("theme")?localStorage.getItem("theme")==="dark":"auto"==="auto"?window.matchMedia("(prefers-color-scheme: dark)").matches:"auto"==="dark")&&document.body.setAttribute("theme","dark")</script><div id=mask></div><div class=wrapper><header class=desktop id=header-desktop><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu><div class=menu-inner><a class=menu-item href=/blog/>Blog </a><a class=menu-item href=/about/>About </a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i> </a><span class="menu-item delimiter"></span><span class="menu-item search" id=search-desktop>
+<input type=text placeholder="Search titles or contents..." id=search-input-desktop>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-desktop title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-desktop title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-desktop><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span>
+</span><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme"><i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></div></header><header class=mobile id=header-mobile><div class=header-container><div class=header-wrapper><div class=header-title><a href=/ title="Matthew Crews">Matthew Crews</a></div><div class=menu-toggle id=menu-toggle-mobile><span></span><span></span><span></span></div></div><div class=menu id=menu-mobile><div class=search-wrapper><div class="search mobile" id=search-mobile><input type=text placeholder="Search titles or contents..." id=search-input-mobile>
+<a href=javascript:void(0); class="search-button search-toggle" id=search-toggle-mobile title=Search><i class="fas fa-search fa-fw" aria-hidden=true></i></a>
+<a href=javascript:void(0); class="search-button search-clear" id=search-clear-mobile title=Clear><i class="fas fa-times-circle fa-fw" aria-hidden=true></i></a>
+<span class="search-button search-loading" id=search-loading-mobile><i class="fas fa-spinner fa-fw fa-spin" aria-hidden=true></i></span></div><a href=javascript:void(0); class=search-cancel id=search-cancel-mobile>Cancel</a></div><a class=menu-item href=/blog/ title>Blog</a><a class=menu-item href=/about/ title>About</a><a class=menu-item href=https://github.com/matthewcrews/blog title=GitHub rel="noopener noreffer" target=_blank><i class='fab fa-github fa-fw' aria-hidden=true></i></a><a href=javascript:void(0); class="menu-item theme-switch" title="Switch Theme">
+<i class="fas fa-adjust fa-fw" aria-hidden=true></i></a></div></div></header><div class="search-dropdown desktop"><div id=search-dropdown-desktop></div></div><div class="search-dropdown mobile"><div id=search-dropdown-mobile></div></div><main class=main><div class=container><div class="page single special"><h1 class="single-title animate__animated animate__pulse animate__faster">Accelerating Dictionary Lookup with Records as Keys</h1><div class=content id=content><blockquote><p><strong>NOTE</strong>: All the code can be found <a href=https://github.com/matthewcrews/RecordsAsKeysForDictionary target=_blank rel="noopener noreffer">here</a>. Feel free to follow along!</p></blockquote><h2 id=the-problem>The Problem</h2><p>I ran into an interesting problem a week ago and I think others may find some value in it. I am currently working on writing a small Discrete-Event Simulation engine for a manufacturing facility. This problem required a bespoke solution since the current products that are available on the market are built with Modelers in mind and not deployment. In our ideal scenario this engine gets embedded in a decision-making product that is run by a Plant Manager.</p><p>The goal is to take a Discrete-Event model of the facility and then wrap it in an optimization loop to find the best possible schedule for the facility. For optimization to be effective, you need to be able to run the model as fast as possible. At each time step we need to evaluate how the processes in the facility are going to respond to the updated state. Let&rsquo;s call this evaluation <code>CalculateChange</code>. The input for the <code>CalculateChange</code> is a type called <code>Settings</code>. <code>Settings</code> holds the parameters for the pieces of equipment in the facility. The result of calling <code>CalculateChange</code> will be a <code>Changes</code> type which holds the changes we will make to the model.</p><p>In our case, for a given <code>Settings</code> we will always get the same <code>Changes</code> back from <code>CalculateChange</code>. This means that <code>CalculateChange</code> is a natural candidate for <a href=https://en.wikipedia.org/wiki/Memoization target=_blank rel="noopener noreffer">memoization</a>. The easiest way to memoize a function, that I am aware of, is to store results in a <code>Dictionary</code> and check to see if a result is already stored in it. A silly example of memoization is the following.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Create a Dictionary to hold our results
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>cache</span> <span class=o>=</span> <span class=n>Dictionary</span> <span class=bp>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>memoizedFunction</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>int</span><span class=o>)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>match</span> <span class=n>cache</span><span class=o>.</span><span class=n>TryFindValue</span> <span class=n>a</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=k>true</span><span class=o>,</span> <span class=n>result</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Yay, the result for `a` was in our cache
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>result</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=k>false</span><span class=o>,</span> <span class=o>_</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Booooo! The result was not in our cache :/
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>// Now we have to call the expensive function
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>let</span> <span class=nv>result</span> <span class=o>=</span> <span class=n>reallyExpensiveFunctionToCall</span> <span class=n>a</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// We store the result so that it will be in the cache next time
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>cache</span><span class=o>.[</span><span class=n>a</span><span class=o>]</span> <span class=o>&lt;-</span> <span class=n>result</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// Now return the result
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>Here we are trying to keep from having to evaluate <code>reallyExpensiveFunctionToCall</code> each time by storing the result. Memoization can be a powerful way to speed up your programs. You are trading memory footprint for speed. This means this technique should only be used in an environment where you have plenty of memory available and what you really need is speed.</p><h2 id=the-challenge>The Challenge</h2><p>This is where things take an interesting turn. Our <code>Settings</code> type is made up of a few arrays. Two of them are <code>array&lt;float></code> and one of them is an <code>array&lt;BufferState></code>. <code>BufferState</code> is a <a href=https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/discriminated-unions target=_blank rel="noopener noreffer">Discriminated Union</a> with 3 cases: <code>Full</code>, <code>Partial</code>, and <code>Empty</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>BufferState</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Full</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Partial</span>
+</span></span><span class=line><span class=cl>    <span class=o>|</span> <span class=n>Empty</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>I am wanting to use the <code>Settings</code> type as a Key in a Dictionary. Now, some of you may already have alarms going off in your head. We are wanting to hash and check equality of something that has <code>float</code> in it. If you ask a question about this on StackOverflow, the first responses will typically be people telling you not to do that. I will echo their caution but add some context about when it is okay.</p><p>Equality of any floating-point number is a notoriously difficult problem. Floating point math has rounding error built in which means that something that works mathematically may not work computationally. For example. Try putting this into an F# Interactive session and you will get false.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// This will return FALSE
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>0</span><span class=o>.</span><span class=n>1</span> <span class=o>+</span> <span class=n>0</span><span class=o>.</span><span class=n>2</span> <span class=o>=</span> <span class=n>0</span><span class=o>.</span><span class=n>3</span>
+</span></span></code></pre></td></tr></table></div></div><p>If you were taking a math class, the answer would be true, obviously. Using floating point math though <code>0.3</code> cannot be perfectly represented so what you get it when you put in <code>0.3</code> is</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>0.299999999999999988897769753748434595763683319091796875
+</span></span></code></pre></td></tr></table></div></div><p>Likewise, when you add <code>0.1</code> and <code>0.2</code> together you get</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>0.3000000000000000444089209850062616169452667236328125000
+</span></span></code></pre></td></tr></table></div></div><p>Those two numbers are very, very close but they are technically not the same. Okay, so I agree with the StackOverflow mob that testing equality of floats is fraught with danger. There are situations where it IS okay though. Those situations are when you are needing to compare <code>float</code> values that no math has been performed on. In my use case, the values in <code>Settings</code> are parameters that are being set on the condition of other parts of the facility. They are not the result of any computation. This means that I can reliably test their equality because no math has been performed on them.</p><blockquote><p><strong>Note</strong>: I highly recommend reading the paper <a href=https://www.itu.dk/~sestoft/bachelor/IEEE754_article.pdf target=_blank rel="noopener noreffer">What Every Computer Scientist Should Know About Floating-Point Arithmetic</a> by David Goldberg. It&rsquo;s probably way more detail than you need at this time but if you are working with floating-point math it&rsquo;s worth your time.</p></blockquote><p>What is nice is that F# is going to give us structural equality for free. This means using <code>Settings</code> as a key for a record should be no problem, right? Well, as with everything the answer is, &ldquo;It depends&mldr;&rdquo;. Earlier this year, Isaac Abraham wrote a <a href=https://www.compositional-it.com/news-blog/custom-equality-and-comparison-in-f/ target=_blank rel="noopener noreffer">great blog post</a> for Compositional IT which went into the performance gains that can be had from writing custom equality and comparison in F#. I highly recommend you go read that article first before continuing.</p><p>In that article Isaac showed that there can be significant speed gains from implementing your own equality on a Record. In his tests the speed up for a Dictionary lookup was anywhere from 2 to 3 times faster. That has significant implications on the runtime of your algorithm if there is a Dictionary lookup in the heart of an inner loop. In my use case I want to lookup results in a Dictionary at every single time step of the simulation because a Dictionary lookup is still several orders of magnitude cheaper than running the expensive calculation logic.</p><p>Before we go doing anything though, let&rsquo;s establish the baseline of our performance so we don&rsquo;t flail around blindly. For this domain the values of <code>Levels</code> field can range from <code>0.0</code> to <code>100.0</code> and it can contain anywhere from 10 to 100 values. The values in <code>MaxRates</code> range from <code>0.0</code> to <code>10.0</code> and contain anywhere from 10 to 100 values. The values of the <code>Buffers</code> field are evenly distributed between the three possible states of <code>BufferState</code> and can be from 10 to 100 values. We&rsquo;ll need to generate some data for us to test on.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>open</span> <span class=nn>System</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Parameters for generating test data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>rng</span> <span class=o>=</span> <span class=n>Random</span> <span class=o>(</span><span class=n>123</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxLevelValue</span> <span class=o>=</span> <span class=n>100</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxRateValue</span> <span class=o>=</span> <span class=n>100</span><span class=o>.</span><span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=c1>// How many lookups we will perform in our test
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>lookupCount</span> <span class=o>=</span> <span class=n>10_000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Maximum length of the arrays
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>maxLevelsLength</span> <span class=o>=</span> <span class=n>100</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxRatesLength</span> <span class=o>=</span> <span class=n>100</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxBufferStateLength</span> <span class=o>=</span> <span class=n>100</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// How many arrays to generate
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>levelsCount</span>  <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>maxRatesCount</span> <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>buffersCount</span> <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// How many different random Settings to generate
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>randomSettingsCount</span> <span class=o>=</span> <span class=n>1_000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Function to create an array&lt;float&gt; with random values
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>randomFloatArray</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=n>maxValue</span> <span class=n>length</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>result</span> <span class=o>=</span> <span class=nn>Array</span><span class=p>.</span><span class=n>zeroCreate</span> <span class=n>length</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=o>=</span> <span class=n>0</span> <span class=k>to</span> <span class=n>result</span><span class=o>.</span><span class=n>Length</span> <span class=o>-</span> <span class=n>1</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=n>result</span><span class=o>.[</span><span class=n>i</span><span class=o>]</span> <span class=o>&lt;-</span> <span class=n>maxValue</span> <span class=o>*</span> <span class=o>(</span><span class=n>rng</span><span class=o>.</span><span class=n>NextDouble</span> <span class=bp>()</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>result</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Function to create an array&lt;BufferState&gt; with random values
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>randomBufferStateArray</span> <span class=o>(</span><span class=n>rng</span><span class=o>:</span> <span class=n>Random</span><span class=o>)</span> <span class=n>maxValue</span> <span class=n>length</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>result</span> <span class=o>=</span> <span class=nn>Array</span><span class=p>.</span><span class=n>zeroCreate</span> <span class=n>length</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>i</span> <span class=o>=</span> <span class=n>0</span> <span class=k>to</span> <span class=n>result</span><span class=o>.</span><span class=n>Length</span> <span class=o>-</span> <span class=n>1</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// The `Next` method is generating values from 0 to 2
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=c1>// The MaxValue arg used here is exclusive
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>match</span> <span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=n>3</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>0</span> <span class=o>-&gt;</span> <span class=n>result</span><span class=o>.[</span><span class=n>i</span><span class=o>]</span> <span class=o>&lt;-</span> <span class=nn>BufferState</span><span class=p>.</span><span class=n>Empty</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>1</span> <span class=o>-&gt;</span> <span class=n>result</span><span class=o>.[</span><span class=n>i</span><span class=o>]</span> <span class=o>&lt;-</span> <span class=nn>BufferState</span><span class=p>.</span><span class=n>Full</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>2</span> <span class=o>-&gt;</span> <span class=n>result</span><span class=o>.[</span><span class=n>i</span><span class=o>]</span> <span class=o>&lt;-</span> <span class=nn>BufferState</span><span class=p>.</span><span class=n>Partial</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=n>failwith</span> <span class=s>&#34;Really?&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>result</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Generate possible array&lt;float&gt; to be used as the Levels field
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>levels</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>_</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>levelsCount</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=o>((</span><span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=n>maxLevelsLength</span><span class=o>)</span> <span class=o>+</span> <span class=n>1</span><span class=o>)</span> <span class=c1>// Generate a random length
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=o>|&gt;</span> <span class=n>randomFloatArray</span> <span class=n>rng</span> <span class=n>maxLevelValue</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Generate possible array&lt;float&gt; to be used as the MaxRates field
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>maxRates</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>_</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>maxRatesCount</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=o>((</span><span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=n>maxRatesLength</span><span class=o>)</span> <span class=o>+</span> <span class=n>1</span><span class=o>)</span> <span class=c1>// Generate a random length
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=o>|&gt;</span> <span class=n>randomFloatArray</span> <span class=n>rng</span> <span class=n>maxRateValue</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Generate possible array&lt;BufferState&gt; to be used as the BufferStates field
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>bufferStates</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>_</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>bufferStatesCount</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=o>((</span><span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=n>maxRatesLength</span><span class=o>)</span> <span class=o>+</span> <span class=n>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=o>|&gt;</span> <span class=n>randomBufferStateArray</span> <span class=n>rng</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now we have some random data that we want to sample from to generate our random <code>Settings</code> type which we will use for lookup. The way we will do this is by creating a set of indices that we will use to lookup values for <code>Levels</code>, <code>MaxRates</code>, and <code>BufferStates</code>. The reason we want to do this is because we are going to create alternatives to the <code>Settings</code> type and we want to be sure those alternatives are populated with the same data. If it doesn&rsquo;t make sense now, it will in a few minutes.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// We want to make sure that all of our versions of the Settings type
+</span></span></span><span class=line><span class=cl><span class=c1>// have the same underlying data to hash and compare. This means we
+</span></span></span><span class=line><span class=cl><span class=c1>// need to compute the indices for the underlying data and use them
+</span></span></span><span class=line><span class=cl><span class=c1>// for all the versions of the Settings type we create.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>valueIndexes</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>_</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>randomSettingsCount</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>{|</span>
+</span></span><span class=line><span class=cl>            <span class=n>LevelsIdx</span> <span class=o>=</span> <span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>levels</span><span class=o>.</span><span class=n>Length</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRatesIdx</span> <span class=o>=</span> <span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>maxRates</span><span class=o>.</span><span class=n>Length</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>BufferStatesIdx</span> <span class=o>=</span> <span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>buffers</span><span class=o>.</span><span class=n>Length</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>|}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl><span class=c1>// We now generate the random Settings we will be using
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=n>vi</span> <span class=k>in</span> <span class=n>valueIndexes</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>=</span> <span class=n>levels</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>LevelsIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>=</span> <span class=n>maxRates</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>MaxRatesIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>=</span> <span class=n>buffers</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>BufferStatesIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now let&rsquo;s generate a set of indices which we will use to select the <code>Settings</code> values we will look up in our performance test. Again, we are generating the indices then creating another array which holds the <code>Settings</code> values we will look up so that we can use the indices to generate the exact same list when we create alternative <code>Settings</code> types.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// These will be the indices for deciding which Settings values we
+</span></span></span><span class=line><span class=cl><span class=c1>// will look up in each of the dictionary. We want to ensure we are
+</span></span></span><span class=line><span class=cl><span class=c1>// looking up equivalent data in all the tests.
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>testIndexes</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>for</span> <span class=o>_</span> <span class=k>in</span> <span class=n>1</span> <span class=o>..</span> <span class=n>lookupCount</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>rng</span><span class=o>.</span><span class=n>Next</span> <span class=o>(</span><span class=n>0</span><span class=o>,</span> <span class=n>randomSettingsCount</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// The values we will test looking up in a Dictionary
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>settingsKeys</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>testIndexes</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>idx</span> <span class=o>-&gt;</span> <span class=n>settings</span><span class=o>.[</span><span class=n>idx</span><span class=o>])</span>
+</span></span></code></pre></td></tr></table></div></div><p>Alright! We have our random <code>Settings</code> and we have the lookups we want to test. We&rsquo;ll now put our random <code>Settings</code> values into a <code>Dictionary&lt;Settings, int></code> to test looking up values.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Create the dictionary for looking up Settings
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>let</span> <span class=nv>settingsDictionary</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=n>settings</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>mapi</span> <span class=o>(</span><span class=k>fun</span> <span class=n>i</span> <span class=n>settings</span> <span class=o>-&gt;</span> <span class=n>KeyValuePair</span> <span class=o>(</span><span class=n>settings</span><span class=o>,</span> <span class=n>i</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>|&gt;</span> <span class=n>Dictionary</span>
+</span></span></code></pre></td></tr></table></div></div><p>We can now create our test. We will be using <a href=https://github.com/dotnet/BenchmarkDotNet target=_blank rel="noopener noreffer">benchmarkDotNet</a> for our performance testing. BenchmarkDotNet has us create a class and annotate methods with the <code>[&lt;Benchmark>]</code> attribute so that the performance analyzer knows what code to test. Let&rsquo;s open the necessary namespaces and write a test for our default <code>Settings</code> type.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>open</span> <span class=nn>BenchmarkDotNet.Attributes</span>
+</span></span><span class=line><span class=cl><span class=k>open</span> <span class=nn>BenchmarkDotNet.Running</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Type to contain our performance tests
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>Default</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then build our project by opening a terminal in the directory that holds our <code>.fsproj</code> file and build the project with the <code>Release</code> configuration.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>dotnet build -c Release
+</span></span></code></pre></td></tr></table></div></div><p>This will create a release build of our code in the directory <code>&lt;Project Root>/bin/Release/net6.0</code>. I open a terminal in this directory and run the <code>.exe</code> that was generated and get the following table as the result.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>36.73 ms</td><td style=text-align:right>0.472 ms</td><td style=text-align:right>0.442 ms</td></tr></tbody></table><p>This means that it is taking us 36.73 ms on average to look up our <code>Settings</code> type in the Dictionary 1,000 times. We now have a performance baseline.</p><h2 id=simple-override>Simple Override</h2><p>Let&rsquo;s do the next, obvious thing and try defining a new version of <code>Settings</code> in a new module called <code>Simple</code> where we will use the easiest means of overriding the default equality behavior. I am going to put this new type and its data in a separate module to isolate it to prevent type collision headaches.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>Simple</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>this</span><span class=o>.</span><span class=n>Levels</span><span class=o>,</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span><span class=o>,</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>Nothing exotic going on here. We&rsquo;ve added the attributes <code>[&lt;CustomEquality>]</code> and <code>[&lt;NoComparison>]</code>. <code>[&lt;CustomEquality>]</code> is telling the F# compiler that we are going to provide our own overloads for <code>Equals</code> and <code>GetHashCode</code>. We have to also add <code>[&lt;NoComparison>]</code> because the compiler wants us to also define the necessary methods for performing comparisons. We aren&rsquo;t testing that right now, so we are telling the compiler, &ldquo;I don&rsquo;t want to define comparison so just don&rsquo;t allow me to compare it.&rdquo; This is one of the downsides of overriding default behavior. Now that we&rsquo;ve told the compiler we are defining equality, we have taken on more responsibility for how this type behaves.</p><p>Let&rsquo;s generate the necessary test data and update our <code>Benchmark</code> class with a new testing method. I just copy and paste the code that we used for the default <code>Settings</code> type into the module where we defined our new <code>Settings</code> with overrides.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>Simple</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Type definition here...
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=c1>// This is why we defined that array of indices before. So we could generate new Settings types
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// that were populated with the same data.
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// We now generate the random Settings which uses our custom overrides
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>seq</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>for</span> <span class=n>vi</span> <span class=k>in</span> <span class=n>valueIndexes</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>Levels</span> <span class=o>=</span> <span class=n>levels</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>LevelsIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>                <span class=n>MaxRates</span> <span class=o>=</span> <span class=n>maxRates</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>MaxRatesIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>                <span class=n>Buffers</span> <span class=o>=</span> <span class=n>buffers</span><span class=o>[</span><span class=n>vi</span><span class=o>.</span><span class=n>BufferStatesIdx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span> <span class=c1>// Making sure we are getting the type we want
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=o>}</span> <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>ofSeq</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1>// The values we will test looking up in a Dictionary
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>testIndexes</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>map</span> <span class=o>(</span><span class=k>fun</span> <span class=n>idx</span> <span class=o>-&gt;</span> <span class=n>settings</span><span class=o>[</span><span class=n>idx</span><span class=o>])</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>    <span class=c1>// Create the dictionary for looking up Settings
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>settingsDictionary</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=n>settings</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=nn>Array</span><span class=p>.</span><span class=n>mapi</span> <span class=o>(</span><span class=k>fun</span> <span class=n>i</span> <span class=n>settings</span> <span class=o>-&gt;</span> <span class=n>KeyValuePair</span> <span class=o>(</span><span class=n>settings</span><span class=o>,</span> <span class=n>i</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>|&gt;</span> <span class=n>Dictionary</span>
+</span></span></code></pre></td></tr></table></div></div><p>And now we add our test to the <code>Benchmarks</code> class. We also moved the default <code>Settings</code> into a module of its own so now we need to prefix the initial test with <code>Default</code>. Our <code>Benchmark</code> class will now look like this.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=c1>// Type to contain our performance tests
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>Default</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>Default</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>Default</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>Default</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>Simple</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>Simple</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>Simple</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>Simple</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>We do another build and re-run our benchmarks. Upon completion we get these results.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>37.69 ms</td><td style=text-align:right>0.428 ms</td><td style=text-align:right>0.357 ms</td></tr><tr><td>Simple</td><td style=text-align:right>37.82 ms</td><td style=text-align:right>0.271 ms</td><td style=text-align:right>0.241 ms</td></tr></tbody></table><p>This is wildly disappointing. This had no affect which honestly, is probably a good thing. What we just implemented is essentially the default behavior of F# so we shouldn&rsquo;t expect a big change. At this point though, I got curious as to how exactly is F# generating hash codes for <code>array&lt;float></code>. I went digging into the F# source and found my way to the <a href=https://github.com/dotnet/fsharp/blob/main/src/fsharp/FSharp.Core/prim-types.fs target=_blank rel="noopener noreffer">prim-types.fs</a> file. One thing I notice in my sleuthing is that F# has some specialized functions for generating hashcodes for <code>array&lt;int></code>, <code>array&lt;int64></code>, and <code>array&lt;byte></code> but I didn&rsquo;t see any for <code>array&lt;float></code>. Hmm, what if we created one and used that for generating our hashcodes?</p><h2 id=hashcode-for-arrayfloat>HashCode for <code>array&lt;float></code></h2><p>I decided to <del>steal</del> borrow the function that F# is using for combining hashcodes found <a href=https://github.com/dotnet/fsharp/blob/dc81e22205550f0cedf4295b06c3a1e338c1cfa1/src/fsharp/FSharp.Core/prim-types.fs#L1625 target=_blank rel="noopener noreffer">here</a>. I also copy and paste the specialized function for hashing <code>array&lt;int></code> found <a href=https://github.com/dotnet/fsharp/blob/dc81e22205550f0cedf4295b06c3a1e338c1cfa1/src/fsharp/FSharp.Core/prim-types.fs#L1650 target=_blank rel="noopener noreffer">here</a> and change it up a little to work with <code>array&lt;float></code>. I put this new functions into a new module <code>FloatHash</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>FloatHash</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Source: https://github.com/dotnet/fsharp/blob/dc81e22205550f0cedf4295b06c3a1e338c1cfa1/src/fsharp/FSharp.Core/prim-types.fs#L1625
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>inline</span> <span class=n>HashCombine</span> <span class=n>nr</span> <span class=n>x</span> <span class=n>y</span> <span class=o>=</span> <span class=o>(</span><span class=n>x</span> <span class=o>&lt;&lt;&lt;</span> <span class=n>1</span><span class=o>)</span> <span class=o>+</span> <span class=n>y</span> <span class=o>+</span> <span class=n>631</span> <span class=o>*</span> <span class=n>nr</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>HashFloatArray</span> <span class=o>(</span><span class=n>x</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>:</span> <span class=n>int</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>x</span><span class=o>.</span><span class=n>Length</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mutable</span> <span class=n>i</span> <span class=o>=</span> <span class=n>len</span> <span class=o>-</span> <span class=n>1</span> 
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mutable</span> <span class=n>acc</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>            <span class=k>while</span> <span class=o>(</span><span class=n>i</span> <span class=o>&gt;=</span> <span class=n>0</span><span class=o>)</span> <span class=k>do</span> 
+</span></span><span class=line><span class=cl>                <span class=n>acc</span> <span class=o>&lt;-</span> <span class=n>HashCombine</span> <span class=n>i</span> <span class=n>acc</span> <span class=o>(</span><span class=n>int</span> <span class=n>x</span><span class=o>.[</span><span class=n>i</span><span class=o>])</span>
+</span></span><span class=line><span class=cl>                <span class=n>i</span> <span class=o>&lt;-</span> <span class=n>i</span> <span class=o>-</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>            <span class=n>acc</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now we have the ingredients to make our own hashing function for our <code>Settings</code> type. Let&rsquo;s define a new <code>Settings</code> using this new functionality.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>FloatHash</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>          
+</span></span><span class=line><span class=cl>    <span class=c1>// ...new functions here
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=c1>// We now use our `hashFloatArray` 
+</span></span></span><span class=line><span class=cl><span class=c1></span>            <span class=k>let</span> <span class=nv>levelsHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>maxRatesHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>buffersHash</span> <span class=o>=</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>.</span><span class=n>GetHashCode</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>levelsHash</span><span class=o>,</span> <span class=n>maxRatesHash</span><span class=o>,</span> <span class=n>buffersHash</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We again copy and paste the data generating code into this new module to create our test data with our new type. We then add a third method to our <code>Benchmarks</code> class to test this new approach.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Previous benchmarks are still here. I&#39;m just not posting the code for brevity
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>FloatHash</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>FloatHash</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>FloatHash</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>FloatHash</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>After we compile and run our benchmarks, we get the following.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>37.12 ms</td><td style=text-align:right>0.648 ms</td><td style=text-align:right>0.606 ms</td></tr><tr><td>Simple</td><td style=text-align:right>36.84 ms</td><td style=text-align:right>0.270 ms</td><td style=text-align:right>0.253 ms</td></tr><tr><td>FloatHash</td><td style=text-align:right>10.12 ms</td><td style=text-align:right>0.093 ms</td><td style=text-align:right>0.087 ms</td></tr></tbody></table><p>Whoa! Now that&rsquo;s interesting. We get a significant speed up when using a function that is specifically made for a <code>array&lt;float</code>>. Now we are making progress.</p><h2 id=faster-by-ignoring>Faster by Ignoring</h2><p>Now, if you are one of the few people who clicked the links to the F# source code, you may notice that the version of <code>HashFloatArray</code> I wrote isn&rsquo;t quite like the version that is in the F# source code. The F# source code only hashes up to the first 18 values. It ignores the elements after that. I&rsquo;m assuming the rationale is that the first 18 elements are sufficient for generating a unique enough hashcode. Let&rsquo;s create a new module <code>FloatHashSort</code> where we define a new <code>Settings</code> type that uses this abbreviated hashing.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>FloatHashShort</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1>// To limit the number of elements we use for hashing
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>defaultHashNodes</span> <span class=o>=</span> <span class=n>18</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>inline</span> <span class=n>HashCombine</span> <span class=n>nr</span> <span class=n>x</span> <span class=n>y</span> <span class=o>=</span> <span class=o>(</span><span class=n>x</span> <span class=o>&lt;&lt;&lt;</span> <span class=n>1</span><span class=o>)</span> <span class=o>+</span> <span class=n>y</span> <span class=o>+</span> <span class=n>631</span> <span class=o>*</span> <span class=n>nr</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>HashFloatArray</span> <span class=o>(</span><span class=n>x</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>:</span> <span class=n>int</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>          <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>x</span><span class=o>.</span><span class=n>Length</span>
+</span></span><span class=line><span class=cl>          <span class=k>let</span> <span class=nv>mutable</span> <span class=n>i</span> <span class=o>=</span> <span class=n>len</span> <span class=o>-</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>          <span class=k>if</span> <span class=n>i</span> <span class=o>&gt;</span> <span class=n>defaultHashNodes</span> <span class=k>then</span> <span class=n>i</span> <span class=o>&lt;-</span> <span class=n>defaultHashNodes</span> <span class=c1>// limit the hash
+</span></span></span><span class=line><span class=cl><span class=c1></span>          <span class=k>let</span> <span class=nv>mutable</span> <span class=n>acc</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>          <span class=k>while</span> <span class=o>(</span><span class=n>i</span> <span class=o>&gt;=</span> <span class=n>0</span><span class=o>)</span> <span class=k>do</span> 
+</span></span><span class=line><span class=cl>              <span class=n>acc</span> <span class=o>&lt;-</span> <span class=n>HashCombine</span> <span class=n>i</span> <span class=n>acc</span> <span class=o>(</span><span class=n>int</span> <span class=n>x</span><span class=o>.[</span><span class=n>i</span><span class=o>])</span>
+</span></span><span class=line><span class=cl>              <span class=n>i</span> <span class=o>&lt;-</span> <span class=n>i</span> <span class=o>-</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>          <span class=n>acc</span>
+</span></span><span class=line><span class=cl>          
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>levelsHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>maxRatesHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>buffersHash</span> <span class=o>=</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>.</span><span class=n>GetHashCode</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>levelsHash</span><span class=o>,</span> <span class=n>maxRatesHash</span><span class=o>,</span> <span class=n>buffersHash</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// There is also the data creation code here but I&#39;m leaving it out because it&#39;s a repeat of
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=c1>// what you have seen already.
+</span></span></span></code></pre></td></tr></table></div></div><p>And we add a fourth benchmark to <code>Benchmarks</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ...previous benchmarks here
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>FloatHashShort</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>FloatHashShort</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>FloatHashShort</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>FloatHashShort</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>We recompile and run those benchmarks! Let&rsquo;s see what we get.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>35.546 ms</td><td style=text-align:right>0.5105 ms</td><td style=text-align:right>0.3985 ms</td></tr><tr><td>Simple</td><td style=text-align:right>38.245 ms</td><td style=text-align:right>0.3848 ms</td><td style=text-align:right>0.3600 ms</td></tr><tr><td>FloatHash</td><td style=text-align:right>9.861 ms</td><td style=text-align:right>0.0399 ms</td><td style=text-align:right>0.0333 ms</td></tr><tr><td>FloatHashShort</td><td style=text-align:right>9.459 ms</td><td style=text-align:right>0.0965 ms</td><td style=text-align:right>0.0903 ms</td></tr></tbody></table><p>Alright! A little more progress. Nothing crazy but we&rsquo;ll take everything we can get.</p><h2 id=faster-arrayfloat-equality>Faster <code>array&lt;float></code> Equality</h2><p>We made a little progress now on the <code>GetHashCode</code> side of our problem. Let&rsquo;s look at the Equals now. We would like to speed this up. Right now, we are using the built in functionality of F# to evaluate the equality of the arrays. Let&rsquo;s write our own to see if we get more performance.</p><p>We are going to write a function which is going to take two <code>array&lt;float></code> and test whether all the values are the same. We will be using a <code>while</code> loop in this case. From my understanding, all loops get compiled down to <code>while</code> loops in IL. Using a <code>while</code> will get early termination and the most compact assembly that I am aware of. For more info on optimizing .NET I refer you to Federico Andres Lois (@federicolois) and Bartosz Adamczewski (@badamczewski01). We create a new module, <code>FloatArrayEquals</code>, to hold our new approach.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>FloatArrayEquals</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ...our updated hashing code is still here. Not shown for brevity
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=c1>// The function we will use to compare the values in two float arrays
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>FloatArrayEquals</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>b</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.</span><span class=n>Length</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>            <span class=n>invalidArg</span> <span class=o>(</span><span class=n>nameof</span> <span class=n>b</span><span class=o>)</span> <span class=s>&#34;Cannot check equality on arrays of different lengths&#34;</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=c1>// Use a while loop to create better assembly
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>a</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=n>result</span> <span class=o>&lt;-</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>                
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=c1>// We are using our new function to compare the values
+</span></span></span><span class=line><span class=cl><span class=c1></span>                <span class=c1>// in our array&lt;float&gt;
+</span></span></span><span class=line><span class=cl><span class=c1></span>                <span class=o>(</span><span class=n>FloatArrayEquals</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>FloatArrayEquals</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=o>=</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>levelsHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>maxRatesHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>buffersHash</span> <span class=o>=</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>.</span><span class=n>GetHashCode</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>levelsHash</span><span class=o>,</span> <span class=n>maxRatesHash</span><span class=o>,</span> <span class=n>buffersHash</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We add a new method to <code>Benchmark</code>&mldr;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Previous benchmarks are still here...
+</span></span></span><span class=line><span class=cl><span class=c1></span>        
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>ArrayEquals</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>ArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>ArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>ArrayEquals</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>Then compile and run our tests to get&mldr;</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>37.085 ms</td><td style=text-align:right>0.1836 ms</td><td style=text-align:right>0.1627 ms</td></tr><tr><td>Simple</td><td style=text-align:right>35.839 ms</td><td style=text-align:right>0.2870 ms</td><td style=text-align:right>0.2544 ms</td></tr><tr><td>FloatHash</td><td style=text-align:right>10.189 ms</td><td style=text-align:right>0.1942 ms</td><td style=text-align:right>0.1907 ms</td></tr><tr><td>FloatHashShort</td><td style=text-align:right>9.454 ms</td><td style=text-align:right>0.1645 ms</td><td style=text-align:right>0.1539 ms</td></tr><tr><td>ArrayEquals</td><td style=text-align:right>7.100 ms</td><td style=text-align:right>0.1289 ms</td><td style=text-align:right>0.1324 ms</td></tr></tbody></table><p>This is great! We are still making progress. Before F# had to figure out what method to call in order to evaluate equality. Here we can skip that and use a loop tuned for this exact problem.</p><h2 id=enter-the-simd>Enter the SIMD</h2><p>Now, I skipped something at the very beginning of this whole post. There was a version of my simulation code where the <code>Settings</code> type did not contain arrays. It was a more complex set of types. I&rsquo;ve been on a journey to learn how to write faster code because speed is a huge differentiator in my field. I work in a .NET shop, but we still want to have fast simulations. During my wanderings I have found <a href=https://en.wikipedia.org/wiki/Data-oriented_design target=_blank rel="noopener noreffer">Data-Oriented Design</a> and <a href=https://en.wikipedia.org/wiki/Entity_component_system target=_blank rel="noopener noreffer">Entity Component Systems</a>. These are broad topics, but they are really about arranging your data to achieve high performance.</p><p>I have been building code with a more Entity Component style. I&rsquo;m not building full Entity Component systems but I&rsquo;m tending toward Structs of Arrays (SoA) instead of Arrays of Structs (AoS) as a way to organize data (<a href=https://en.wikipedia.org/wiki/AoS_and_SoA target=_blank rel="noopener noreffer">AoS vs SoA</a>). <code>Settings</code> is a type that has gone through that transformation. By arranging data in a way that is sympathetic to how computers work, we can achieve much better performance.</p><p>One of the tools that becomes available to you when you arrange your data in nice contiguous blocks of data is <a href=https://en.wikipedia.org/wiki/SIMD target=_blank rel="noopener noreffer">SIMD instructions</a>. Practically all modern processors have special instructions which operate on multiple pieces of data simultaneously. This is exactly what we are doing with the equality checks in our <code>Equals</code> methods. For our first step into SIMD, let&rsquo;s use some <a href=https://en.wikipedia.org/wiki/SSE2 target=_blank rel="noopener noreffer">SSE2</a> instructions to test the equality of <code>array&lt;float></code>. SSE2 allows us to operate on 128 bits at a time. This means we can test the equality of 2 <code>float</code> at the same time.</p><blockquote><p><strong>Note</strong>: The Intrinsics libraries are designed as zero safeties type of library. It is incumbent on the developer to check whether the CPU actually has the required intrinsics available. Most modern x86 CPUs will have everything that I am showing. Best practice is to have code check as to whether the instructions are available and providing a fallback function if they are not. A fallback for us would simply be the code earlier in this post. Production code should contain checks and fallbacks. You have been warned.</p></blockquote><p>I am going to show you the function we will use for stepping through two arrays simultaneously and then break it down for you line by line. In this case I think it&rsquo;s easier for you to see the whole picture first and then have me explain what is happening to you.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>SseFloatArrayEquals</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Open some new namespace we will need
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>open</span> <span class=nn>FSharp.NativeInterop</span>
+</span></span><span class=line><span class=cl>    <span class=k>open</span> <span class=nn>System.Runtime.Intrinsics.X86</span>
+</span></span><span class=line><span class=cl>    <span class=k>open</span> <span class=nn>System.Runtime.Intrinsics</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Note, we are still using the same hashing functions. There just not shown for brevity
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=c1>// This is the new function we will use for comparing values
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>let</span> <span class=nv>equals</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>b</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.</span><span class=n>Length</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>            <span class=n>invalidArg</span> <span class=o>(</span><span class=n>nameof</span> <span class=n>b</span><span class=o>)</span> <span class=s>&#34;Cannot check equality on arrays of different lengths&#34;</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>lastBlockIdx</span> <span class=o>=</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>-</span> <span class=o>(</span><span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>%</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;.</span><span class=n>Count</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>use</span> <span class=n>aPointer</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>a</span>
+</span></span><span class=line><span class=cl>        <span class=k>use</span> <span class=n>bPointer</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>b</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>lastBlockIdx</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>aVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>aPointer</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>bVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bPointer</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>comparison</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>CompareEqual</span> <span class=o>(</span><span class=n>aVector</span><span class=o>,</span> <span class=n>bVector</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mask</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>MoveMask</span> <span class=n>comparison</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=o>(</span><span class=n>mask</span> <span class=o>=</span> <span class=n>3</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;.</span><span class=n>Count</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>a</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=n>result</span> <span class=o>&lt;-</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>Okay, let&rsquo;s unpack what is happening in <code>equals</code>. In the first couple of lines, I&rsquo;m making sure that the two arrays are the same length.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>if</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.</span><span class=n>Length</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=n>invalidArg</span> <span class=o>(</span><span class=n>nameof</span> <span class=n>b</span><span class=o>)</span> <span class=s>&#34;Cannot check equality on arrays of different lengths&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Next I create some values I will be using to track my progress through the loop.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>I then need to calculate the last index at which I can use the SIMD instructions. Past this index I will need to fall back to scalar operations since I don&rsquo;t have a big enough chunk of data to work on.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>lastBlockIdx</span> <span class=o>=</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>-</span> <span class=o>(</span><span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>%</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;.</span><span class=n>Count</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now need to get a pointer to the arrays. The <a href=https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/fixed target=_blank rel="noopener noreffer"><code>fixed</code></a> keyword is used to pin down the array and give us a pointer. We don&rsquo;t want the garbage collector moving data around while our function is running. This is what we use to tell the runtime to leave it alone until we are done with it. Instead of using <code>let</code> to bind the result, we use the <a href=https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/resource-management-the-use-keyword target=_blank rel="noopener noreffer"><code>use</code></a> keyword. <code>use</code> tells the compiler that the resource should be collected once the value has gone out of scope. This is important since we don&rsquo;t want memory to stay pinned forever.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>use</span> <span class=n>aPointer</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>a</span>
+</span></span><span class=line><span class=cl><span class=k>use</span> <span class=n>bPointer</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>b</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now let&rsquo;s look at the loop where we are actually doing the work. The calls to <code>Sse2.LoadVector128</code> are loading the data into the registers to be worked on in parallel. <code>Sse2.CompareEqual</code> tells the CPU to compare the values in <code>aVector</code> and <code>bVector</code> for equality. If the values are equal, then it will set the result to 1 values. If they are not, they are set to 0.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>aVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>aPointer</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>bVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bPointer</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>comparison</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>CompareEqual</span> <span class=o>(</span><span class=n>aVector</span><span class=o>,</span> <span class=n>bVector</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>Here&rsquo;s what this operation would look like if we were working in 8-bit. I&rsquo;m using 8-bit because I didn&rsquo;t want to have to draw out 32 boxes for 32-bit but the concepts translate to whatever bit-ness you are using. Here is what the data looks like if Vector A had the values 6 and 23 loaded in.</p><p><img class=lazyload src=/svg/loading.min.svg data-src=/blog/2021/11/records-as-keys-for-dictionaries/vector_a_values.png data-srcset="/blog/2021/11/records-as-keys-for-dictionaries/vector_a_values.png, /blog/2021/11/records-as-keys-for-dictionaries/vector_a_values.png 1.5x, /blog/2021/11/records-as-keys-for-dictionaries/vector_a_values.png 2x" data-sizes=auto alt=/blog/2021/11/records-as-keys-for-dictionaries/vector_a_values.png title="Vector A Values" width=987 height=262></p><p>And let&rsquo;s say we had the values 6 and 14 loaded into Vector B.</p><p><img class=lazyload src=/svg/loading.min.svg data-src=/blog/2021/11/records-as-keys-for-dictionaries/vector_b_values.png data-srcset="/blog/2021/11/records-as-keys-for-dictionaries/vector_b_values.png, /blog/2021/11/records-as-keys-for-dictionaries/vector_b_values.png 1.5x, /blog/2021/11/records-as-keys-for-dictionaries/vector_b_values.png 2x" data-sizes=auto alt=/blog/2021/11/records-as-keys-for-dictionaries/vector_b_values.png title="Vector B Values" width=975 height=193></p><p>When we perform the <code>Sse1.CompareEqual</code> method on these two vectors we will get 1&rsquo;s where the slots match, and 0&rsquo;s where they did not. Notice I said SLOT, not bit. You should think of it as the entire slot matching, not necessarily a number because this can be done with many different data types which have different widths.</p><p><img class=lazyload src=/svg/loading.min.svg data-src=/blog/2021/11/records-as-keys-for-dictionaries/compare_equals_result.png data-srcset="/blog/2021/11/records-as-keys-for-dictionaries/compare_equals_result.png, /blog/2021/11/records-as-keys-for-dictionaries/compare_equals_result.png 1.5x, /blog/2021/11/records-as-keys-for-dictionaries/compare_equals_result.png 2x" data-sizes=auto alt=/blog/2021/11/records-as-keys-for-dictionaries/compare_equals_result.png title="Compare Equals Result" width=1049 height=171></p><p>Now we need to check the result of the comparison. We do that by calling <code>Sse2.MoveMask</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>mask</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>MoveMask</span> <span class=n>comparison</span>
+</span></span><span class=line><span class=cl><span class=n>result</span> <span class=o>&lt;-</span> <span class=o>(</span><span class=n>mask</span> <span class=o>=</span> <span class=n>3</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p><code>MoveMask</code> is calling a <code>MOVMSK</code> hardware intrinsic which is kind of a magical operation that confused me to no end. The explanation of it in the Intel documentation didn&rsquo;t help me much either. There are actually a lot of different <code>MOVMSK</code> intrinsics depending on the data you are working with. In our case it is working with a 64-bit float so it is calling <a href=https://www.laruence.com/x86/MOVMSKPD.html target=_blank rel="noopener noreffer"><code>MOVMSKPD</code></a>. All <code>MOVMSK</code> operations take the highest order bit from each slot and put them in the lowest order bits in the output. This is effectively creating a <a href=https://en.wikipedia.org/wiki/Mask_%28computing%29 target=_blank rel="noopener noreffer">Bitmask</a>. A Bitmask can also be interpreted as an <code>int</code>.</p><p>Here is an example of what <code>MOVMSK</code> is doing using my 8-bit example.</p><p><img class=lazyload src=/svg/loading.min.svg data-src=/blog/2021/11/records-as-keys-for-dictionaries/movemask_action.png data-srcset="/blog/2021/11/records-as-keys-for-dictionaries/movemask_action.png, /blog/2021/11/records-as-keys-for-dictionaries/movemask_action.png 1.5x, /blog/2021/11/records-as-keys-for-dictionaries/movemask_action.png 2x" data-sizes=auto alt=/blog/2021/11/records-as-keys-for-dictionaries/movemask_action.png title="Mask Result" width=1065 height=375></p><p>It moved the highest order bit from each slot into the lowest order bits on the output. This new mask gets interpreted as an <code>int</code> which has a value of <code>2</code>.</p><p>So, in this code, if both values match the output mask would have <code>11</code> in the lowest order bits of a 32-bit <code>int</code> which would be equivalent to <code>3</code>. That&rsquo;s why the test for whether all the values match is <code>mask = 3</code>.</p><p>Okay, we made it to the bottom of the loop. Now we just need to increment our index forward far enough to get a fresh set of values to load into our vectors. We want to increment by how many of our test elements fit into a <code>Vector128</code> which is why we add <code>Vector128&lt;float>.Count</code> to the index.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;.</span><span class=n>Count</span>
+</span></span></code></pre></td></tr></table></div></div><p>We will keep looping until we get through the elements, we can process using the vector operations. We then make it to the final loop which checks any remaining values that we need to process in a scalar way.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=n>a</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.[</span><span class=n>idx</span><span class=o>]</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=n>result</span> <span class=o>&lt;-</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>Wow, that was a lot. Let&rsquo;s now create a <code>Settings</code> type that uses these SSE2 instructions and see if we get a speed up.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>SseFloatArrayEquals</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferState</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>levelsHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>maxRatesHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>buffersHash</span> <span class=o>=</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>.</span><span class=n>GetHashCode</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>levelsHash</span><span class=o>,</span> <span class=n>maxRatesHash</span><span class=o>,</span> <span class=n>buffersHash</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then add our new benchmark&mldr;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Previous benchmarks still here
+</span></span></span><span class=line><span class=cl><span class=c1></span>    
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>SseFloatArrayEquals</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>SseFloatArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>SseFloatArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>SseFloatArrayEquals</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>&mldr;and compile and run. What do we get?</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th><th style=text-align:right>Median</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>39.472 ms</td><td style=text-align:right>0.4295 ms</td><td style=text-align:right>0.4018 ms</td><td style=text-align:right>39.438 ms</td></tr><tr><td>Simple</td><td style=text-align:right>39.010 ms</td><td style=text-align:right>0.5248 ms</td><td style=text-align:right>0.4909 ms</td><td style=text-align:right>39.157 ms</td></tr><tr><td>FloatHash</td><td style=text-align:right>10.989 ms</td><td style=text-align:right>0.1300 ms</td><td style=text-align:right>0.1216 ms</td><td style=text-align:right>11.033 ms</td></tr><tr><td>FloatHashShort</td><td style=text-align:right>9.554 ms</td><td style=text-align:right>0.1898 ms</td><td style=text-align:right>0.2400 ms</td><td style=text-align:right>9.410 ms</td></tr><tr><td>ArrayEquals</td><td style=text-align:right>7.286 ms</td><td style=text-align:right>0.0442 ms</td><td style=text-align:right>0.0392 ms</td><td style=text-align:right>7.274 ms</td></tr><tr><td>SseFloatArrayEquals</td><td style=text-align:right>6.453 ms</td><td style=text-align:right>0.0864 ms</td><td style=text-align:right>0.0808 ms</td><td style=text-align:right>6.440 ms</td></tr></tbody></table><p>Excellent. A little more progress but we&rsquo;d still like to see if we can get some more.</p><h2 id=bytes-all-the-way-down>Bytes all the way down</h2><p>There is a comparison that we haven&rsquo;t looked at yet. It&rsquo;s the equality of the <code>Buffers</code> field. You may remember that this field is an <code>array&lt;BufferState></code>. <code>BufferState</code> is a discriminated union and so far has been using the built in F# equality. Something important to note, the default DU is a reference type. This means that it is passed by reference and if you want to compare the equality of two different DUs, you&rsquo;ll need to follow there references to get the underlying data.</p><p>Fortunately, F# has added the ability to make struct DUs with the <code>[&lt;Struct>]</code> keyword. This is great for high performance scenarios but there are downsides. I don&rsquo;t have the space to go into it here but will refer you to Bartosz Sypytkowski&rsquo;s excellent blog post <a href=https://bartoszsypytkowski.com/writing-high-performance-f-code/ target=_blank rel="noopener noreffer">here</a>. It&rsquo;s a great read and will provide you significant insight into how to get the most performance out of F#.</p><p>So why do I care about the fact that I can make the <code>BufferState</code> DU into a struct? Well, if I&rsquo;m storing all the data in an array and that data is a struct, then everything I need to compare will be contiguous. Now of course there are no hardware intrinsics in an x86 CPU for comparing F# types, but there are intrinsics for comparing raw bytes. If I can get a pointer to the <code>array&lt;BufferState></code> and simply compare the bytes for equality I can accelerate the equality check of the <code>Buffers</code> field as well.</p><p>Let&rsquo;s get to work. We&rsquo;ll need to define a new type <code>BufferStateStruct</code> which is exactly the same as a <code>BufferState</code> but with the <code>[&lt;Struct>]</code> attribute. We&rsquo;ll put all this new code in a module called <code>SseByteArrayEquals</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>SseByteArrayEquals</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Struct</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>BufferStateStruct</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>Full</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>Partial</span>
+</span></span><span class=line><span class=cl>        <span class=o>|</span> <span class=n>Empty</span>
+</span></span></code></pre></td></tr></table></div></div><p>Now we need to define a new <code>equals</code> function that can take two <code>array&lt;'T></code> and check their equality based on the bytes matching. Again, I&rsquo;m going to throw the whole function at you and then break it down. It&rsquo;s like what we went through in the previous section with some minor tweaks.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>module</span> <span class=nn>SseByteArrayEquals</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>private</span> <span class=n>equals</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>T</span> <span class=k>when</span> <span class=k>&#39;</span><span class=n>T</span> <span class=o>:</span> <span class=n>unmanaged</span><span class=o>&gt;</span> <span class=o>(</span><span class=n>a</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>T</span><span class=o>&gt;)</span> <span class=o>(</span><span class=n>b</span><span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>T</span><span class=o>&gt;)</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.</span><span class=n>Length</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>            <span class=n>invalidArg</span> <span class=o>(</span><span class=n>nameof</span> <span class=n>b</span><span class=o>)</span> <span class=s>&#34;Cannot perform equals on arrays of different lengths&#34;</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>*</span> <span class=n>sizeof</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>T</span><span class=o>&gt;</span> <span class=o>/</span> <span class=n>sizeof</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>lastBlockIdx</span> <span class=o>=</span> <span class=n>len</span> <span class=o>-</span> <span class=o>(</span><span class=n>len</span> <span class=o>%</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;.</span><span class=n>Count</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>use</span> <span class=n>pointerA</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>a</span>
+</span></span><span class=line><span class=cl>        <span class=k>use</span> <span class=n>pointerB</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>b</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>bytePointerA</span> <span class=o>=</span> <span class=n>pointerA</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>toNativeInt</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>ofNativeInt</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>bytePointerB</span> <span class=o>=</span> <span class=n>pointerB</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>toNativeInt</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>ofNativeInt</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span><span class=n>lastBlockIdx</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>aVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bytePointerA</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>bVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bytePointerB</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>comparison</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>CompareEqual</span> <span class=o>(</span><span class=n>aVector</span><span class=o>,</span> <span class=n>bVector</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>mask</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>MoveMask</span> <span class=o>(</span><span class=n>comparison</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=o>(</span><span class=n>mask</span> <span class=o>=</span> <span class=n>65535</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;.</span><span class=n>Count</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>len</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=o>((</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>get</span> <span class=n>bytePointerA</span> <span class=n>idx</span><span class=o>)</span> <span class=o>=</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>get</span> <span class=n>bytePointerB</span> <span class=n>idx</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>Our function declarations have changed slightly. We now take an <code>array&lt;'T></code> but we added the restriction <code>unmanaged</code>. You can read more about type restrictions <a href=https://docs.microsoft.com/en-us/dotnet/fsharp/language-reference/generics/constraints target=_blank rel="noopener noreffer">here</a> but this restriction is necessary for us to be able to view the array as just a set of bytes.</p><p>At the beginning we have the same check to ensure that the arrays are the same length.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>if</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>&lt;&gt;</span> <span class=n>b</span><span class=o>.</span><span class=n>Length</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=n>invalidArg</span> <span class=o>(</span><span class=n>nameof</span> <span class=n>b</span><span class=o>)</span> <span class=s>&#34;Cannot perform equals on arrays of different lengths&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then need to know how long our arrays are in terms of the number of bytes since we will be operating on them as just bytes.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>len</span> <span class=o>=</span> <span class=n>a</span><span class=o>.</span><span class=n>Length</span> <span class=o>*</span> <span class=n>sizeof</span><span class=o>&lt;</span><span class=k>&#39;</span><span class=n>T</span><span class=o>&gt;</span> <span class=o>/</span> <span class=n>sizeof</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>We then create <code>result</code> to track what we have found, create an <code>int</code> to track our progress and calculate the index of the last block we will be able to process using vector operations.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=k>true</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>lastBlockIdx</span> <span class=o>=</span> <span class=n>len</span> <span class=o>-</span> <span class=o>(</span><span class=n>len</span> <span class=o>%</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;.</span><span class=n>Count</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We now get our pointers to pin the array down to prevent GC from moving things from underneath us.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>use</span> <span class=n>pointerA</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>a</span>
+</span></span><span class=line><span class=cl><span class=k>use</span> <span class=n>pointerB</span> <span class=o>=</span> <span class=k>fixed</span> <span class=n>b</span>
+</span></span></code></pre></td></tr></table></div></div><p>What you can&rsquo;t see here is that <code>pointerA</code> and <code>pointerB</code> are both of type <code>nativeptr&lt;'T></code>. That&rsquo;s not what we want. We want a <code>nativeptr&lt;byte></code>. We use the functions in the <code>FSharp.NativeInterop</code> namespace to convert the pointer to a <code>nativeptr&lt;byte></code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>let</span> <span class=nv>bytePointerA</span> <span class=o>=</span> <span class=n>pointerA</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>toNativeInt</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>ofNativeInt</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl><span class=k>let</span> <span class=nv>bytePointerB</span> <span class=o>=</span> <span class=n>pointerB</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>toNativeInt</span> <span class=o>|&gt;</span> <span class=nn>NativePtr</span><span class=p>.</span><span class=n>ofNativeInt</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The while loop for the vector operations is the same except for one difference. The mask value we check. Before we were comparing 2 floats at a time, so the possible mask values were <code>00</code>, <code>01</code>, <code>10</code>, and <code>11</code>. Now we are working in units of <code>byte</code> and we operate on 128 bits at a time. This means that when we call <code>MoveMask</code> we will generate a mask with potentially 16 1s in the least significant bits. If I type that out as bits it looks like this.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>00000000 00000000 11111111 11111111
+</span></span></code></pre></td></tr></table></div></div><p>That mask is getting interpreted as a 32-bit number which gives a value of <code>65535</code>.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=n>lastBlockIdx</span> <span class=o>&amp;&amp;</span> <span class=n>result</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>aVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bytePointerA</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>bVector</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>LoadVector128</span> <span class=o>(</span><span class=nn>NativePtr</span><span class=p>.</span><span class=n>add</span> <span class=n>bytePointerB</span> <span class=n>idx</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>comparison</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>CompareEqual</span> <span class=o>(</span><span class=n>aVector</span><span class=o>,</span> <span class=n>bVector</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>let</span> <span class=nv>mask</span> <span class=o>=</span> <span class=nn>Sse2</span><span class=p>.</span><span class=n>MoveMask</span> <span class=o>(</span><span class=n>comparison</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>result</span> <span class=o>&lt;-</span> <span class=o>(</span><span class=n>mask</span> <span class=o>=</span> <span class=n>65535</span><span class=o>)</span> <span class=c1>// This has changed since we are working in bytes.
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>Vector128</span><span class=o>&lt;</span><span class=kt>byte</span><span class=o>&gt;.</span><span class=n>Count</span>
+</span></span></code></pre></td></tr></table></div></div><p>The rest of the code in the function is the same as before so I won&rsquo;t go over it. Our <code>Settings</code> type can change though since our <code>array&lt;float></code> and <code>array&lt;BufferStateStruct></code> can both use this new <code>equals</code> function.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>CustomEquality</span><span class=o>;</span> <span class=n>NoComparison</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>type</span> <span class=nc>Settings</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>Levels</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>MaxRates</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=kt>float</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=n>Buffers</span> <span class=o>:</span> <span class=n>array</span><span class=o>&lt;</span><span class=n>BufferStateStruct</span><span class=o>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>Equals</span> <span class=n>b</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>match</span> <span class=n>b</span> <span class=k>with</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>:?</span> <span class=n>Settings</span> <span class=k>as</span> <span class=n>other</span> <span class=o>-&gt;</span>
+</span></span><span class=line><span class=cl>                <span class=c1>// Notice that all of the arrays are using the same equals function
+</span></span></span><span class=line><span class=cl><span class=c1></span>                <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span> <span class=n>other</span><span class=o>.</span><span class=n>Levels</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span> <span class=n>other</span><span class=o>.</span><span class=n>MaxRates</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>&amp;&amp;</span> <span class=o>(</span><span class=n>equals</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span> <span class=n>other</span><span class=o>.</span><span class=n>Buffers</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=o>|</span> <span class=o>_</span> <span class=o>-&gt;</span> <span class=k>false</span>
+</span></span><span class=line><span class=cl>            
+</span></span><span class=line><span class=cl>        <span class=k>override</span> <span class=n>this</span><span class=p>.</span><span class=nf>GetHashCode</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>levelsHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>Levels</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>maxRatesHash</span> <span class=o>=</span> <span class=n>HashFloatArray</span> <span class=n>this</span><span class=o>.</span><span class=n>MaxRates</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>buffersHash</span> <span class=o>=</span> <span class=n>this</span><span class=o>.</span><span class=n>Buffers</span><span class=o>.</span><span class=n>GetHashCode</span><span class=bp>()</span>
+</span></span><span class=line><span class=cl>            <span class=n>hash</span> <span class=o>(</span><span class=n>levelsHash</span><span class=o>,</span> <span class=n>maxRatesHash</span><span class=o>,</span> <span class=n>buffersHash</span><span class=o>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>We add another benchmark&mldr;</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fsharp data-lang=fsharp><span class=line><span class=cl><span class=k>type</span> <span class=nc>Benchmarks</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// ...previous benchmarks
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl>    <span class=o>[&lt;</span><span class=n>Benchmark</span><span class=o>&gt;]</span>
+</span></span><span class=line><span class=cl>    <span class=k>member</span> <span class=n>_</span><span class=p>.</span><span class=nf>SseByteArrayEquals</span> <span class=bp>()</span> <span class=o>=</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>idx</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>        <span class=k>let</span> <span class=nv>mutable</span> <span class=n>result</span> <span class=o>=</span> <span class=n>0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>while</span> <span class=n>idx</span> <span class=o>&lt;</span> <span class=nn>SseByteArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>.</span><span class=n>Length</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>            <span class=k>let</span> <span class=nv>testKey</span> <span class=o>=</span> <span class=nn>SseByteArrayEquals</span><span class=p>.</span><span class=n>settingsKeys</span><span class=o>[</span><span class=n>idx</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>result</span> <span class=o>&lt;-</span> <span class=nn>SseByteArrayEquals</span><span class=p>.</span><span class=n>settingsDictionary</span><span class=o>[</span><span class=n>testKey</span><span class=o>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>            <span class=n>idx</span> <span class=o>&lt;-</span> <span class=n>idx</span> <span class=o>+</span> <span class=n>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>result</span>
+</span></span></code></pre></td></tr></table></div></div><p>&mldr;compile and run our tests to get the following.</p><table><thead><tr><th>Method</th><th style=text-align:right>Mean</th><th style=text-align:right>Error</th><th style=text-align:right>StdDev</th></tr></thead><tbody><tr><td>Default</td><td style=text-align:right>38.424 ms</td><td style=text-align:right>0.4668 ms</td><td style=text-align:right>0.4138 ms</td></tr><tr><td>Simple</td><td style=text-align:right>39.739 ms</td><td style=text-align:right>0.4141 ms</td><td style=text-align:right>0.3874 ms</td></tr><tr><td>FloatHash</td><td style=text-align:right>10.290 ms</td><td style=text-align:right>0.0969 ms</td><td style=text-align:right>0.0859 ms</td></tr><tr><td>FloatHashShort</td><td style=text-align:right>9.541 ms</td><td style=text-align:right>0.1061 ms</td><td style=text-align:right>0.0993 ms</td></tr><tr><td>ArrayEquals</td><td style=text-align:right>7.469 ms</td><td style=text-align:right>0.0763 ms</td><td style=text-align:right>0.0713 ms</td></tr><tr><td>SseFloatArrayEquals</td><td style=text-align:right>6.966 ms</td><td style=text-align:right>0.0580 ms</td><td style=text-align:right>0.0453 ms</td></tr><tr><td>SseByteArrayEquals</td><td style=text-align:right>1.653 ms</td><td style=text-align:right>0.0178 ms</td><td style=text-align:right>0.0149 ms</td></tr></tbody></table><p>This is great! We got another huge speed boost. Putting your data into vectors and using SIMD to rapidly process them can lead to some huge performance gains.</p><h2 id=wrap-up>Wrap Up</h2><p>I hope you enjoyed this journey. I had a lot of fun figuring out just how fast I could make this lookup since it is at the heart of some of the most performance sensitive code I wrote. I still have a lot to learn and if you have feedback, I would love to hear it! You can check out the code <a href=https://github.com/matthewcrews/RecordsAsKeysForDictionary target=_blank rel="noopener noreffer">here</a>. You can run the benchmarks yourself and see what you find.</p><p>Please send me an email at <a href=mailto:matthewcrews@gmail.com rel>matthewcrews@gmail.com</a> if you have any questions and subscribe so you can stay on top new posts and products I am offering.</p><script>window.mootrack||!function(e,t,n,s,o){function i(e){var s,o=~~(Date.now()/3e5),t=document.createElement(n);t.async=!0,t.src=e+"?ts="+o,s=document.getElementsByTagName(n)[0],s.parentNode.insertBefore(t,s)}e.MooTrackerObject=o,e[o]=e[o]||function(){return e[o].q?void e[o].q.push(arguments):void(e[o].q=[arguments])},window.attachEvent?window.attachEvent("onload",i.bind(this,s)):window.addEventListener("load",i.bind(this,s),!1)}(window,document,"script","https://cdn.stat-track.com/statics/moosend-tracking.min.js","mootrack"),mootrack("loadForm","b498d29aaba84b5bb3e0479003dc7264")</script><div data-mooform-id=b498d29a-aba8-4b5b-b3e0-479003dc7264></div></div><div id=comments><div id=valine class=comment></div><noscript>Please enable JavaScript to view the comments powered by <a href=https://valine.js.org/>Valine</a>.</noscript></div></div></div></main><footer class=footer><div class=footer-container><div class=footer-line>Powered by <a href=https://gohugo.io/ target=_blank rel="noopener noreffer" title="Hugo 0.104.3">Hugo</a> | Theme - <a href=https://github.com/dillonzq/LoveIt target=_blank rel="noopener noreffer" title="LoveIt 0.2.11"><i class="far fa-kiss-wink-heart fa-fw" aria-hidden=true></i> LoveIt</a></div><div class=footer-line itemscope itemtype=http://schema.org/CreativeWork><i class="far fa-copyright fa-fw" aria-hidden=true></i><span itemprop=copyrightYear>2019 - 2022</span><span class=author itemprop=copyrightHolder>&nbsp;<a href=matthewcrews.com target=_blank>Matthew Crews</a></span>&nbsp;|&nbsp;<span class=license><a rel="license external nofollow noopener noreffer" href=https://creativecommons.org/licenses/by-nc/4.0/ target=_blank>CC BY-NC 4.0</a></span></div></div></footer></div><div id=fixed-buttons><a href=# id=back-to-top class=fixed-button title="Back to Top"><i class="fas fa-arrow-up fa-fw" aria-hidden=true></i>
+</a><a href=# id=view-comments class=fixed-button title="View Comments"><i class="fas fa-comment fa-fw" aria-hidden=true></i></a></div><link rel=stylesheet href=/lib/valine/valine.min.css><link rel=stylesheet href=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.css><script type=text/javascript src=https://cdn.jsdelivr.net/npm/valine@1.5.0/dist/Valine.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/autocomplete.js@0.38.1/dist/autocomplete.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/algoliasearch@4.13.1/dist/algoliasearch-lite.umd.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/lazysizes@5.3.2/lazysizes.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/clipboard@2.0.11/dist/clipboard.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/sharer.js@0.5.1/sharer.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/katex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/auto-render.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/copy-tex.min.js></script><script type=text/javascript src=https://cdn.jsdelivr.net/npm/katex@0.16.0/dist/contrib/mhchem.min.js></script><script type=text/javascript>window.config={code:{copyTitle:"Copy to clipboard",maxShownLines:50},comment:{valine:{appId:"QGzwQXOqs5JOhN4RGPOkR2mR-MdYXbMMI",appKey:"WBmoGyJtbqUswvfLh6L8iEBr",avatar:"mp",el:"#valine",emojiCDN:"https://cdn.jsdelivr.net/npm/emoji-datasource-google@14.0.0/img/google/64/",emojiMaps:{100:"1f4af.png",alien:"1f47d.png",anger:"1f4a2.png",angry:"1f620.png",anguished:"1f627.png",astonished:"1f632.png",black_heart:"1f5a4.png",blue_heart:"1f499.png",blush:"1f60a.png",bomb:"1f4a3.png",boom:"1f4a5.png",broken_heart:"1f494.png",brown_heart:"1f90e.png",clown_face:"1f921.png",cold_face:"1f976.png",cold_sweat:"1f630.png",confounded:"1f616.png",confused:"1f615.png",cry:"1f622.png",crying_cat_face:"1f63f.png",cupid:"1f498.png",dash:"1f4a8.png",disappointed:"1f61e.png",disappointed_relieved:"1f625.png",dizzy:"1f4ab.png",dizzy_face:"1f635.png",drooling_face:"1f924.png",exploding_head:"1f92f.png",expressionless:"1f611.png",face_vomiting:"1f92e.png",face_with_cowboy_hat:"1f920.png",face_with_hand_over_mouth:"1f92d.png",face_with_head_bandage:"1f915.png",face_with_monocle:"1f9d0.png",face_with_raised_eyebrow:"1f928.png",face_with_rolling_eyes:"1f644.png",face_with_symbols_on_mouth:"1f92c.png",face_with_thermometer:"1f912.png",fearful:"1f628.png",flushed:"1f633.png",frowning:"1f626.png",ghost:"1f47b.png",gift_heart:"1f49d.png",green_heart:"1f49a.png",grimacing:"1f62c.png",grin:"1f601.png",grinning:"1f600.png",hankey:"1f4a9.png",hear_no_evil:"1f649.png",heart:"2764-fe0f.png",heart_decoration:"1f49f.png",heart_eyes:"1f60d.png",heart_eyes_cat:"1f63b.png",heartbeat:"1f493.png",heartpulse:"1f497.png",heavy_heart_exclamation_mark_ornament:"2763-fe0f.png",hole:"1f573-fe0f.png",hot_face:"1f975.png",hugging_face:"1f917.png",hushed:"1f62f.png",imp:"1f47f.png",innocent:"1f607.png",japanese_goblin:"1f47a.png",japanese_ogre:"1f479.png",joy:"1f602.png",joy_cat:"1f639.png",kiss:"1f48b.png",kissing:"1f617.png",kissing_cat:"1f63d.png",kissing_closed_eyes:"1f61a.png",kissing_heart:"1f618.png",kissing_smiling_eyes:"1f619.png",laughing:"1f606.png",left_speech_bubble:"1f5e8-fe0f.png",love_letter:"1f48c.png",lying_face:"1f925.png",mask:"1f637.png",money_mouth_face:"1f911.png",nauseated_face:"1f922.png",nerd_face:"1f913.png",neutral_face:"1f610.png",no_mouth:"1f636.png",open_mouth:"1f62e.png",orange_heart:"1f9e1.png",partying_face:"1f973.png",pensive:"1f614.png",persevere:"1f623.png",pleading_face:"1f97a.png",pouting_cat:"1f63e.png",purple_heart:"1f49c.png",rage:"1f621.png",relaxed:"263a-fe0f.png",relieved:"1f60c.png",revolving_hearts:"1f49e.png",right_anger_bubble:"1f5ef-fe0f.png",robot_face:"1f916.png",rolling_on_the_floor_laughing:"1f923.png",scream:"1f631.png",scream_cat:"1f640.png",see_no_evil:"1f648.png",shushing_face:"1f92b.png",skull:"1f480.png",skull_and_crossbones:"2620-fe0f.png",sleeping:"1f634.png",sleepy:"1f62a.png",slightly_frowning_face:"1f641.png",slightly_smiling_face:"1f642.png",smile:"1f604.png",smile_cat:"1f638.png",smiley:"1f603.png",smiley_cat:"1f63a.png",smiling_face_with_3_hearts:"1f970.png",smiling_imp:"1f608.png",smirk:"1f60f.png",smirk_cat:"1f63c.png",sneezing_face:"1f927.png",sob:"1f62d.png",space_invader:"1f47e.png",sparkling_heart:"1f496.png",speak_no_evil:"1f64a.png",speech_balloon:"1f4ac.png","star-struck":"1f929.png",stuck_out_tongue:"1f61b.png",stuck_out_tongue_closed_eyes:"1f61d.png",stuck_out_tongue_winking_eye:"1f61c.png",sunglasses:"1f60e.png",sweat:"1f613.png",sweat_drops:"1f4a6.png",sweat_smile:"1f605.png",thinking_face:"1f914.png",thought_balloon:"1f4ad.png",tired_face:"1f62b.png",triumph:"1f624.png",two_hearts:"1f495.png",unamused:"1f612.png",upside_down_face:"1f643.png",weary:"1f629.png",white_frowning_face:"2639-fe0f.png",white_heart:"1f90d.png",wink:"1f609.png",woozy_face:"1f974.png",worried:"1f61f.png",yawning_face:"1f971.png",yellow_heart:"1f49b.png",yum:"1f60b.png",zany_face:"1f92a.png",zipper_mouth_face:"1f910.png",zzz:"1f4a4.png"},enableQQ:!1,highlight:!0,lang:"en",pageSize:10,placeholder:"Your comment ...",recordIP:!0,serverURLs:"https://leancloud.hugoloveit.com",visitor:!0}},math:{delimiters:[{display:!0,left:"$$",right:"$$"},{display:!0,left:"\\[",right:"\\]"},{display:!0,left:"\\begin{equation}",right:"\\end{equation}"},{display:!0,left:"\\begin{equation*}",right:"\\end{equation*}"},{display:!0,left:"\\begin{align}",right:"\\end{align}"},{display:!0,left:"\\begin{align*}",right:"\\end{align*}"},{display:!0,left:"\\begin{alignat}",right:"\\end{alignat}"},{display:!0,left:"\\begin{alignat*}",right:"\\end{alignat*}"},{display:!0,left:"\\begin{gather}",right:"\\end{gather}"},{display:!0,left:"\\begin{CD}",right:"\\end{CD}"},{display:!1,left:"$",right:"$"},{display:!1,left:"\\(",right:"\\)"}],strict:!1},search:{algoliaAppID:"PASDMWALPK",algoliaIndex:"index.en",algoliaSearchKey:"b42948e51daaa93df92381c8e2ac0f93",highlightTag:"em",maxResultLength:10,noResultsFound:"No results found",snippetLength:30,type:"algolia"}}</script><script type=text/javascript src=/js/theme.min.js></script></body></html>
