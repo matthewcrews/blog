@@ -48,6 +48,10 @@ enableEmoji = true
 # 忽略一些构建错误
 ignoreErrors = ["error-remote-getjson", "error-missing-instagram-accesstoken"]
 
+[module]
+  [[module.imports]]
+    path = "https://github.com/dillonzq/LoveIt"
+
 # Author config
 # 作者配置
 [author]
