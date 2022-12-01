@@ -5,15 +5,17 @@ draft: false
 tag: fsharp, performance
 ---
 
-> Note: This article is for the 2022 F# Advent Calendar
+> This article is for the 2022 F# Advent Calendar
 
-In my work building the Aidos engine for Discrete Rate Simulation I often have to build custom collections to meet the performance requirements of the project. Don't get me wrong, many of the collections built into .NET are great but they are general purpose. General purpose collections must meet the requirements of many use cases. For the work that I do, I have a single use case in mind and performance is one of the critical features. If our engine isn't orders of magnitude faster than the competition, then we don't have a compelling product.
+> Full code for article found [here](https://github.com/matthewcrews/FSharpPerformance/tree/main/BitSetEnumeration)
 
-In Aidos I often need to track items that have changed during a time step of the simulation. I also track entities with an `int` that has been annotated with a Unit of Measure. This means an entity ends up being a `int<'EntityType>`. For my use case, I also cannot have duplicates so I need to maintain a distinct set of entities that have changed. One way to do this would be to use a HashSet. HashSets are built into .NET and provide `O(1)` insertion which you would think would be ideal for this use case. The downside to a `HashSet` is that its memory will be allocated on the heap. If you have to create a `HashSet` for every iteration of a hot loop, this can cause excess GC pressure.
+While building the Aidos engine for Discrete Rate Simulation, I often have to build custom collections to meet the project's performance requirements. Don't get me wrong, many of the collections built into .NET are great, but they are general-purpose. General-purpose collections must meet the requirements of many use cases. I have a single use case in mind for my work, and performance is one of the critical features. If our engine isn't orders of magnitude faster than the competition, we don't have a compelling product.
 
-Instead what I use is a custom `BitSet`. `BitSet` is a struct which wraps an array of `uint64` which acts as a bit array that I manually manage. The .NET runtime has a `BitArray` class but it does not provide the API I needed for my use cases. I wanted to be able to iterate through all of the set bits and call a function with the index of the set bit as an argument.
+In Aidos, I often need to track items that have changed during a time step of the simulation. I also track entities with an `int` that has been annotated with a Unit of Measure. This means an entity ends up being an `int<'EntityType>`. I also cannot have duplicates for my use case, so I need to maintain a distinct set of entities that have changed. One way to do this would be to use a `HashSet`. HashSet is built into .NET and provides `O(1)` insertion, which you would think would be ideal for this use case. The downside to a `HashSet` is that its memory will be allocated on the heap. If you have to create a `HashSet` for every iteration of a hot loop, this can cause excess GC pressure.
 
-One of the advantages of the `BitSet` approach over `HashSet` is that the array use by the `BitSet` can be allocated from an `ArrayPool` which means that `BitSet` will never increase GC pressure or take up room on the heap. The other is that it is faster than `HashSet` for iterating through the set bits using the `BitSet.iter` function.
+Instead, what I use is a custom `BitSet`. `BitSet` is a struct that wraps an array of `uint64,` which acts as a bit array that I manually manage. The .NET runtime has a `BitArray` class, but it does not provide the API I need for my use cases. I need to iterate through all the set bits and call a function with the index of the set bit as an argument.
+
+One of the advantages of the `BitSet` approach over `HashSet` is that the array used by the `BitSet` can be allocated from an `ArrayPool`, which means that `BitSet` will never increase GC pressure or take up room on the heap. The other is that it is faster than `HashSet` for iterating through the set bits using the `BitSet.iter` function.
 
 Here is the definition of the `BitSet` type:
 
@@ -63,7 +65,7 @@ type BitSet<[<Measure>] 'Measure>(buckets: uint64[]) =
         buckets[bucketId] <- bucket &&& ~~~mask
 ```
 
-We also have a `BitSet` module where we define the functions for operating on `BitSet`. Here I show just the `iter` function. `iter` loops through each of the set bits in the array and calls the lambda `f` with the index of the set bit as the argument.
+We also have a `BitSet` module where we define the functions for operating on `BitSet`. Here I show just the `iter` function. `iter` loops through each set bit in the array and calls the lambda `f` with the index of the set bit as the argument.
 
 ```fsharp
 module BitSet =
@@ -86,7 +88,7 @@ module BitSet =
             i <- i + 1
 ```
 
-I setup a benchmark to compare the performance of `HashSet` and `BitSet`. I define a unit of measure `Chicken` which I will use as the entity type to annotate my `int` values with. I add 10 `int<Chicken>` between the values of `0<Chicken>` and `99<Chicken>` to both of these collections. This range of values is a good representation for the use case that I am concerned with. I then write a benchmark for measuring the time to iterate through the values in both collections to see how long it takes for both collections. When I run the benchmark using `BenchmarkDotNet` I get the following result:
+I set up a benchmark to compare the performance of `HashSet` and `BitSet`. I define a unit of measure, `Chicken`, which I will use as the entity type to annotate my `int` values. I add 10 `int<Chicken>` between the values of `0<Chicken>` and `99<Chicken>` to both of these collections. This range of values is a good representation of the use case that I am concerned with. I then write a benchmark for measuring the time to iterate through the values in both collections to see how long it takes for both collections. When I run the benchmark using `BenchmarkDotNet` I get the following result:
 
 ```fsharp
 |           Method |      Mean |     Error |    StdDev |   Gen0 | Allocated |
@@ -95,21 +97,21 @@ I setup a benchmark to compare the performance of `HashSet` and `BitSet`. I defi
 |             Iter |  7.048 ns | 0.1168 ns | 0.1092 ns |      - |         - |
 ```
 
-We see that the `iter` function for `BitSet` is approcimately 3x faster than `HashSet` for iterating through the values.
+We see that the `iter` function for `BitSet` is approximately 3x faster than `HashSet` for iterating through the values.
 
 ## The Problem
 
-Now, you may be thinking that `BitSet` is great but there is a downside with this approach. The `iter` function takes a lambda as one of its arguments. Whenever the `BitSet` encounters a set bit, it then calls the lambda with the index of the set bit. Lambdas are intrinsic to programming in F# but they do have limitations. One of those limitates is that they cannot capture `Span<'T>` or `ByRefLike` types. Most of the time this is not a big deal. F# devs are not often known as being hardcore performance so most F# devs will not run into this problem.
+Now, you may be thinking that `BitSet` is great, but there is a downside to this approach. The `iter` function takes a lambda as one of its arguments. Whenever the `BitSet` encounters a set bit, it then calls the lambda with the index of the set bit. Lambdas are intrinsic to programming in F#, but they have limitations. One of those limitations is that they cannot capture `Span<'T>` or `ByRefLike` types. Most of the time, this is not a big deal. F# developers are not often known as hardcore performance programmers, so most F# developers will not run into this problem.
 
-I, on the other hand, work with `Span<'T>` and `ByRefLike` types all of the time. They can be incredibly powerful for increasing the performance of your programming and decreasing memory allocations. Now, a word of caution. You probably don't need this. You can lead a very happy life as an F# developer and never worry about this. This type of limitation only becomes and issue when you are trying to eek out every bit of performance that you can and you likely are not in that scenario. I happen to be in an odd situation in that I work for a company that has a F# dev team and I'm tasked with writing libraries for others to use that must be fast. For strategic reasons we constrain ourselves to F# so calling out to C/C++/Rust is not an option. If you find yourself in a similar situation, you are going to appreciate what we cover next.
+I, on the other hand, work with `Span<'T>` and `ByRefLike` types all the time. They can be incredibly powerful for increasing your program's performance and decreasing memory allocations. Now, a word of caution. You probably don't need this. You can lead a very happy life as an F# developer, and never worry about this. This limitation only becomes an issue when you are trying to eke out every bit of performance you can, and you are likely not in that scenario. I happen to be in an odd situation because I work for a company with an F# dev team, and I'm tasked with writing libraries for others to use that must be fast. For strategic reasons, we constrain ourselves to F#, so calling out to C/C++/Rust is not an option. You will appreciate what we cover next if you find yourself in a similar situation.
 
-I have asked about relaxing some of the compiler restrictions around lambdas and capturing `Span<'T>` but the effort would be large. The more I dug into how the F# compiler and the CLR are interacting my appreciation for the complexity of the problem goes. This is also not the most important feature for the growth of F# so I'm not going to push for it. My hope is to maybe get good enough to be able to contribute it to the F# compiler someday 😊.
+I have asked about relaxing some of the compiler restrictions around lambdas and capturing `Span<'T>`, but the effort would be large. The more I dug into how the F# compiler and the CLR interact, my appreciation for the complexity of the problem grows. This is also not the most important feature for the growth of F#, so I'm not going to push for it. I hope to get good enough to contribute it to the F# compiler someday 😊.
 
 ## The Solution
 
-So how do we get around this limitation? `BitSet` is intended for these hot loops where we likely want to be able to use some stack allocated memory. This means we need to be able to work with `BitSet` and with `Span<'T>` at the same time. The simple solution is to expose a new way of iterating through the set bits in the `BitSet`. We can implement `IEnumerable<'T>` for `BitSet` and use a `for ...in...do` loops.
+So how do we get around this limitation? `BitSet` is intended for these hot loops where we likely want to be able to use some stack-allocated memory. This means we must be able to work with `BitSet` and `Span<'T>` simultaneously. The simple solution is to expose a new way of iterating through the set bits in the `BitSet`. We can implement `IEnumerable<'T>` for `BitSet` and use a `for...in...do` loop.
 
-The easiest way to implement `IEnumerable<'T>` for `BitSet` is to define a `BitSetEnumerator` which takes the logic used in the `iter` function but exposes it in a way that the `IEnumerable<'T>` interface expexts. Let's see what that looks like:
+The easiest way to implement `IEnumerable<'T>` for `BitSet` is to define a `BitSetEnumerator`, which takes the logic used in the `iter` function but exposes it in a way that the `IEnumerable<'T>` interface expects. Let's see what that looks like:
 
 ```fsharp
 type BitSetEnumerator<[<Measure>] 'Measure>(buckets: uint64[]) =
@@ -158,9 +160,9 @@ type BitSetEnumerator<[<Measure>] 'Measure>(buckets: uint64[]) =
         member b.Dispose() = ()
 ```
 
-The `BitSetEnumerator` type defines three methods for being able to fulfill the `IEnumerable<'T>` contract: `Current`, `MoveNext`, and `Reset`. You can see how the `BitSetEnumerator` fulfills the `IEnumerable<'T>` interface at the bottom. The type is using the same bit-shifting logic that `iter` uses but breaks it up to support the methods that `IEnumerable<'T>` expects.
+The `BitSetEnumerator` type defines three methods for fulfilling the `IEnumerable<'T>` contract: `Current`, `MoveNext`, and `Reset`. You can see how the `BitSetEnumerator` fulfills the `IEnumerable<'T>` interface at the bottom. The type uses the same bit-shifting logic `iter` uses but breaks it up to support the methods that `IEnumerable<'T>` expects.
 
-We can then have the `BitSet` colleciton inmplement the `IEnumerable<'T>` interface by having it return an instance of the `BitSetEnumerator` when calling the `GetEnumerator` method.
+We can then have the `BitSet` collection implement the `IEnumerable<'T>` interface by returning an instance of the `BitSetEnumerator` when calling the `GetEnumerator` method.
 
 ```fsharp
 open System.Collections.Generic
@@ -178,7 +180,7 @@ type BitSet<[<Measure>] 'Measure>(buckets: uint64[]) =
 
 ```
 
-When we add this approach to the benchmarks we get the following result:
+When we add this approach to the benchmarks, we get the following result:
 
 ```fsharp
 |     Method |      Mean |     Error |    StdDev |   Gen0 | Allocated |
@@ -188,13 +190,13 @@ When we add this approach to the benchmarks we get the following result:
 | Enumerable | 55.521 ns | 0.9228 ns | 0.8181 ns | 0.0048 |      40 B |
 ```
 
-The `IEnumerable<'T>` approach is twice as slow as using a `HashSet`. This is less than ideal. It is also allocating on the heap. This is because the interface is necessitates the creation of an object on the heap. We've negated most, if not all, of the benefit we are hoping to get from `BitSet`. What can we do?
+The `IEnumerable<'T>` approach is twice as slow as using a `HashSet`. This is less than ideal. It is also allocating on the heap. This is because the interface necessitates the creation of an object on the heap. We've negated most, if not all, of the benefits we hope to get from `BitSet`. What can we do?
 
 ## Ducks All The Way Down
 
-There's a feature of .NET that I don't hear about much but turns out to be important in this scenario. The .NET runtime will using duck typing to implement `foreach` loops and their equivalents. The runtime will look at the type and see if it has a `GetEnumerator` method which returns a type that has the `Current` field and the `MoveNext` method. Well, the `for...in...do` loop in F# is the equivalent to the C# `foreach` loop.
+There's a feature of .NET that I don't hear about much but is important in this scenario. The .NET runtime will use duck-typing to implement C# `foreach` loops and their equivalents. The runtime will look at the type and see if it has a `GetEnumerator` method that returns a type with the `Current` field and the `MoveNext` method. Well, the `for...in...do` loop in F# is the equivalent to the C# `foreach` loop.
 
-What if instead of implementing `IEnumerable<'T>` we instead just rely on the .NET duck-typing approach? We can change our enumerator to be a `struct` so that it doesn't allocate any memory on the heap and we'll avoid the overhead of an interface.
+What if instead of implementing `IEnumerable<'T>` we rely on the .NET duck-typing approach? We can change our enumerator to be a `struct` so that it doesn't allocate any memory on the heap, and we'll avoid the overhead of an interface.
 
 Here's what the `BitSetEnumerator` looks like as a struct with only the necessary pieces for duck-typing.
 
@@ -243,7 +245,7 @@ type BitSetEnumerator<[<Measure>] 'Measure> =
                 false
 ```
 
-Things look a bit different since `BitSetEnumerator` is now a struct and therefore requires some different approaches how we handle the internal data.
+Things look a bit different since `BitSetEnumerator` is now a struct and therefore requires different approaches to handling the internal data.
 
 We also change the `BitSet` type to only have a `GetEnumerator()` method instead of implementing `IEnumerable<'T>`.
 
@@ -255,7 +257,7 @@ type BitSet<[<Measure>] 'Measure>(buckets: uint64[]) =
     member b.GetEnumerator() = BitSetEnumerator<'Measure>(buckets)
 ```
 
-When we benchmark this approach we get the following:
+When we benchmark this approach, we get the following:
 
 ```
 |     Method |      Mean |     Error |    StdDev |   Gen0 | Allocated |
@@ -266,15 +268,15 @@ When we benchmark this approach we get the following:
 | DuckTyping | 28.039 ns | 0.5183 ns | 0.4848 ns |      - |         - |
 ```
 
-This is much better. Our performance is almost that of a `HashSet`. Something to be aware of, the duck-typing approache and the `IEnumerable<'T>` are not mutally exclusive. If you implement both, the runtime will pick the faster approach in the testing that I have done. In the production code we include both because the `IEnumerable<'T>` is necessary for using the `BitSet` with the `Seq` module.
+This is much better. Our performance is almost that of a `HashSet`. Something to be aware of, the duck-typing approach and the `IEnumerable<'T>` are not mutually exclusive. If you implement both, the runtime will pick the faster approach in the testing I have done. In the production code, we include both because the `IEnumerable<'T>` is necessary for using the `BitSet` with the `Seq` module.
 
 ## Inline All The Things (When it helps)
 
-You have probably noticed that the performance of our loop based approach is still nowhere near the `iter` method. That's to be expected. The for loop approach adds overhead to the iteration. The F# compiler has some special transforms that it does for arrays which makes using a `for...in...do` loop over the elements of an array incredibly fast but most other collections do not get that special treatment.
+You have probably noticed that our loop-based approach's performance is still not near the `iter` method. That's to be expected. The for-loop approach adds overhead to the iteration. The F# compiler has some special transforms that it does for arrays which makes using a `for...in...do` loop over the elements of an array incredibly fast, but most other collections do not get that special treatment.
 
-There is something we can do to get a little more performance though. Right now each time the `MoveNext` method is being called, it is creating a new stack frame. This is adding overhead to the loop when it has to copy data for each instance of the stack frame. If we could inline the logic of the `MoveNext` method, we could reduce the number of stack frames that are created and potentially get a performance boost.
+There is something we can do to get a little more performance, though. Right now, each time the `MoveNext` method is called, it creates a new stack frame. This adds overhead to the loop when it has to copy data for each instance of the stack frame. If we could inline the logic of the `MoveNext` method, we could reduce the number of stack frames created and potentially get a performance boost.
 
-If you try to just add the `inline` keyword to `Current` and `MoveNext` on `BitSetEnumerator` you will have a problem though. The compiler will give you an error that looks something like this:
+If you try to add the `inline` keyword to `Current` and `MoveNext` on `BitSetEnumerator`, you will have a problem. The compiler will give you an error that looks something like this:
 
 ```
 D:\Documents\GitHub\FSharpPerformance\BitSetEnumeration\DuckTyping.fs(55,17): error FS1114: The value 'BitSetEnumeration.DuckTyping.BitSetEnumerator.MoveNext' was marked inline but was not bound in the optimi
@@ -289,7 +291,7 @@ uments\GitHub\FSharpPerformance\BitSetEnumeration\BitSetEnumeration.fsproj]
 The build failed. Fix the build errors and run again.
 ```
 
-That looks like a lot of garbage but the important part is near the end. It reports an error on line 55 of our `DuckTyping.fs` which mentions "perhaps because a recursive value was marked `inline`". That's the clue we need. The `MoveNext` method is recursive at the moment so the inlining logic of the F# compiler cannot work. What we need to do is remove this recursion. When we remove the recursion from the `MoveNext` method we get the following:
+That looks like a lot of garbage, but the important part is near the end. It reports an error on line 55 of our `DuckTyping.fs`, which mentions "perhaps because a recursive value was marked `inline`." That's the clue we need. The `MoveNext` method is recursive at the moment, so the inlining logic of the F# compiler cannot work. What we need to do is remove this recursion. When we remove the recursion from the `MoveNext` method, we get the following:
 
 ```fsharp
     member inline b.MoveNext() =
@@ -325,7 +327,7 @@ That looks like a lot of garbage but the important part is near the end. It repo
             result
 ```
 
-The logic for moving to the next bucket and checking for values has gotten more complex but it no longer recurses. This allows us to use the `inline` keyword to get the F# compiler to inline this logic where it is used. This will reduce the number of stack frames that are used in our loop. Let's see what the performance of this version is:
+The logic for moving to the next bucket and checking for values has gotten more complex, but it no longer recurses. This allows us to use the `inline` keyword to get the F# compiler to inline this logic where it is used. This will reduce the number of stack frames used in our loop. Let's see what the performance of this version is:
 
 ```fsharp
 |     Method |      Mean |     Error |    StdDev |   Gen0 | Allocated |
@@ -337,10 +339,10 @@ The logic for moving to the next bucket and checking for values has gotten more 
 |   Inlining | 13.315 ns | 0.2178 ns | 0.2037 ns |      - |         - |
 ```
 
-Inlining is now faster than `HashSet` but still slower than `Iter`. This is a win for me because there's now no performance downside to `BitSet` when compared to `HashSet` for this scenario. Would I like to be able to match the performance of `Iter`? Yes, absolutely but this is already nowhere near the bottleneck of our engine so I moved on to other problems.
+Inlining is now faster than `HashSet` but still slower than `Iter`. This is a win for me because there's now no performance downside to `BitSet` compared to `HashSet` for this scenario. Would I like to be able to match the performance of `Iter`? Yes, absolutely, but this is already nowhere near the bottleneck of our engine, so I moved on to other problems.
 
 ## Conclusion
 
-You've learned a little about implementing `IEnumerable<'T>` for custom collections that you write and how to use the duck-typing of the `for` loop in .NET to get even better performance. We've also shown that we can get even greater performance using the `inline` keyword to remove stack-frames.
+You've learned a little about implementing `IEnumerable<'T>` for custom collections that you write and how to use the duck-typing of the `foreach` loop in .NET to get even better performance. We've also shown that we can perform even better using the `inline` keyword to remove stack frames.
 
-My recommendation is that you stick with the built in looping functions provided by F#: `map`, `iter`, iteri`, etc. They are highly optimized and will give you great performance out of the box. Only in rare use cases where the need to capture a `Span<'T>` or some other restriction forces you to use other looping constructs should you consider other options. I hope you find this helpful. Please feel free to reach out with any questions or critiques 😊.
+I recommend that you stick with the built-in looping functions provided by F#: `map`, `iter`, `iteri`, etc. They are highly optimized and will give you great performance out of the box. In rare cases, you should consider other options where the need to capture a `Span<'T>` or another restriction forces you to use other looping constructs. I hope you find this helpful. Please feel free to reach out with any questions or critiques 😊.
