@@ -1,6 +1,5 @@
-# 
-
 # Compare and Contrast F# and Odin - Part 1
+
 
 I have recently been talking online about the need to improve the importance of my .NET code. I have successfully created high-performance solutions using purely F# and will continue to. There comes a point, though, when you are fighting the system you are building on so much that you end up looking for another tool.
 
