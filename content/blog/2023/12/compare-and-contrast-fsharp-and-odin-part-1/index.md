@@ -45,7 +45,7 @@ type Chicken = {
 }
 ```
 
-Odin doesn't have the idea of a Record. Instead, the closest thing we have is a `struct` which is allocated on the Stack.
+Odin doesn't have the idea of a Record. Instead, the closest thing we have is a `struct` which is allocated on the Stack if you define it locally but can also be allocated on the heap. Odin has extensive support for custom memory allocation which gives you fine grained control over where memory is laid out. We'll come back to this when we talk about Garbage Collection in a future post. For now, here's how to define a `Chicken` in Odin.
 
 Odin
 ```odin
@@ -110,7 +110,7 @@ You will see in this case that the F# is a little more verbose. This is because 
 Odin
 
 ```odin
-c := { Name = "Clucky", Age = 1, Size = 2.0, }
+c := Chicken{ Name = "Clucky", Age = 1, Size = 2.0 }
 ```
 
 If we use the default `let` binding in F#, we still won't have quite the same behavior as Odin. Though the fields of the F# `Chicken` type are mutable, we aren't allowed to change them without taking a mutable binding. Let's do the Odin equivalent in F#.
